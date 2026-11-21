@@ -37,6 +37,9 @@
     scrollbar-width:none;-webkit-overflow-scrolling:touch}
   /* 2층 회의실에서는 1층 전시실 이동 줄을 숨긴다 — 창밖 시야를 가리지 않게 */
   body.floor-2 #zones{display:none}
+  /* 2층에서는 맨 윗줄(로고·판넬 편집·관리)까지 숨기고 회의 바·창밖 바를 맨 위로 올린다.
+     → 창밖 야외 라이브 스크린 시야가 그만큼 넓어진다. 1층 복귀 시 클래스가 빠져 자동 복원. */
+  body.floor-2 #top{display:none}
   #zones::-webkit-scrollbar{display:none}
   .zone-btn{flex:0 0 auto;display:flex;align-items:center;gap:6px;border:0;cursor:pointer;
     padding:8px 13px;border-radius:999px;font-family:inherit;font-size:13px;font-weight:700;color:var(--ink);
@@ -3878,10 +3881,12 @@
   var VISTA = {
     azIsland: 0.10,          // 독도 방위(라디안, 정북=0 · 동쪽 +)
     distIsland: 380,         // 독도까지 거리(m) — 560m 은 해무에 묻혀 흐릿했다
-    liveDist: 240,           // 라이브 파노라마 곡면 반지름(m)
-    liveArc: 0.28,           // 라이브 파노라마 좌우 반각(라디안 ≈ 16°)
-    liveH: 46,               // 라이브 파노라마 높이(m)
-    liveY: 19.5,             // 라이브 파노라마 중심 높이
+    /* 창밖 야외 대형 파노라마 라이브 스크린(옥외 LED 월) 제원
+       · liveZ  : 북쪽 통유리(z=-5) 바깥 53m 바다 위 — 화면이 창 3~4칸을 채운다
+       · liveW  : 16:9 화면 폭 26m(높이 14.6m) — 4.6m 천장 들보 밑으로 화면 전체가 들어오는 크기
+       · liveBaseY: 화면 아래 끝(수면 위 2.4m) — 지지 기둥이 바다에 닿아 '세워진 구조물'로 보인다
+       · liveBend : 가장자리가 1.6m 앞으로 휜 완만한 곡면 */
+    liveZ: -58, liveW: 26, liveBaseY: 11.4, liveBend: 1.6,
     sunAz: -0.52,            // 태양 방위(라디안) — 북서쪽 오후 햇살
     sunEl: 0.60
   };
@@ -4446,6 +4451,11 @@
   }
 
   function updateShips(ships, dt, elapsed) {
+    /* 라이브 송출 중에는 야외 스크린 '앞' 수역(z > 스크린)으로 배가 나오지 않게 한다.
+       항로(r ≥ 262m)는 스크린(58m)보다 훨씬 뒤라 화면을 가리지 않고,
+       혹시 앞 코스로 들어오면 그 배만 잠시 감춰 방송 화면 시야를 100% 지킨다. */
+    var screenOn = !!(DOKDO_LIVE.structure && DOKDO_LIVE.structure.visible);
+    var frontZ = VISTA.liveZ + 12;
     for (var i = 0; i < ships.length; i++) {
       var s = ships[i], az = s.az0 + elapsed * s.sp;
       var rr = s.r;
@@ -4454,6 +4464,7 @@
       s.g.rotation.y = heading;
       s.g.rotation.x = Math.sin(elapsed * 0.42 + s.ph) * 0.012;
       s.g.rotation.z = Math.sin(elapsed * 0.37 + s.ph * 1.7) * 0.016;
+      s.g.visible = !(screenOn && s.g.position.z > frontZ && Math.abs(s.g.position.x) < VISTA.liveW * 0.9);
     }
   }
 
@@ -4553,12 +4564,47 @@
     },
     hlsSrc: 'https://cdn.jsdelivr.net/npm/hls.js@1.5.18/dist/hls.min.js',
     hlsState: 'idle',        // idle | loading | ready | failed
-    video: null, hls: null, tex: null, screen: null, mat: null,
+    video: null, hls: null, tex: null,
+    /* 창밖 야외 스크린 구조물(패널·연결중 안내판·상하 라벨) */
+    structure: null, panel: null, panelMat: null, overlay: null,
+    screenApi: null, panelW: 0, panelH: 0,
+    labelText: '', labelIsland: '', labelOther: '',
+    overlayOpacity: 1, lastMean: null, _loadPhase: 0, _lastLoadDraw: -1,
     want: 'east',            // 지금 켜려는 스트림(east | west | 3d)
     mode: 'east',            // 실제로 화면에 보이는 모드
     playing: false, failed: false, errors: [], darkFrames: 0, lastProbe: 0,
     startTimer: 0, retryTimer: 0, lastDark: 0,
     needGesture: false, _warned: false,
+
+    /* 상·하단 라벨 문구를 지금 모드(동도/서도)에 맞춰 다시 그린다 */
+    setLiveLabels: function (which) {
+      var self = DOKDO_LIVE;
+      if (!self.screenApi || !self.screenApi.drawBoards) return;
+      self.screenApi.drawBoards(which);
+    },
+
+    /* 연결 중 안내판 애니메이션 + 첫 프레임 도착 시 부드러운 전환 */
+    tick: function (dt, t) {
+      var self = DOKDO_LIVE;
+      if (!self.structure || !self.structure.visible || !self.screenApi) return;
+      var live = self.playing && !self.failed;
+      if (live) {
+        if (self.overlayOpacity > 0) {
+          self.overlayOpacity = Math.max(0, self.overlayOpacity - dt * 2.2);
+          self.overlay.material.opacity = self.overlayOpacity;
+          self.overlay.visible = self.overlayOpacity > 0.002;
+        }
+      } else {
+        self.overlayOpacity = 1;
+        self.overlay.material.opacity = 1;
+        self.overlay.visible = true;
+        if (t - self._lastLoadDraw > 0.30) {      // 0.3초마다 링·점 애니메이션
+          self._lastLoadDraw = t;
+          self._loadPhase = (t * 0.85) % 1;
+          self.screenApi.drawLoading(self.mode === 'west' ? 'west' : 'east', self._loadPhase);
+        }
+      }
+    },
 
     ensureVideo: function () {
       if (DOKDO_LIVE.video) return DOKDO_LIVE.video;
@@ -4601,6 +4647,7 @@
       t.generateMipmaps = false;
       t.encoding = THREE.sRGBEncoding;
       t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
+      try { t.anisotropy = 4; } catch (e) {}
       DOKDO_LIVE.tex = t;
       return t;
     },
@@ -4637,13 +4684,17 @@
         return;
       }
       self.want = which;
-      if (!self.screen) return;
+      if (!self.panel) return;
 
       // 버튼을 누른 그 제스처 안에서 <video> 를 만들고 재생을 걸어 둔다(모바일 자동재생 정책)
       var v = self.ensureVideo();
       self.armGesture();
       self.tex = self.texture();
-      if (self.mat && self.mat.uniforms.uMap.value !== self.tex) self.mat.uniforms.uMap.value = self.tex;
+      if (self.panelMat && self.panelMat.map !== self.tex) {
+        self.panelMat.map = self.tex;
+        self.panelMat.needsUpdate = true;
+      }
+      self.setLiveLabels(which);       // 스크린 상·하단 라벨을 동도/서도에 맞춘다
 
       if (self.hooked === which && self.playing && !self.failed) {
         self.mode = which; self.applyVisibility();
@@ -4663,7 +4714,8 @@
       self._warned = false;
       self._recover = 0;
       self.startTimer = performance.now();
-      self.applyVisibility();                  // 새 영상이 뜨기 전까지는 3D 섬을 보여 준다
+      self.overlayOpacity = 1;                 // 첫 프레임 전까지 '연결 중' 안내판을 깐다
+      self.applyVisibility();                  // 스크린을 즉시 켠다(안내판 → 실제 영상)
       if (typeof updateVistaUi === 'function') updateVistaUi();
       if (typeof toast === 'function' && state.floor === 2) {
         toast(which === 'west' ? '📡 독도 실시간 · 서도 연결 중…' : '📡 독도 실시간 · 동도 연결 중…', 2400);
@@ -4841,16 +4893,24 @@
 
     applyVisibility: function () {
       var self = DOKDO_LIVE;
-      if (!self.mat || !self.screen) return;
+      if (!self.structure) return;
       var live = (self.mode === 'east' || self.mode === 'west') && self.playing && !self.failed;
-      self.screen.visible = live;
-      self.mat.uniforms.uOpacity.value = live ? 1.0 : 0.0;
+      // 동도/서도를 고른 동안은 연결 중이어도 야외 스크린을 즉시 켠다(안내판이 깔린 채로)
+      var showScreen = (self.mode === 'east' || self.mode === 'west');
+      self.structure.visible = showScreen;
+      if (self.panel) self.panel.visible = showScreen;
+      if (self.overlay) {
+        self.overlay.visible = showScreen && self.overlayOpacity > 0.002;
+        self.overlay.material.opacity = self.overlayOpacity;
+      }
       // 라이브가 살아 있으면 3D 독도는 숨겨 '독도 두 개'가 겹치지 않게 한다
       if (state.vistaIsland) state.vistaIsland.visible = !live;
       if (typeof updateVistaUi === 'function') updateVistaUi();
     },
 
-    // 야간 암전·검은 화면 감지 — 실제 프레임이 검으면 3D 뷰로 넘긴다
+    /* 프레임 밝기 측정 — 진단용으로만 기록한다.
+       ⚠️ 야간에는 실제 독도 영상도 어둡다. 예전처럼 어둡다고 화면을 꺼 3D 로 덮으면
+       사용자가 야간 방송(등대·불빛·밤바다)을 볼 수 없다 → 밤에도 계속 송출한다. */
     probe: function (now) {
       var self = DOKDO_LIVE;
       var v = self.video;
@@ -4865,13 +4925,14 @@
         var d = ctx.getImageData(0, 0, c.width, c.height).data;
         var sum = 0;
         for (var i = 0; i < d.length; i += 4) sum += (d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114);
-        var mean = sum / (d.length / 4);
-        if (mean < 10) {
-          self.darkFrames++;
-          if (self.darkFrames >= 2) { self.note('night-dark'); self.fallback('night'); }
-        } else {
-          self.darkFrames = 0;
-        }
+        self.lastMean = sum / (d.length / 4);
+        if (self.lastMean < 10) self.darkFrames++; else self.darkFrames = 0;
+        /* 야간 리프트 — 밤 방송(등대·경비대 불빛, 바다 실루엣)은 원본이 거의 검다.
+           화면을 끄지도, 흐리게 하지도 않고 밝기만 올려 '실제 야간 화면'이 보이게 한다.
+           (낮에는 gain 1.0 = 원본 그대로) */
+        var want = self.lastMean < 56 ? Math.min(1.85, 56 / Math.max(self.lastMean, 8)) : 1.0;
+        self._gain = (self._gain == null) ? want : self._gain + (want - self._gain) * 0.3;
+        if (self.panelMat && self.panelMat.color) self.panelMat.color.setScalar(self._gain);
       } catch (e) { self.note('probe:' + e.message); }
     },
 
@@ -4883,8 +4944,11 @@
         video: v ? { readyState: v.readyState, width: v.videoWidth, height: v.videoHeight,
                      currentTime: +v.currentTime.toFixed(2), paused: v.paused,
                      crossOrigin: v.crossOrigin, muted: v.muted } : null,
-        screenVisible: self.screen ? self.screen.visible : null,
-        opacity: self.mat ? self.mat.uniforms.uOpacity.value : null
+        screenVisible: self.structure ? self.structure.visible : null,
+        panelVisible: self.panel ? self.panel.visible : null,
+        overlay: self.overlay ? { visible: self.overlay.visible, opacity: +self.overlay.material.opacity.toFixed(2) } : null,
+        opacity: +self.overlayOpacity.toFixed(2),
+        mean: self.lastMean == null ? null : +self.lastMean.toFixed(1)
       };
     }
   };
@@ -4906,23 +4970,39 @@
     try { return localStorage.getItem('mg_dokdo_sound_v1') !== '0'; } catch (e) { return true; }
   }
 
-  /* 2층 창밖 전환 바 위치 — 상단 브랜드 줄(#top) 바로 아래로 바싹 붙인다.
-     #meeting-voice 의 실제 높이를 재어 그 아래 6px 에 #vista-bar 를 두므로
-     어떤 기기·글꼴 크기에서도 겹치지 않고, 창밖 시야를 가리지 않는다. */
+  /* 2층 창밖 전환 바 위치.
+     2층(body.floor-2)에서는 윗줄(#top: 로고·판넬 편집·관리)을 숨기고
+       첫째 줄 = 회의실 음성 바(#meeting-voice), 둘째 줄 = 창밖 전환 바(#vista-bar)
+     로 화면 맨 위(8px + safe-area)부터 붙인다 — 창밖 야외 스크린 시야가 그만큼 넓어진다.
+     1층에서는 원래 자리(#top 아래)로 되돌린다. */
+  var TOP_SAFE = 'calc(8px + env(safe-area-inset-top))';
   function positionVistaBar() {
     var bar = $('vista-bar');
     if (!bar) return;
-    var topEl = $('top');
-    var underTop = topEl ? Math.ceil(topEl.getBoundingClientRect().bottom) + 6 : 100;
     var on2 = state.floor === 2;
     var mv = $('meeting-voice');
-    if (mv) {
-      if (on2 && mv.classList.contains('show')) mv.style.top = underTop + 'px';
-      else mv.style.top = '';           // 1층·회의 바 없음 → 원래 CSS 위치
+    var tst = $('toast');
+
+    if (on2) {
+      var mvShown = !!mv && mv.classList.contains('show');
+      if (mv) mv.style.top = mvShown ? TOP_SAFE : '';
+      var mvBottom = mvShown ? Math.ceil(mv.getBoundingClientRect().bottom) : null;
+      var barBottom;
+      if (mvBottom != null && mvBottom > 8) {
+        bar.style.top = (mvBottom + 6) + 'px';
+      } else {
+        bar.style.top = TOP_SAFE;       // 회의 바가 없으면 창밖 바가 첫 줄
+      }
+      barBottom = Math.ceil(bar.getBoundingClientRect().bottom);
+      if (tst) tst.style.top = Math.max(barBottom + 8, 96) + 'px';
+      return;
     }
-    var mvShown = on2 && mv && mv.classList.contains('show') && mv.getBoundingClientRect().height > 0.5;
-    if (mvShown) bar.style.top = Math.ceil(mv.getBoundingClientRect().bottom + 6) + 'px';
-    else bar.style.top = underTop + 'px';
+
+    var topEl = $('top');
+    var underTop = topEl ? Math.ceil(topEl.getBoundingClientRect().bottom) + 6 : 100;
+    if (mv) mv.style.top = '';           // 1층·회의 바 없음 → 원래 CSS 위치
+    bar.style.top = underTop + 'px';
+    if (tst) tst.style.top = '';
   }
 
   function updateVistaUi() {
@@ -4963,7 +5043,8 @@
      남·동·서쪽 벽을 보고 있었어도 버튼을 누르면 눈앞 창밖에 독도가 나타난다. */
   function alignToVista() {
     if (!state.camera || state.seated) return;   // 앉아 있으면 의자 방향을 지킨다
-    state.yaw = Math.PI - VISTA.azIsland;
+    // 라이브는 창밖 야외 스크린 정면(정북 az 0), 3D 뷰는 독도(azIsland)를 바라본다
+    state.yaw = Math.PI - (VISTA_STATE.mode === '3d' ? VISTA.azIsland : 0);
     state.pitch = 0.04;
     if (state.vel) state.vel.set(0, 0, 0);
     updateCamera(1);
@@ -5199,6 +5280,240 @@
     }
   };
 
+  /* ══════════════════════════════════════════════════════════════════
+     창밖 야외 대형 파노라마 라이브 스크린 — 바다 위에 '실제로 세운' 옥외 스크린
+     ──────────────────────────────────────────────────────────────
+     · 북쪽 통유리(z=-5) 바깥 53m, 수면(SEA_Y) 위 2.4m 에 16:9 화면(26 × 14.6m).
+     · 영상은 페이드·안개·타원 마스크 없이 방송 원본 그대로(낮에도 밤에도 선명).
+     · 첫 프레임 전에는 화면 자체에 '연결 중' 안내판이 깔려, 버튼을 누른 즉시
+       "저 바깥 스크린이 독도 방송을 받아 띄우는 중"임이 보인다.
+     · 3D 뷰에서는 이 구조물 전체를 숨겨 기존 3D 독도 파노라마를 그대로 보여 준다.
+     ══════════════════════════════════════════════════════════════════ */
+  function buildOutdoorLiveScreen(group) {
+    var W = VISTA.liveW, H = W * 9 / 16, bend = VISTA.liveBend;
+    var baseY = VISTA.liveBaseY, topY = baseY + H;
+
+    var struct = new THREE.Group();
+    struct.name = 'live-screen';
+    struct.position.set(0, 0, VISTA.liveZ);
+    group.add(struct);
+
+    var navyMat = new THREE.MeshStandardMaterial({ color: 0x121f31, roughness: 0.55, metalness: 0.30 });
+    var steelMat = new THREE.MeshStandardMaterial({ color: 0x243342, roughness: 0.65, metalness: 0.35 });
+    var goldMat = new THREE.MeshStandardMaterial({ color: 0xc9a227, roughness: 0.35, metalness: 0.70 });
+    var goldTrim = new THREE.MeshBasicMaterial({ color: 0xe8c877, toneMapped: false, fog: false });
+
+    function zAt(x) { var u = x / (W / 2); return bend * u * u; }
+    function slopeAt(x) { var u = x / (W / 2); return 2 * bend * u / (W / 2); }
+
+    /* ── 방송 화면(곡면 패널) — 원본 100% 선명 ───────────────── */
+    var geo = new THREE.PlaneGeometry(W, H, 48, 6);
+    var pa = geo.attributes.position;
+    for (var i = 0; i < pa.count; i++) pa.setZ(i, zAt(pa.getX(i)));
+    geo.computeVertexNormals();
+
+    var panelMat = new THREE.MeshBasicMaterial({
+      map: DOKDO_LIVE.texture(), toneMapped: false, fog: false
+    });
+    var panel = new THREE.Mesh(geo, panelMat);
+    panel.position.set(0, baseY + H / 2, 0);
+    panel.renderOrder = 2;
+    struct.add(panel);
+
+    /* 화면 뒤 은은한 발광 — 야간(등대·불빛뿐인 어두운 방송)에도 '켜진 스크린'으로 읽히게 */
+    var glowTex = (function () {
+      var S = 128, cv = document.createElement('canvas'); cv.width = cv.height = S;
+      var c = cv.getContext('2d');
+      var rg = c.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S / 2);
+      rg.addColorStop(0, 'rgba(150,205,255,.50)');
+      rg.addColorStop(0.55, 'rgba(120,180,240,.18)');
+      rg.addColorStop(1, 'rgba(120,180,240,0)');
+      c.fillStyle = rg; c.fillRect(0, 0, S, S);
+      return new THREE.CanvasTexture(cv);
+    })();
+    var glow = new THREE.Mesh(new THREE.PlaneGeometry(W * 1.22, H * 1.34),
+      new THREE.MeshBasicMaterial({ map: glowTex, transparent: true, opacity: 0.5,
+        depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false, fog: false }));
+    glow.position.set(0, baseY + H / 2, -1.4);
+    glow.renderOrder = 1;
+    struct.add(glow);
+
+    /* ── 연결 중 안내판 — 첫 프레임이 오기 전까지 화면에 깔린다 ── */
+    var loadCv = document.createElement('canvas');
+    loadCv.width = 1024; loadCv.height = 576;
+    var loadCtx = loadCv.getContext('2d');
+    var loadTex = new THREE.CanvasTexture(loadCv);
+    loadTex.encoding = THREE.sRGBEncoding;
+    var overlayMat = new THREE.MeshBasicMaterial({
+      map: loadTex, transparent: true, opacity: 1, depthWrite: false,
+      toneMapped: false, fog: false
+    });
+    var overlay = new THREE.Mesh(geo, overlayMat);
+    overlay.position.set(0, baseY + H / 2, 0.16);
+    overlay.renderOrder = 3;
+    struct.add(overlay);
+
+    /* ── 상·하단 슬림 라벨(지금 보는 것이 실제 독도 실시간 방송임을 알린다) ── */
+    function makeLabelBoard(w, h, pxW, pxH) {
+      var cv = document.createElement('canvas');
+      cv.width = pxW; cv.height = pxH;
+      var tex = new THREE.CanvasTexture(cv);
+      tex.encoding = THREE.sRGBEncoding;
+      var mat = new THREE.MeshBasicMaterial({ map: tex, toneMapped: false, fog: false });
+      var mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.22),
+        [navyMat, navyMat, navyMat, navyMat,
+         new THREE.MeshBasicMaterial({ map: tex, toneMapped: false, fog: false }),
+         new THREE.MeshBasicMaterial({ color: 0x0a1420, toneMapped: false, fog: false })]);
+      mesh.userData.faceMat = mesh.material[4];
+      return { cv: cv, ctx: cv.getContext('2d'), tex: tex, mesh: mesh, mat: mat };
+    }
+
+    // 상·하단 라벨은 프레임 앞면에 붙인다 — 화면(16:9)은 1px도 가리지 않고,
+   // 천장 들보에 가리지 않도록 위로 더 솟지 않는다.
+    var headBoard = makeLabelBoard(24, 1.15, 2048, 128);
+    headBoard.mesh.position.set(0, topY + 0.60, zAt(0) + 1.0);
+    struct.add(headBoard.mesh);
+
+    var capBoard = makeLabelBoard(26, 1.10, 2048, 116);
+    capBoard.mesh.position.set(0, baseY - 0.60, zAt(0) + 1.0);
+    struct.add(capBoard.mesh);
+
+    function drawBoards(which) {
+      var isWest = which === 'west';
+      var island = isWest ? '서도' : '동도';
+      var other = isWest ? '동도' : '서도';
+
+      var c1 = headBoard.ctx, W1 = headBoard.cv.width, H1 = headBoard.cv.height;
+      var g1 = c1.createLinearGradient(0, 0, 0, H1);
+      g1.addColorStop(0, '#132238'); g1.addColorStop(1, '#0a1624');
+      c1.fillStyle = g1; c1.fillRect(0, 0, W1, H1);
+      c1.strokeStyle = 'rgba(201,162,39,.75)'; c1.lineWidth = 5;
+      c1.strokeRect(4, 4, W1 - 8, H1 - 8);
+      // 빨간 LIVE 점(이모지 대신 직접 그린다 — 어떤 기기에서도 깨지지 않게)
+      c1.fillStyle = '#e03a34';
+      c1.beginPath(); c1.arc(64, H1 / 2, 20, 0, Math.PI * 2); c1.fill();
+      c1.textBaseline = 'middle'; c1.textAlign = 'left';
+      c1.fillStyle = '#ff6a5f'; c1.font = '900 54px ' + fontOf();
+      c1.fillText('LIVE', 100, H1 / 2 + 2);
+      c1.fillStyle = '#eaf3ff'; c1.font = '800 58px ' + fontOf();
+      c1.fillText('해양수산부 독도 실시간 방송', 240, H1 / 2 + 2);
+      c1.fillStyle = '#e8c877'; c1.font = '900 58px ' + fontOf();
+      c1.textAlign = 'right';
+      c1.fillText('· ' + island, W1 - 54, H1 / 2 + 2);
+      headBoard.tex.needsUpdate = true;
+
+      var c2 = capBoard.ctx, W2 = capBoard.cv.width, H2 = capBoard.cv.height;
+      c2.fillStyle = '#0a1624'; c2.fillRect(0, 0, W2, H2);
+      c2.strokeStyle = 'rgba(201,162,39,.45)'; c2.lineWidth = 4;
+      c2.strokeRect(3, 3, W2 - 6, H2 - 6);
+      c2.textBaseline = 'middle'; c2.textAlign = 'center';
+      c2.fillStyle = '#cfe3f6'; c2.font = '700 46px ' + fontOf();
+      c2.fillText('dokdo.re.kr · 해양수산부 독도종합정보시스템 실시간 CCTV · ' + island + ' 송출 중', W2 / 2, H2 / 2 + 2);
+      capBoard.tex.needsUpdate = true;
+
+      DOKDO_LIVE.labelText = '해양수산부 독도 실시간 방송 · ' + island;
+      DOKDO_LIVE.labelIsland = island;
+      DOKDO_LIVE.labelOther = other;
+    }
+
+    /* ── 프레임 — 곡면을 따라가는 짧은 조각으로 상·하단 바를 잇는다 ── */
+    function bentBar(yc, barH, depth, mat, widen, zOff, thick) {
+      var total = W + (widen || 0);
+      var n = 20, segW = total / n;
+      for (var k = 0; k < n; k++) {
+        var xc = -total / 2 + segW * (k + 0.5);
+        var box = new THREE.Mesh(new THREE.BoxGeometry(segW * 1.08, thick || 1.2, depth), mat);
+        box.position.set(xc, yc, zAt(xc) + (zOff || 0));
+        box.rotation.y = -Math.atan(slopeAt(xc));
+        struct.add(box);
+      }
+    }
+    bentBar(topY + 0.62, 0, 1.7, navyMat, 1.6);          // 상단 다크 네이비 프레임
+    bentBar(baseY - 0.62, 0, 1.7, navyMat, 1.6);          // 하단 다크 네이비 프레임
+    bentBar(topY + 0.10, 0, 0.10, goldTrim, 1.6, 0.90, 0.18);   // 상단 골드 라인
+    bentBar(baseY - 0.10, 0, 0.10, goldTrim, 1.6, 0.90, 0.18);  // 하단 골드 라인
+
+    // 좌우 세로 기둥(프레임)
+    [-1, 1].forEach(function (sd) {
+      var x = sd * (W / 2 + 0.62);
+      var post = new THREE.Mesh(new THREE.BoxGeometry(1.24, H + 2.4, 1.7), navyMat);
+      post.position.set(x, baseY + H / 2, zAt(x) + 0.1);
+      struct.add(post);
+      var line = new THREE.Mesh(new THREE.BoxGeometry(0.18, H + 1.4, 0.10), goldTrim);
+      line.position.set(sd * (W / 2 + 0.02), baseY + H / 2, zAt(sd * (W / 2)) + 1.0);
+      struct.add(line);
+    });
+
+    /* ── 바다 위로 솟은 지지 기둥·부잔교·버팀대 ───────────────── */
+    var colTop = baseY - 1.2;
+    var colH = colTop - SEA_Y + 0.6;
+    [-1, 0, 1].forEach(function (sd) {
+      var x = sd * (W * 0.30);
+      var col = new THREE.Mesh(new THREE.BoxGeometry(2.0, colH, 2.0), steelMat);
+      col.position.set(x, SEA_Y + colH / 2, zAt(x) + 0.3);
+      struct.add(col);
+      // 기둥 앞면 골드 라인 — 수면 위 지지 기둥이 또렷하게 보이게
+      var cLine = new THREE.Mesh(new THREE.BoxGeometry(0.22, colH * 0.92, 0.12), goldTrim);
+      cLine.position.set(x, SEA_Y + colH / 2, zAt(x) + 1.35);
+      struct.add(cLine);
+      var brace = new THREE.Mesh(new THREE.BoxGeometry(0.7, colH * 1.5, 0.7), steelMat);
+      brace.position.set(x, SEA_Y + colH * 0.55, zAt(x) - 3.6);
+      brace.rotation.x = -0.34;
+      struct.add(brace);
+    });
+    var pontoon = new THREE.Mesh(new THREE.BoxGeometry(W + 12, 1.2, 10), navyMat);
+    pontoon.position.set(0, SEA_Y + 0.35, 0);
+    struct.add(pontoon);
+    // 수면 반사(어두운 띠) — 구조물이 물에 서 있다는 느낌
+    var refl = new THREE.Mesh(new THREE.PlaneGeometry(W + 14, 16),
+      new THREE.MeshBasicMaterial({ color: 0x0b1c2c, transparent: true, opacity: 0.38,
+        depthWrite: false, toneMapped: false, fog: false }));
+    refl.rotation.x = -Math.PI / 2;
+    refl.position.set(0, SEA_Y + 0.06, 1.5);
+    struct.add(refl);
+
+    return {
+      group: struct, panel: panel, panelMat: panelMat, overlay: overlay,
+      overlayMat: overlayMat, loadCv: loadCv, loadCtx: loadCtx, loadTex: loadTex,
+      drawBoards: drawBoards, drawLoading: function (which, phase) {
+        var c = loadCtx, W2 = loadCv.width, H2 = loadCv.height;
+        var g = c.createLinearGradient(0, 0, 0, H2);
+        g.addColorStop(0, '#0a1a2c'); g.addColorStop(0.55, '#0e2438'); g.addColorStop(1, '#081522');
+        c.fillStyle = g; c.fillRect(0, 0, W2, H2);
+        c.strokeStyle = 'rgba(120,180,230,.07)'; c.lineWidth = 1;
+        for (var gx = 0; gx < W2; gx += 64) { c.beginPath(); c.moveTo(gx, 0); c.lineTo(gx, H2); c.stroke(); }
+        for (var gy = 0; gy < H2; gy += 64) { c.beginPath(); c.moveTo(0, gy); c.lineTo(W2, gy); c.stroke(); }
+        // 상단 배지
+        c.fillStyle = 'rgba(207,52,45,.95)';
+        roundRect(c, 44, 40, 132, 52, 12); c.fill();
+        c.fillStyle = '#ffffff'; c.font = '900 30px ' + fontOf();
+        c.textAlign = 'left'; c.textBaseline = 'middle';
+        c.fillText('LIVE', 70, 67);
+        c.fillStyle = 'rgba(206,226,244,.82)'; c.font = '700 27px ' + fontOf();
+        c.fillText('해양수산부 독도 실시간 CCTV', 200, 68);
+        // 회전 링
+        var cx = W2 / 2, cy = 250;
+        c.strokeStyle = 'rgba(150,200,240,.20)'; c.lineWidth = 10; c.lineCap = 'round';
+        c.beginPath(); c.arc(cx, cy, 44, 0, Math.PI * 2); c.stroke();
+        c.strokeStyle = '#7fd0ff';
+        c.beginPath(); c.arc(cx, cy, 44, phase * Math.PI * 2, phase * Math.PI * 2 + 1.15); c.stroke();
+        // 문구
+        var island = which === 'west' ? '서도' : '동도';
+        c.textAlign = 'center';
+        c.fillStyle = '#eaf4ff'; c.font = '900 48px ' + fontOf();
+        c.fillText('독도 실시간 방송 연결 중' + '...'.slice(0, 1 + (Math.floor(phase * 3) % 3)), cx, 372);
+        c.fillStyle = '#9fc6e0'; c.font = '700 30px ' + fontOf();
+        c.fillText(island + ' · dokdo.re.kr 해양수산부 실시간 방송', cx, 432);
+        // 진행 바
+        c.fillStyle = 'rgba(255,255,255,.10)';
+        roundRect(c, 200, 496, 624, 10, 5); c.fill();
+        c.fillStyle = '#5fbfe8';
+        roundRect(c, 200, 496, Math.max(28, 624 * ((phase * 0.9) % 1)), 10, 5); c.fill();
+        loadTex.needsUpdate = true;
+      }
+    };
+  }
+
   /* ── 2층 회의실 바깥 풍경 조립 ─────────────────────────────── */
   function buildDokdoVista() {
     var scene = state.scene;
@@ -5216,64 +5531,16 @@
     state.vistaShips = buildShips(group);
     state.vistaBirds = buildBirds(group);
 
-    // 라이브 파노라마 — 테두리 없는 곡면(페더링으로 하늘·바다에 녹인다)
-    var arc = VISTA.liveArc, D = VISTA.liveDist, H = VISTA.liveH;
-    var cyl = new THREE.CylinderGeometry(D, D, H, 128, 1, true, Math.PI - arc, arc * 2);
-    var mat = new THREE.ShaderMaterial({
-      uniforms: {
-        uMap: { value: DOKDO_LIVE.texture() },
-        uOpacity: { value: 0.0 },
-        uHaze: { value: new THREE.Color(0xd2e4f2) },
-        uFeatherX: { value: 0.17 },
-        uFeatherTop: { value: 0.55 },
-        uSeaY: { value: SEA_Y + 1.5 },
-        uFadeH: { value: 9.0 },
-        uTime: { value: 0 }
-      },
-      vertexShader: `
-        varying vec2 vUv; varying vec3 vWorld;
-        void main() {
-          vUv = uv;
-          vec4 wp = modelMatrix * vec4(position, 1.0);
-          vWorld = wp.xyz;
-          gl_Position = projectionMatrix * viewMatrix * wp;
-        }`,
-      fragmentShader: `
-        precision highp float;
-        uniform sampler2D uMap;
-        uniform float uOpacity, uFeatherX, uFeatherTop, uSeaY, uFadeH, uTime;
-        uniform vec3 uHaze;
-        varying vec2 vUv; varying vec3 vWorld;
-        void main() {
-          vec3 c = texture2D(uMap, vUv).rgb;
-          // 사각 액자 느낌을 없애기 위해 타원형으로 부드럽게 사라진다
-          vec2 q = vUv - vec2(0.5, 0.44);
-          q.y *= 1.45;
-          float radial = 1.0 - smoothstep(0.30, 0.52, length(q));
-          float ex = smoothstep(0.0, uFeatherX, vUv.x) * (1.0 - smoothstep(1.0 - uFeatherX, 1.0, vUv.x));
-          float top = 1.0 - smoothstep(1.0 - uFeatherTop, 1.0, vUv.y);
-          float bot = smoothstep(uSeaY, uSeaY + uFadeH, vWorld.y);
-          float a = uOpacity * ex * top * bot * radial;
-          // 대기 원근 — 조금 하늘빛으로 섞어 3D 바다·하늘과 같은 공기에 잠기게
-          float yy = clamp((vWorld.y - uSeaY) / 26.0, 0.0, 1.0);
-          // 위로 갈수록(영상의 하늘) 우리 3D 하늘빛에 더 녹아들게
-          float topMix = smoothstep(0.50, 1.0, vUv.y);
-          // 실제 피드 색 보정 — 살짝 청량하게(채도·청색) 올려 3D 바다와 같은 공기로
-          float lum = dot(c, vec3(0.299, 0.587, 0.114));
-          c = mix(vec3(lum), c, 1.18);
-          c = mix(c, c * vec3(0.94, 1.02, 1.10), 0.65);
-          vec3 col = mix(c, uHaze, 0.04 + 0.08 * (1.0 - yy) + 0.28 * topMix);
-          gl_FragColor = vec4(col, a);
-        }`,
-      transparent: true, depthWrite: false, side: THREE.BackSide, fog: false, toneMapped: true
-    });
-    var screen = new THREE.Mesh(cyl, mat);
-    screen.position.set(0, VISTA.liveY, 0.6);
-    screen.renderOrder = 2;
-    screen.visible = false;
-    group.add(screen);
-    DOKDO_LIVE.screen = screen;
-    DOKDO_LIVE.mat = mat;
+    // 창밖 야외 대형 파노라마 라이브 스크린(바다 위 옥외 LED 월) — 구조물·영상·안내판
+    var lscreen = buildOutdoorLiveScreen(group);
+    DOKDO_LIVE.structure = lscreen.group;
+    DOKDO_LIVE.panel = lscreen.panel;
+    DOKDO_LIVE.panelMat = lscreen.panelMat;
+    DOKDO_LIVE.overlay = lscreen.overlay;
+    DOKDO_LIVE.panelW = VISTA.liveW;
+    DOKDO_LIVE.panelH = VISTA.liveW * 9 / 16;
+    DOKDO_LIVE.screenApi = lscreen;
+    DOKDO_LIVE.setLiveLabels(VISTA_STATE.mode === 'west' ? 'west' : 'east');
 
     // 해무 띠 — 라이브 파노라마 아래 수면 경계를 부드럽게 잇는다
     var hazeTex = (function () {
@@ -5366,10 +5633,9 @@
     }
     if (state.vistaShips) updateShips(state.vistaShips, dt, t);
     if (state.vistaBirds) updateBirds(state.vistaBirds, dt, t);
-    var liveMat = DOKDO_LIVE.mat;
-    if (liveMat && liveMat.uniforms) liveMat.uniforms.uTime.value = t;
+    DOKDO_LIVE.tick(dt, t);          // 연결 중 안내판 → 실제 영상으로 부드러운 전환
     var _now = performance.now();
-    if (DOKDO_LIVE.screen && DOKDO_LIVE.screen.visible) DOKDO_LIVE.probe(_now);
+    if (DOKDO_LIVE.panel && DOKDO_LIVE.panel.visible) DOKDO_LIVE.probe(_now);
     if (!DOKDO_LIVE.playing && !DOKDO_LIVE.failed && DOKDO_LIVE.mode !== '3d'
         && _now - DOKDO_LIVE.startTimer > 75000) {
       var _v = DOKDO_LIVE.video;
@@ -12552,6 +12818,22 @@
         vista: {
           group: function () { return state.vistaGroup; },
           built: function () { return !!state.vistaBuilt; },
+          /* 창밖 야외 라이브 스크린 검증용 — 구조물·패널·안내판·라벨 상태 */
+          screen: function () {
+            var s = DOKDO_LIVE;
+            return {
+              structure: s.structure ? s.structure.visible : null,
+              panel: s.panel ? s.panel.visible : null,
+              overlay: s.overlay ? { visible: s.overlay.visible, opacity: +s.overlay.material.opacity.toFixed(2) } : null,
+              w: s.panelW, h: +s.panelH.toFixed(2), z: VISTA.liveZ, baseY: VISTA.liveBaseY,
+              topY: +(VISTA.liveBaseY + s.panelH).toFixed(2),
+              label: s.labelText, mean: s.lastMean == null ? null : +s.lastMean.toFixed(1),
+              gain: s._gain == null ? null : +s._gain.toFixed(2),
+              matType: s.panelMat ? s.panelMat.type : null,
+              color: s.panelMat ? +s.panelMat.color.r.toFixed(2) : null,
+              mapReady: !!(s.tex && s.tex.image && s.tex.image.readyState >= 2)
+            };
+          },
           mode: function () { return VISTA_STATE.mode; },
           setMode: applyVistaMode,
           soundOn: function () { return !!VISTA_STATE.sound; },
