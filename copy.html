@@ -368,6 +368,8 @@
     } catch (e) {
       try { manualBox.select(); } catch (e2) {}
     }
+    // 전체 선택 후 화면이 코드 끝으로 튀지 않게 맨 앞을 보여 준다.
+    try { setTimeout(function () { manualBox.scrollTop = 0; }, 0); } catch (e) {}
   }
 
   function copied() {
