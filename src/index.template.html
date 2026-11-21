@@ -5298,8 +5298,8 @@
     struct.position.set(0, 0, VISTA.liveZ);
     group.add(struct);
 
-    var navyMat = new THREE.MeshStandardMaterial({ color: 0x121f31, roughness: 0.55, metalness: 0.30 });
-    var steelMat = new THREE.MeshStandardMaterial({ color: 0x243342, roughness: 0.65, metalness: 0.35 });
+    var navyMat = new THREE.MeshStandardMaterial({ color: 0x2b3d52, roughness: 0.52, metalness: 0.38 });
+    var steelMat = new THREE.MeshStandardMaterial({ color: 0x3a4a5c, roughness: 0.60, metalness: 0.42 });
     var goldMat = new THREE.MeshStandardMaterial({ color: 0xc9a227, roughness: 0.35, metalness: 0.70 });
     var goldTrim = new THREE.MeshBasicMaterial({ color: 0xe8c877, toneMapped: false, fog: false });
 
@@ -5430,8 +5430,9 @@
     }
     bentBar(topY + 0.62, 0, 1.7, navyMat, 1.6);          // 상단 다크 네이비 프레임
     bentBar(baseY - 0.62, 0, 1.7, navyMat, 1.6);          // 하단 다크 네이비 프레임
-    bentBar(topY + 0.10, 0, 0.10, goldTrim, 1.6, 0.90, 0.18);   // 상단 골드 라인
-    bentBar(baseY - 0.10, 0, 0.10, goldTrim, 1.6, 0.90, 0.18);  // 하단 골드 라인
+    // 스크린 테두리를 따라 도는 골드 LED 라인 — 밤에도 '켜진 스크린'으로 보이게
+    bentBar(topY + 0.22, 0, 0.10, goldTrim, 1.6, 0.92, 0.34);
+    bentBar(baseY - 0.22, 0, 0.10, goldTrim, 1.6, 0.92, 0.34);
 
     // 좌우 세로 기둥(프레임)
     [-1, 1].forEach(function (sd) {
@@ -5439,10 +5440,16 @@
       var post = new THREE.Mesh(new THREE.BoxGeometry(1.24, H + 2.4, 1.7), navyMat);
       post.position.set(x, baseY + H / 2, zAt(x) + 0.1);
       struct.add(post);
-      var line = new THREE.Mesh(new THREE.BoxGeometry(0.18, H + 1.4, 0.10), goldTrim);
-      line.position.set(sd * (W / 2 + 0.02), baseY + H / 2, zAt(sd * (W / 2)) + 1.0);
+      var line = new THREE.Mesh(new THREE.BoxGeometry(0.30, H + 0.9, 0.10), goldTrim);
+      line.position.set(sd * (W / 2 + 0.02), baseY + H / 2, zAt(sd * (W / 2)) + 0.92);
       struct.add(line);
     });
+
+    // 좌상단 ON-AIR 램프 — 바깥 스크린이 지금 방송 중임을 나타내는 작은 빨간 등
+    var lamp = new THREE.Mesh(new THREE.SphereGeometry(0.30, 12, 10),
+      new THREE.MeshBasicMaterial({ color: 0xff3b30, toneMapped: false, fog: false }));
+    lamp.position.set(-(W / 2 + 0.62), topY + 0.60, zAt(0) + 1.0);
+    struct.add(lamp);
 
     /* ── 바다 위로 솟은 지지 기둥·부잔교·버팀대 ───────────────── */
     var colTop = baseY - 1.2;
