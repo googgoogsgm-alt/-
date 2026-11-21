@@ -10101,7 +10101,7 @@
        로봇 아바타와 다른 사람 조형(머리·옷·얼굴·손발을 따로 만든다).
      · 카운터 앞면에 '독도국제무역 프런트데스크' 푯말만 붙인다(다른 안내 문구 없음).
      · 클릭/터치 또는 E → #desk-modal 상담 창(목소리 답변 포함).
-     · 1순위 Supabase Edge Function(frontdesk-chat) · 실패하면 내장 지식 응답기.
+     · 1순위 Supabase Edge Function(dynamic-task · 대화 chat·목소리 tts 한 함수) · 실패하면 내장 지식 응답기.
      ══════════════════════════════════════════════════════════════════ */
   var DESK = {
     cx: 0, cz: 10.1,           // 카운터 안쪽(남쪽 벽 쪽) 곡선 중앙 — 카운터는 z 9.6~10.1
@@ -10761,7 +10761,7 @@
   }
   function deskEndpoint() {
     var c = deskCfg();
-    return c ? (c.url + '/functions/v1/frontdesk-chat') : null;
+    return c ? (c.url + '/functions/v1/dynamic-task') : null;
   }
   function deskZoneName(id) {
     if (id === 'hall') return '중앙홀';
@@ -11649,7 +11649,7 @@
     /* 사람 목소리 상태 — 화면·검증(window.__gallery.desk.speakMode)이 함께 본다 */
     mode: 'idle',               // 'gemini-tts' | 'browser-tts' | 'idle'
     speaking: false, audio: null, seq: 0, guard: 0,
-    cache: [], CACHE_MAX: 20, TTS_TIMEOUT: 7000,
+    cache: [], CACHE_MAX: 20, TTS_TIMEOUT: 10000,   // Gemini TTS 실측 2.2~2.5초 · 느린 회선 여유 10초(대화 14초 한도 안)
     lastVoiceMode: '', lastEnd: '',
     init: function () {
       try { SPEAK.on = localStorage.getItem('mg_voice_on_v1') !== '0'; } catch (e) {}
