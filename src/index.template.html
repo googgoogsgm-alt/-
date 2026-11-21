@@ -735,6 +735,21 @@
   #meeting-voice button{flex:0 0 auto;border:0;cursor:pointer;font-family:inherit;font-size:11px;font-weight:900;
     color:#241c00;background:var(--gold);border-radius:999px;padding:7px 11px}
   #meeting-voice button.on{background:#2f9e5f;color:#fff}
+  /* 2층 회의실 창밖 전환 바 — 음성 회의 바 바로 아래 */
+  #vista-bar{position:fixed;left:50%;transform:translateX(-50%);top:calc(146px + env(safe-area-inset-top));
+    display:none;gap:6px;align-items:center;z-index:7;max-width:calc(100vw - 16px)}
+  #vista-bar.show{display:flex}
+  #vista-bar .vb{border:1px solid rgba(163,208,242,.42);background:rgba(10,24,42,.74);
+    color:#dae9f7;font-family:inherit;font-size:11px;font-weight:800;letter-spacing:-.25px;
+    padding:6px 10px;border-radius:999px;cursor:pointer;white-space:nowrap;
+    box-shadow:0 2px 10px rgba(4,12,24,.35);transition:background .18s,color .18s,box-shadow .18s}
+  #vista-bar .vb.on{background:linear-gradient(180deg,#2f88d8,#1d5da6);color:#fff;
+    border-color:rgba(170,222,255,.9);box-shadow:0 0 0 1px rgba(130,205,255,.28),0 5px 16px rgba(18,86,156,.5)}
+  #vista-bar .vb:active{transform:translateY(1px)}
+  @media (max-width:520px){
+    #vista-bar{top:calc(148px + env(safe-area-inset-top));gap:5px}
+    #vista-bar .vb{font-size:10px;padding:5px 8px;letter-spacing:-.35px}
+  }
 
   /* 회의실 입장 인증 · 직원 등급 관리 */
   #gate-modal .sheet,#staff-modal .sheet{max-width:520px}
@@ -911,6 +926,13 @@
   <span class="mv-ico">🎙️</span>
   <div class="mv-txt"><b>2층 회의실 · 음성 회의</b><span id="mv-msg">마이크를 켜면 이 회의실 사람들과 목소리로 대화합니다.</span></div>
   <button type="button" id="mv-join">마이크 켜기</button>
+</div>
+<!-- 2층 회의실 창밖 — 독도 실시간(동도/서도) · 3D 뷰 · 창밖 소리 전환 (2층에서만 보인다) -->
+<div id="vista-bar" role="group" aria-label="창밖 풍경 전환">
+  <button type="button" class="vb" data-vista="east">📡 동도 LIVE</button>
+  <button type="button" class="vb" data-vista="west">📡 서도 LIVE</button>
+  <button type="button" class="vb" data-vista="3d">🏝️ 3D 뷰</button>
+  <button type="button" class="vb" id="vb-sound" aria-pressed="true">🌊 창밖 소리</button>
 </div>
 <button type="button" id="zoom-pill" aria-label="확대·축소 초기화">🔍 1.0× · 초기화</button>
 <div id="hint">WASD 이동 · 마우스 드래그 시점 · <b>E</b>/클릭으로 판넬 열기</div>
@@ -3373,6 +3395,7 @@
     MAT.light = new THREE.MeshBasicMaterial({ color: 0xffffff });
     MAT.dark = new THREE.MeshStandardMaterial({ color: 0x1d2a44, roughness: 0.42, metalness: 0.35 });
     MAT.gold = new THREE.MeshStandardMaterial({ color: 0xc9a227, roughness: 0.3, metalness: 0.75 });
+    MAT.goldDark = new THREE.MeshStandardMaterial({ color: 0x8a6c1c, roughness: 0.42, metalness: 0.6 });
 
     // 바닥 — 중앙홀 + 6개 전시실을 한 장으로 덮는다
     var floor = new THREE.Mesh(new THREE.PlaneGeometry(WORLD.x1 - WORLD.x0, WORLD.z1 - WORLD.z0), MAT.floor);
@@ -3571,12 +3594,12 @@
     });
 
     // 센터 명판
-    var sign = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 0.45),
+    var sign = new THREE.Mesh(new THREE.PlaneGeometry(1.34, 0.335),
       new THREE.MeshBasicMaterial({ map: makeMeetingSignTexture(), side: THREE.DoubleSide }));
-    sign.position.set(0, 1.22, 0); g.add(sign);
+    sign.position.set(0, 0.90, 0); g.add(sign);   // 1인칭 눈높이(1.2m) 아래로 — 창밖 수평선을 가리지 않게
     [-0.72, 0.72].forEach(function (x) {
-      var post = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.38, 8), chromeMat);
-      post.position.set(x, 1.0, 0); g.add(post);
+      var post = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.28, 8), chromeMat);
+      post.position.set(x, 0.82, 0); g.add(post);
     });
 
     // 상판 소품: 노트북·컵·화분
@@ -3657,7 +3680,7 @@
      · 두 포털 모두 '통과'가 아니라 입장 인증/복귀 동작을 거친다.
      ══════════════════════════════════════════════════════════════════ */
   function makeMeetingPlaqueTexture() {
-    var W = 1200, H = 300;
+    var W = 1200, H = 240;
     var cv = document.createElement('canvas'); cv.width = W; cv.height = H;
     var ctx = cv.getContext('2d');
     var g = ctx.createLinearGradient(0, 0, W, H);
@@ -3666,11 +3689,11 @@
     ctx.strokeStyle = '#c9a227'; ctx.lineWidth = 6; ctx.strokeRect(12, 12, W - 24, H - 24);
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillStyle = '#ffffff';
-    ctx.font = '800 90px ' + fontOf();
-    ctx.fillText('독도국제무역 회의실', W / 2, 118);
+    ctx.font = '800 78px ' + fontOf();
+    ctx.fillText('독도국제무역 회의실', W / 2, 92);
     ctx.fillStyle = '#e7cd77';
-    ctx.font = '700 38px ' + fontOf();
-    ctx.fillText('VIP · 직원 전용 · 음성 회의', W / 2, 214);
+    ctx.font = '700 32px ' + fontOf();
+    ctx.fillText('VIP · 직원 전용 · 음성 회의', W / 2, 174);
     var tex = new THREE.CanvasTexture(cv);
     tex.encoding = THREE.sRGBEncoding; tex.anisotropy = maxAniso;
     return tex;
@@ -3827,6 +3850,1406 @@
     }
   }
 
+  /* ══════════════════════════════════════════════════════════════════
+     2층 회의실 창밖 — 동해 파노라마 + 독도 + 화물선·여객선·갈매기
+     + 독도 실시간 라이브(동도/서도) 연동 + 창밖 환경음(파도·바람·갈매기)
+     ──────────────────────────────────────────────────────────────
+     · 바깥 풍경은 전부 전용 레이어(OUT_LAYER=3)에만 둔다.
+       카메라가 1층일 때는 이 레이어를 끄므로 1층 실내는 지금과 똑같고
+       렌더·연산·소리·영상도 2층에서만 돈다.
+     · 바다 수면 SEA_Y = 9.0 — 1층 지붕(6.6m)보다 위라서
+       1층 실내로 물이 새지 않고, 2층 바닥(12.0) 아래 3m에서 넘실댄다.
+     · 창밖 기본값은 실제 독도 CCTV 라이브(동도)이고, 연결이 안 되거나
+       야간 암전이면 3D 동해 파노라마로 스스로 넘어간다(빈 화면 없음).
+     ══════════════════════════════════════════════════════════════════ */
+  var OUT_LAYER = 3;
+  var SEA_Y = 9.0;
+  var VISTA = {
+    azIsland: 0.10,          // 독도 방위(라디안, 정북=0 · 동쪽 +)
+    distIsland: 560,         // 독도까지 거리(m)
+    liveDist: 240,           // 라이브 파노라마 곡면 반지름(m)
+    liveArc: 0.215,          // 라이브 파노라마 좌우 반각(라디안 ≈ 12.3°)
+    liveH: 38,               // 라이브 파노라마 높이(m)
+    liveY: 17.6,             // 라이브 파노라마 중심 높이 — 영상 수평선을 실제 수평선(13.6m)에 맞춤
+    sunAz: -0.52,            // 태양 방위(라디안) — 북서쪽 오후 햇살
+    sunEl: 0.60
+  };
+
+  function setLayerDeep(obj, layer) {
+    obj.traverse(function (o) { if (o.layers) o.layers.set(layer); });
+    return obj;
+  }
+
+  function vnoise(x, y, z, seed) {
+    return Math.sin(x * 1.7 + seed * 2.1) * Math.cos(y * 2.3 - seed * 1.3) * Math.sin(z * 1.9 + seed * 0.7);
+  }
+
+  /* ── 하늘 돔(그라데이션 + 태양 광휘) ─────────────────────── */
+  function makeSkyDomeTexture() {
+    var W = 32, H = 512, cv = document.createElement('canvas');
+    cv.width = W; cv.height = H;
+    var ctx = cv.getContext('2d');
+    var g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0.00, '#2b66ad');     // 천정 — 짙은 맑은 하늘
+    g.addColorStop(0.24, '#4785c4');
+    g.addColorStop(0.42, '#77aed8');
+    g.addColorStop(0.49, '#a9c9dd');     // 수평선 언저리 — 바다 먼 빛과 이어지게
+    g.addColorStop(0.53, '#c6dcea');
+    g.addColorStop(0.66, '#b6d0e2');
+    g.addColorStop(1.00, '#a4c2d6');     // 수면 아래쪽(보이지 않음)
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    var tex = new THREE.CanvasTexture(cv);
+    tex.encoding = THREE.sRGBEncoding;
+    return tex;
+  }
+
+  function buildSkyAndSun(group) {
+    var dome = new THREE.Mesh(
+      new THREE.SphereGeometry(2100, 32, 20),
+      new THREE.MeshBasicMaterial({ map: makeSkyDomeTexture(), side: THREE.BackSide, fog: false, toneMapped: false, depthWrite: false })
+    );
+    dome.position.y = SEA_Y;
+    group.add(dome);
+
+    // 태양 — 부드러운 광휘 스프라이트
+    var S = 256, cv = document.createElement('canvas');
+    cv.width = cv.height = S;
+    var ctx = cv.getContext('2d');
+    var rg = ctx.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S / 2);
+    rg.addColorStop(0, 'rgba(255,252,235,1)');
+    rg.addColorStop(0.10, 'rgba(255,246,214,.95)');
+    rg.addColorStop(0.28, 'rgba(255,238,190,.42)');
+    rg.addColorStop(0.62, 'rgba(255,240,205,.10)');
+    rg.addColorStop(1, 'rgba(255,240,205,0)');
+    ctx.fillStyle = rg; ctx.fillRect(0, 0, S, S);
+    var sunTex = new THREE.CanvasTexture(cv);
+    var sun = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: sunTex, transparent: true, depthWrite: false, depthTest: false,
+      blending: THREE.AdditiveBlending, fog: false, toneMapped: false
+    }));
+    var d = 1700;
+    sun.position.set(Math.sin(VISTA.sunAz) * Math.cos(VISTA.sunEl) * d,
+                     SEA_Y + Math.sin(VISTA.sunEl) * d,
+                     -Math.cos(VISTA.sunAz) * Math.cos(VISTA.sunEl) * d);
+    sun.scale.set(560, 560, 1);
+    sun.renderOrder = -1;
+    group.add(sun);
+  }
+
+  /* ── 구름 — 아주 천천히 흐르는 낮구름 ──────────────────────── */
+  function makeCloudTexture(seed) {
+    var W = 256, H = 128, cv = document.createElement('canvas');
+    cv.width = W; cv.height = H;
+    var ctx = cv.getContext('2d');
+    for (var i = 0; i < 26; i++) {
+      var px = 30 + Math.random() * (W - 60);
+      var py = H * 0.5 + (Math.random() - 0.5) * H * 0.42;
+      var r = 12 + Math.random() * 30;
+      var rg = ctx.createRadialGradient(px, py, 0, px, py, r);
+      rg.addColorStop(0, 'rgba(255,255,255,.55)');
+      rg.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = rg;
+      ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI * 2); ctx.fill();
+    }
+    var tex = new THREE.CanvasTexture(cv);
+    tex.encoding = THREE.sRGBEncoding;
+    return tex;
+  }
+
+  function buildClouds(group) {
+    var list = [];
+    for (var i = 0; i < 9; i++) {
+      var sp = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: makeCloudTexture(i), transparent: true, opacity: 0.22 + Math.random() * 0.16,
+        depthWrite: false, fog: false, toneMapped: false
+      }));
+      var az = (Math.random() * Math.PI * 2);
+      var dist = 700 + Math.random() * 900;
+      var y = SEA_Y + 300 + Math.random() * 340;
+      sp.position.set(Math.sin(az) * dist, y, -Math.cos(az) * dist);
+      var w = 240 + Math.random() * 320;
+      sp.scale.set(w, w * 0.44, 1);
+      sp.userData.az = az;
+      sp.userData.dist = dist;
+      sp.userData.speed = 0.0009 + Math.random() * 0.0011;
+      group.add(sp);
+      list.push(sp);
+    }
+    return list;
+  }
+
+  /* ── 바다 — 깊은 코발트·청록 수심 + 햇빛 윤슬 + 넘실대는 물결 ── */
+  function buildSea(group) {
+    var geo = new THREE.PlaneGeometry(7000, 7000, 1, 1);
+    geo.rotateX(-Math.PI / 2);
+    var mat = new THREE.ShaderMaterial({
+      uniforms: {
+        uTime: { value: 0 },
+        uSeaY: { value: SEA_Y },
+        uDeep: { value: new THREE.Color(0x072a46) },
+        uMid: { value: new THREE.Color(0x0f6390) },
+        uCrest: { value: new THREE.Color(0x35a8c4) },
+        uHorizon: { value: new THREE.Color(0x9dc2da) },
+        uSunXZ: { value: new THREE.Vector2(Math.sin(VISTA.sunAz), -Math.cos(VISTA.sunAz)).normalize() }
+      },
+      vertexShader: `
+        varying vec3 vWorld;
+        void main() {
+          vec4 wp = modelMatrix * vec4(position, 1.0);
+          vWorld = wp.xyz;
+          gl_Position = projectionMatrix * viewMatrix * wp;
+        }`,
+      fragmentShader: `
+        precision highp float;
+        uniform float uTime, uSeaY;
+        uniform vec3 uDeep, uMid, uCrest, uHorizon;
+        uniform vec2 uSunXZ;
+        varying vec3 vWorld;
+        void main() {
+          vec2 p = vWorld.xz;
+          vec3 toCam = cameraPosition - vWorld;
+          float dist = length(toCam.xz);
+          float near = 1.0 - smoothstep(60.0, 900.0, dist);
+          float t = uTime;
+
+          // 큰 너울 — 10~40m 파장이 천천히 넘실댄다
+          float sw1 = sin(p.x * 0.055 + p.y * 0.030 + t * 0.55);
+          float sw2 = sin(p.x * 0.028 - p.y * 0.042 + t * 0.41 + 2.1);
+          float swell = sw1 * 0.60 + sw2 * 0.40;
+
+          // 잔물결 — 가까운 물결만 디테일
+          float rip = sin(p.x * 0.42 + p.y * 0.33 - t * 1.55) * sin(p.x * 0.31 - p.y * 0.48 + t * 1.25);
+          float rip2 = sin(p.x * 0.86 - p.y * 0.72 + t * 2.20);
+
+          vec3 V = normalize(toCam);
+
+          // 수심 그라데이션 — 가까울수록 짙은 코발트, 멀수록 청록
+          vec3 col = mix(uDeep, uMid, clamp(0.46 + 0.34 * swell + 0.16 * near * (rip * 0.5 + 0.5), 0.0, 1.0));
+          col = mix(col, uCrest, clamp(swell - 0.30, 0.0, 1.0) * 0.55 * (0.35 + 0.65 * near));
+
+          // 비스듬히 볼수록 하늘빛이 살짝 얹힌다
+          float fres = pow(1.0 - clamp(V.y, 0.0, 1.0), 4.2);
+          col = mix(col, uHorizon, fres * 0.40);
+
+          // 백파(포말) — 드물게, 길게 늘어진 거품 줄기
+          float capN = sin(p.x * 0.80 + p.y * 0.55 + t * 0.85) * sin(p.x * 0.37 - p.y * 0.86 + t * 1.05);
+          float cap = smoothstep(0.93, 1.0, capN);
+          col = mix(col, vec3(0.84, 0.92, 0.97), cap * 0.13 * (0.2 + 0.8 * near));
+
+          // 햇빛 윤슬 — 태양 방향 띠에서만 가늘게 반짝
+          vec3 D = normalize(vWorld - cameraPosition);
+          float align = pow(max(0.0, dot(normalize(D.xz + vec2(0.0001)), normalize(uSunXZ))), 6.0);
+          float sp1 = smoothstep(0.78, 1.0, rip2 * 0.5 + 0.5);
+          float sp2 = smoothstep(0.72, 1.0, rip * 0.5 + 0.5);
+          float glint = sp1 * sp2;
+          col += vec3(1.0, 0.96, 0.86) * glint * (0.55 * align) * (0.10 + 0.90 * near);
+
+          // 먼 바다는 수평선 안개로 잦아든다
+          col = mix(col, uHorizon, smoothstep(200.0, 2400.0, dist) * 0.90);
+          gl_FragColor = vec4(col, 1.0);
+        }`,
+      fog: false,
+      toneMapped: true
+    });
+    var mesh = new THREE.Mesh(geo, mat);
+    mesh.position.set(0, SEA_Y, 0);
+    mesh.renderOrder = -2;
+    group.add(mesh);
+    return mesh;
+  }
+
+  /* ── 독도 — 현무암 해식 절벽 · 층진 암봉 · 초지 능선 · 기슭 포말 ── */
+  function makeTaegukgiTexture() {
+    var W = 180, H = 120, cv = document.createElement('canvas');
+    cv.width = W; cv.height = H;
+    var ctx = cv.getContext('2d');
+    ctx.fillStyle = '#f4f4f2'; ctx.fillRect(0, 0, W, H);
+    var cx = W / 2, cy = H / 2, r = 26;
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cx, cy, r, Math.PI, 0); ctx.closePath();
+    ctx.fillStyle = '#c8102e'; ctx.fill();
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI); ctx.closePath();
+    ctx.fillStyle = '#003478'; ctx.fill();
+    ctx.beginPath(); ctx.arc(cx - r / 2, cy, r / 2, 0, Math.PI * 2); ctx.fillStyle = '#c8102e'; ctx.fill();
+    ctx.beginPath(); ctx.arc(cx + r / 2, cy, r / 2, 0, Math.PI * 2); ctx.fillStyle = '#003478'; ctx.fill();
+    ctx.restore();
+    // 4괘 — 작은 검은 막대 묶음
+    ctx.fillStyle = '#111';
+    var bars = [[-1, -1], [1, -1], [-1, 1], [1, 1]];
+    bars.forEach(function (b) {
+      var bx = cx + b[0] * 52 - 9, by = cy + b[1] * 32 - 3;
+      if ((b[0] === b[1])) { ctx.fillRect(bx, by, 18, 3); ctx.fillRect(bx, by + 6, 18, 3); }
+      else { ctx.fillRect(bx, by, 8, 3); ctx.fillRect(bx + 10, by, 8, 3); ctx.fillRect(bx, by + 6, 8, 3); ctx.fillRect(bx + 10, by + 6, 8, 3); }
+    });
+    var tex = new THREE.CanvasTexture(cv);
+    tex.encoding = THREE.sRGBEncoding;
+    return tex;
+  }
+
+  function makeFoamRingTexture() {
+    var S = 256, cv = document.createElement('canvas');
+    cv.width = cv.height = S;
+    var ctx = cv.getContext('2d');
+    for (var i = 0; i < 90; i++) {
+      var a = Math.random() * Math.PI * 2;
+      var rr = S * (0.30 + Math.random() * 0.18);
+      var px = S / 2 + Math.cos(a) * rr, py = S / 2 + Math.sin(a) * rr * 0.6;
+      var r = 5 + Math.random() * 20;
+      var rg = ctx.createRadialGradient(px, py, 0, px, py, r);
+      rg.addColorStop(0, 'rgba(255,255,255,.85)');
+      rg.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = rg;
+      ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI * 2); ctx.fill();
+    }
+    var tex = new THREE.CanvasTexture(cv);
+    return tex;
+  }
+
+  function makeRockMesh(radius, seed, sx, sy, sz, colorA, colorB) {
+    var geo = new THREE.IcosahedronGeometry(radius, 3);
+    var pos = geo.attributes.position;
+    var colors = new Float32Array(pos.count * 3);
+    var cA = new THREE.Color(colorA), cB = new THREE.Color(colorB), tmp = new THREE.Color();
+    for (var i = 0; i < pos.count; i++) {
+      var x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+      var n = 1 + 0.26 * vnoise(x * 2.1, y * 2.1, z * 2.1, seed) + 0.13 * vnoise(x * 5.3, y * 5.3, z * 5.3, seed + 3.7);
+      pos.setXYZ(i, x * n * sx, y * n * sy, z * n * sz);
+      var band = 0.5 + 0.5 * Math.sin(y * 1.9 + seed * 2.0);
+      tmp.copy(cA).lerp(cB, band * 0.42 + 0.20 * (0.5 + 0.5 * vnoise(x * 3.1, y * 1.7, z * 3.1, seed + 1.3)));
+      colors[i * 3] = tmp.r; colors[i * 3 + 1] = tmp.g; colors[i * 3 + 2] = tmp.b;
+    }
+    geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    geo.computeVertexNormals();
+    var mat = new THREE.MeshStandardMaterial({
+      vertexColors: true, roughness: 0.97, metalness: 0.02, flatShading: true
+    });
+    return new THREE.Mesh(geo, mat);
+  }
+
+  /* 뾰족한 화산 암봉 — 밑동은 넓고 정상은 날카롭게, 층진 현무암 색 */
+  function makeSpire(radius, height, seed, cA, cB) {
+    var geo = new THREE.ConeGeometry(radius, height, 9, 5);
+    geo.translate(0, height / 2, 0);
+    var pos = geo.attributes.position;
+    var colors = new Float32Array(pos.count * 3);
+    var a = new THREE.Color(cA), b = new THREE.Color(cB), tmp = new THREE.Color();
+    for (var i = 0; i < pos.count; i++) {
+      var x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+      var taper = 1 - Math.min(1, y / height) * 0.15;
+      var n = 1 + 0.30 * vnoise(x * 1.6, y * 0.9, z * 1.6, seed) + 0.16 * vnoise(x * 4.2, y * 2.1, z * 4.2, seed + 2.3);
+      pos.setXYZ(i, x * n * taper, y * (1 + 0.05 * vnoise(x, y, z, seed + 1.1)), z * n * taper);
+      var strata = 0.5 + 0.5 * Math.sin(y * 0.55 + seed * 2.4);
+      tmp.copy(a).lerp(b, strata * 0.40 + 0.18 * (0.5 + 0.5 * vnoise(x * 2.4, y * 1.3, z * 2.4, seed)));
+      colors[i * 3] = tmp.r; colors[i * 3 + 1] = tmp.g; colors[i * 3 + 2] = tmp.b;
+    }
+    geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    geo.computeVertexNormals();
+    return new THREE.Mesh(geo, new THREE.MeshStandardMaterial({
+      vertexColors: true, roughness: 1.0, metalness: 0.0, flatShading: true
+    }));
+  }
+
+  function buildDokdo(group) {
+    var isl = new THREE.Group();
+    var az = VISTA.azIsland, dist = VISTA.distIsland;
+    isl.position.set(Math.sin(az) * dist, SEA_Y, -Math.cos(az) * dist);
+    isl.rotation.y = az;
+    isl.scale.set(1.18, 1.22, 1.18);
+    group.add(isl);
+
+    // 현무암 절벽 색 — 짙은 회갈색 + 마모된 밝은 층
+    var ROCK_A = 0x191b1f, ROCK_B = 0x3b3934;
+
+    var mossMatA = new THREE.MeshStandardMaterial({ color: 0x1e3519, roughness: 1.0 });
+    var mossMatB = new THREE.MeshStandardMaterial({ color: 0x2a4722, roughness: 1.0 });
+    function addPeak(x, z, r, h, seed, green) {
+      var sp = makeSpire(r, h, seed, ROCK_A, ROCK_B);
+      sp.position.set(x, 3, z);
+      isl.add(sp);
+      if (green) {
+        var moss = new THREE.Mesh(new THREE.SphereGeometry(r * 0.58, 12, 8), green > 1 ? mossMatB : mossMatA);
+        moss.scale.set(1.10, 0.34, 0.95);
+        moss.position.set(x, 3 + h * 0.90, z);
+        isl.add(moss);
+      }
+      return sp;
+    }
+
+    // 서도 — 큰 섬, 넓은 밑동 위에 여러 봉우리
+    var seoBase = makeRockMesh(52, 2.3, 0.55, 1.05, 0.85, 0x1b1d22, 0x413f3a);
+    seoBase.position.set(-30, 11, 0); isl.add(seoBase);
+    addPeak(-38, 2, 42, 44, 1.3, 1);
+    addPeak(-16, -3, 29, 60, 3.1, 2);
+    addPeak(-54, 4, 19, 37, 5.7, 0);
+
+    // 동도 — 가운데가 뾰족한 화산 암봉
+    var dongBase = makeRockMesh(42, 4.4, 0.62, 0.95, 0.75, 0x1c1e23, 0x46443e);
+    dongBase.position.set(32, 9, -2); isl.add(dongBase);
+    addPeak(34, -2, 27, 56, 7.7, 2);
+    addPeak(22, 0, 12, 68, 9.2, 0);
+
+    // 사이 안부 — 두 섬을 잇는 낮은 암릉
+    var saddle = makeRockMesh(24, 6.6, 1.55, 0.55, 0.9, 0x1d1f24, 0x3f3d38);
+    saddle.position.set(2, 7, 1); isl.add(saddle);
+    addPeak(4, 1, 14, 26, 11.4, 1);
+
+    // 낮게 뻗은 암초·주변 바위섬
+    for (var i = 0; i < 22; i++) {
+      var a2 = (i / 22) * Math.PI * 2 + 0.35;
+      var rr = 62 + Math.random() * 40;
+      var sc = 6 + Math.random() * 10;
+      var rock = makeRockMesh(sc, i * 1.7 + 0.4, 1.25, 0.62 + Math.random() * 0.35, 1.05, 0x1e2025, 0x4a4842);
+      rock.position.set(Math.cos(a2) * rr, sc * 0.28, Math.sin(a2) * rr * 0.62);
+      rock.rotation.y = Math.random() * Math.PI;
+      isl.add(rock);
+    }
+
+    // 능선의 작은 나무·관목
+    for (var j = 0; j < 16; j++) {
+      var tr = new THREE.Mesh(new THREE.ConeGeometry(1.1 + Math.random() * 1.3, 2.8 + Math.random() * 2.2, 6),
+        new THREE.MeshStandardMaterial({ color: 0x1a3220, roughness: 1.0 }));
+      tr.position.set(-46 + Math.random() * 76, 54 + Math.random() * 16, -8 + Math.random() * 14);
+      isl.add(tr);
+    }
+
+    // 등대 — 동도 정상의 작은 하얀 등대 + 발광
+    var lh = new THREE.Group();
+    lh.position.set(30, 64, -2);
+    var tower = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 1.3, 8, 12),
+      new THREE.MeshStandardMaterial({ color: 0xe8ebee, roughness: 0.7 }));
+    tower.position.y = 4; lh.add(tower);
+    var lamp = new THREE.Mesh(new THREE.SphereGeometry(1.5, 12, 10),
+      new THREE.MeshBasicMaterial({ color: 0xfff2c8, toneMapped: false }));
+    lamp.position.y = 8.6; lh.add(lamp);
+    var glowTex = (function () {
+      var S = 128, cv = document.createElement('canvas'); cv.width = cv.height = S;
+      var c = cv.getContext('2d');
+      var rg = c.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S / 2);
+      rg.addColorStop(0, 'rgba(255,244,205,.95)');
+      rg.addColorStop(0.4, 'rgba(255,238,180,.35)');
+      rg.addColorStop(1, 'rgba(255,238,180,0)');
+      c.fillStyle = rg; c.fillRect(0, 0, S, S);
+      return new THREE.CanvasTexture(cv);
+    })();
+    var glow = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: glowTex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false
+    }));
+    glow.position.y = 9; glow.scale.set(16, 16, 1);
+    lh.add(glow);
+    lh.userData.glow = glow;
+    isl.add(lh);
+    isl.userData.lighthouse = lh;
+
+    // 태극기 — 동도 기슭의 작은 게양대
+    var pole = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 12, 6),
+      new THREE.MeshStandardMaterial({ color: 0xd8dade, roughness: 0.5, metalness: 0.5 }));
+    pole.position.set(44, 44, 4); isl.add(pole);
+    var flag = new THREE.Mesh(new THREE.PlaneGeometry(8, 5.3),
+      new THREE.MeshStandardMaterial({ map: makeTaegukgiTexture(), side: THREE.DoubleSide, roughness: 0.9 }));
+    flag.position.set(48.2, 47, 4);
+    isl.add(flag);
+
+    // 기슭 포말 — 섬 둘레에 부서지는 하얀 파도
+    var foamMat = new THREE.MeshBasicMaterial({
+      map: makeFoamRingTexture(), transparent: true, opacity: 0.72, depthWrite: false,
+      blending: THREE.AdditiveBlending, toneMapped: false
+    });
+    var foam = new THREE.Mesh(new THREE.PlaneGeometry(230, 150), foamMat);
+    foam.rotation.x = -Math.PI / 2;
+    foam.position.set(2, 1.2, 0);
+    isl.add(foam);
+    isl.userData.foam = foam;
+
+    return isl;
+  }
+
+  /* ── 배 — 화물선(컨테이너·선교·선미 항적) / 여객선(다층 객실·연돌) ── */
+  function makeHullGeometry(L, B, H) {
+    var s = new THREE.Shape();
+    s.moveTo(L * 0.5, 0);
+    s.quadraticCurveTo(L * 0.42, B * 0.5, L * 0.30, B * 0.5);
+    s.lineTo(-L * 0.42, B * 0.5);
+    s.quadraticCurveTo(-L * 0.5, B * 0.5, -L * 0.5, B * 0.16);
+    s.lineTo(-L * 0.5, -B * 0.5);
+    s.lineTo(L * 0.30, -B * 0.5);
+    s.quadraticCurveTo(L * 0.42, -B * 0.5, L * 0.5, 0);
+    var geo = new THREE.ExtrudeGeometry(s, { depth: H, bevelEnabled: true, bevelSize: 0.5, bevelThickness: 0.4, bevelSegments: 1, steps: 1 });
+    geo.rotateX(-Math.PI / 2);
+    geo.translate(0, 0, 0);
+    return geo;
+  }
+
+  function makeWakeTexture() {
+    var W = 256, H = 128, cv = document.createElement('canvas');
+    cv.width = W; cv.height = H;
+    var ctx = cv.getContext('2d');
+    for (var i = 0; i < 120; i++) {
+      var t = Math.random();
+      var px = W * (0.15 + t * 0.8);
+      var py = H / 2 + (Math.random() - 0.5) * H * (0.15 + t * 0.8);
+      var r = 3 + Math.random() * 12;
+      var a = (1 - t) * (0.35 + Math.random() * 0.5);
+      var rg = ctx.createRadialGradient(px, py, 0, px, py, r);
+      rg.addColorStop(0, 'rgba(255,255,255,' + a.toFixed(2) + ')');
+      rg.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = rg;
+      ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI * 2); ctx.fill();
+    }
+    var tex = new THREE.CanvasTexture(cv);
+    return tex;
+  }
+
+  function makeCargoShip() {
+    var g = new THREE.Group();
+    var L = 92, B = 15;
+    var hullMat = new THREE.MeshStandardMaterial({ color: 0x4e1512, roughness: 0.8, metalness: 0.12 });
+    var deckMat = new THREE.MeshStandardMaterial({ color: 0x3d474f, roughness: 0.85 });
+    var whiteMat = new THREE.MeshStandardMaterial({ color: 0xb9c0c6, roughness: 0.6 });
+    var darkMat = new THREE.MeshStandardMaterial({ color: 0x1b222c, roughness: 0.65 });
+
+    var hull = new THREE.Mesh(makeHullGeometry(L, B, 8.5), hullMat);
+    hull.position.y = -1.2;
+    g.add(hull);
+    var deck = new THREE.Mesh(new THREE.BoxGeometry(L * 0.92, 0.6, B * 0.92), deckMat);
+    deck.position.y = 7.5; g.add(deck);
+    // 하얀 흘수선 띠
+    var line = new THREE.Mesh(new THREE.BoxGeometry(L * 0.95, 0.5, B * 0.97), whiteMat);
+    line.position.y = 1.4; g.add(line);
+
+    // 컨테이너 — 형형색색
+    var cols = [0x1b4f8c, 0x8c2418, 0x1d6b42, 0xa87a12, 0xb3b9bf, 0x54336b, 0x10525e];
+    for (var row = 0; row < 7; row++) {
+      for (var lane = 0; lane < 4; lane++) {
+        for (var lv = 0; lv < 3; lv++) {
+          if (Math.random() < 0.12) continue;
+          var c = new THREE.Mesh(new THREE.BoxGeometry(11.4, 2.55, 3.0),
+            new THREE.MeshStandardMaterial({ color: cols[(row * 3 + lane + lv) % cols.length], roughness: 0.8 }));
+          c.position.set(-L * 0.28 + row * 12.0, 9.0 + lv * 2.6, -B * 0.33 + lane * 3.3);
+          g.add(c);
+        }
+      }
+    }
+
+    // 선교(조타실) — 선미 쪽 흰 블록 + 창
+    var br = new THREE.Mesh(new THREE.BoxGeometry(11, 13, B * 0.82), whiteMat);
+    br.position.set(-L * 0.40, 13.5, 0); g.add(br);
+    var win = new THREE.Mesh(new THREE.BoxGeometry(11.3, 2.0, B * 0.84),
+      new THREE.MeshStandardMaterial({ color: 0x18293c, roughness: 0.25, metalness: 0.4 }));
+    win.position.set(-L * 0.40, 18.4, 0); g.add(win);
+    var funnel = new THREE.Mesh(new THREE.CylinderGeometry(2.0, 2.3, 7, 14),
+      new THREE.MeshStandardMaterial({ color: 0x2a3340, roughness: 0.7 }));
+    funnel.position.set(-L * 0.44, 23, 0); g.add(funnel);
+    var funnelBand = new THREE.Mesh(new THREE.CylinderGeometry(2.1, 2.1, 1.4, 14),
+      new THREE.MeshStandardMaterial({ color: 0x8c2418, roughness: 0.7 }));
+    funnelBand.position.set(-L * 0.44, 25.2, 0); g.add(funnelBand);
+    // 돛대
+    var mast = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 9, 6), darkMat);
+    mast.position.set(L * 0.44, 12, 0); g.add(mast);
+
+    // 선미 항적 — 하얀 물보라
+    var wake = new THREE.Mesh(new THREE.PlaneGeometry(L * 3.4, B * 2.1),
+      new THREE.MeshBasicMaterial({ map: makeWakeTexture(), transparent: true, opacity: 1.0,
+        depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false }));
+    wake.rotation.x = -Math.PI / 2;
+    wake.position.set(-L * 1.55, 0.35, 0);
+    g.add(wake);
+    g.add(makeShipShadow(L, B));
+    return g;
+  }
+
+  function makeShipShadow(L, B) {
+    var S = 128, cv = document.createElement('canvas'); cv.width = cv.height = S;
+    var c = cv.getContext('2d');
+    var rg = c.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S / 2);
+    rg.addColorStop(0, 'rgba(4,14,26,.55)');
+    rg.addColorStop(0.55, 'rgba(4,14,26,.28)');
+    rg.addColorStop(1, 'rgba(4,14,26,0)');
+    c.fillStyle = rg; c.fillRect(0, 0, S, S);
+    var sh = new THREE.Mesh(new THREE.PlaneGeometry(L * 1.35, B * 1.9),
+      new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(cv), transparent: true,
+        depthWrite: false, toneMapped: false }));
+    sh.rotation.x = -Math.PI / 2;
+    sh.position.y = 0.12;
+    return sh;
+  }
+
+  function makeFerry() {
+    var g = new THREE.Group();
+    var L = 74, B = 13;
+    var whiteMat = new THREE.MeshStandardMaterial({ color: 0xc9d0d6, roughness: 0.55 });
+    var navyMat = new THREE.MeshStandardMaterial({ color: 0x122b4d, roughness: 0.65 });
+    var hullMat = new THREE.MeshStandardMaterial({ color: 0x0f2544, roughness: 0.75, metalness: 0.15 });
+
+    var hull = new THREE.Mesh(makeHullGeometry(L, B, 7.2), hullMat);
+    hull.position.y = -1.0; g.add(hull);
+    var stripe = new THREE.Mesh(new THREE.BoxGeometry(L * 0.95, 1.2, B * 0.98), whiteMat);
+    stripe.position.y = 4.2; g.add(stripe);
+
+    // 다층 객실 2~4층
+    [[8.4, 0.86, 10], [7.2, 0.72, 8], [6.0, 0.56, 6]].forEach(function (f, i) {
+      var d = new THREE.Mesh(new THREE.BoxGeometry(L * f[1], f[2], B * 0.8), i === 2 ? navyMat : whiteMat);
+      d.position.set(L * 0.02, f[0], 0); g.add(d);
+      // 창문 띠
+      var w = new THREE.Mesh(new THREE.BoxGeometry(L * f[1] * 0.94, 0.55, B * 0.82), new THREE.MeshStandardMaterial({ color: 0x22384f, roughness: 0.25, metalness: 0.5 }));
+      w.position.set(L * 0.02, f[0] + 0.6, 0); g.add(w);
+    });
+    // 연돌
+    var funnel = new THREE.Mesh(new THREE.CylinderGeometry(2.2, 2.6, 8, 16), navyMat);
+    funnel.position.set(-L * 0.26, 20.5, 0); g.add(funnel);
+    var cap = new THREE.Mesh(new THREE.CylinderGeometry(2.35, 2.35, 1.0, 16),
+      new THREE.MeshStandardMaterial({ color: 0xaeb4ba, roughness: 0.65 }));
+    cap.position.set(-L * 0.26, 24.4, 0); g.add(cap);
+    // 레이더 돛대
+    var mast = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 7, 6), navyMat);
+    mast.position.set(L * 0.16, 20, 0); g.add(mast);
+
+    var wake = new THREE.Mesh(new THREE.PlaneGeometry(L * 3.0, B * 1.9),
+      new THREE.MeshBasicMaterial({ map: makeWakeTexture(), transparent: true, opacity: 0.8,
+        depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false }));
+    wake.rotation.x = -Math.PI / 2;
+    wake.position.set(-L * 1.4, 0.35, 0);
+    g.add(wake);
+    g.add(makeShipShadow(L, B));
+    return g;
+  }
+
+  function buildShips(group) {
+    var ships = [];
+    var cargo = makeCargoShip();
+    group.add(cargo);
+    ships.push({ g: cargo, r: 262, az0: 0.30, sp: 0.0035, dir: 1, bob: 0.55, ph: 0.4, len: 92 });
+    var ferry = makeFerry();
+    group.add(ferry);
+    ships.push({ g: ferry, r: 340, az0: -0.26, sp: -0.0040, dir: -1, bob: 0.4, ph: 2.1, len: 74 });
+    var cargo2 = makeCargoShip();
+    cargo2.scale.setScalar(0.78);
+    group.add(cargo2);
+    ships.push({ g: cargo2, r: 620, az0: 2.30, sp: 0.0028, dir: 1, bob: 0.7, ph: 3.4, len: 92 });
+    // 배는 실내 조명을 그대로 받아 하얗게 뜨므로 한 단계 더 눌러 실제 원거리 색으로
+    ships.forEach(function (s) {
+      s.g.traverse(function (o) {
+        if (o.isMesh && o.material && o.material.isMeshStandardMaterial) o.material.color.multiplyScalar(0.72);
+      });
+    });
+    return ships;
+  }
+
+  function updateShips(ships, dt, elapsed) {
+    for (var i = 0; i < ships.length; i++) {
+      var s = ships[i], az = s.az0 + elapsed * s.sp;
+      var rr = s.r;
+      s.g.position.set(Math.sin(az) * rr, SEA_Y + Math.sin(elapsed * 0.55 + s.ph) * s.bob, -Math.cos(az) * rr);
+      var heading = Math.atan2(-Math.sin(az) * s.sp, Math.cos(az) * s.sp);
+      s.g.rotation.y = heading;
+      s.g.rotation.x = Math.sin(elapsed * 0.42 + s.ph) * 0.012;
+      s.g.rotation.z = Math.sin(elapsed * 0.37 + s.ph * 1.7) * 0.016;
+    }
+  }
+
+  /* ── 갈매기 — 창 가까이에서 멀리까지 깊이감 있게 선회 ────────── */
+  function makeGull(scale) {
+    var g = new THREE.Group();
+    var bodyMat = new THREE.MeshStandardMaterial({ color: 0xf7f8fa, roughness: 0.85 });
+    var tipMat = new THREE.MeshStandardMaterial({ color: 0x9aa3ad, roughness: 0.85 });
+    var body = new THREE.Mesh(new THREE.SphereGeometry(0.5, 10, 8), bodyMat);
+    body.scale.set(1.7, 0.62, 0.62);
+    g.add(body);
+    var head = new THREE.Mesh(new THREE.SphereGeometry(0.26, 8, 7), bodyMat);
+    head.position.set(0.78, 0.12, 0); g.add(head);
+    var beak = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.32, 6),
+      new THREE.MeshStandardMaterial({ color: 0xe0a63c, roughness: 0.6 }));
+    beak.rotation.z = -Math.PI / 2; beak.position.set(1.05, 0.1, 0); g.add(beak);
+    var tail = new THREE.Mesh(new THREE.ConeGeometry(0.24, 0.6, 5), tipMat);
+    tail.rotation.z = Math.PI / 2; tail.position.set(-0.85, 0.02, 0); g.add(tail);
+
+    function wing(sign) {
+      var s = new THREE.Shape();
+      s.moveTo(0, 0);
+      s.quadraticCurveTo(0.85, 0.12, 1.9, 0.06);
+      s.quadraticCurveTo(1.1, -0.16, 0, -0.2);
+      s.lineTo(0, 0);
+      var geo = new THREE.ShapeGeometry(s);
+      var m = new THREE.Mesh(geo, bodyMat);
+      m.rotation.x = -Math.PI / 2;
+      m.scale.z = 1;
+      var pivot = new THREE.Group();
+      pivot.add(m);
+      pivot.rotation.z = 0;
+      pivot.scale.x = sign;
+      return pivot;
+    }
+    var wl = wing(1), wr = wing(-1);
+    wl.position.set(0.1, 0.05, 0); wr.position.set(0.1, 0.05, 0);
+    g.add(wl); g.add(wr);
+    g.scale.setScalar(scale || 1.6);
+    g.userData.wings = [wl, wr];
+    return g;
+  }
+
+  function buildBirds(group) {
+    var birds = [];
+    var n = 16;
+    for (var i = 0; i < n; i++) {
+      // 실제 갈매기(몸통 0.55m · 날개폭 1.3m) 크기 — 가까운 새도 화면을 덮지 않게
+      var scale = i < 6 ? 0.42 + Math.random() * 0.12 : 0.55 + Math.random() * 0.35;
+      var b = makeGull(scale);
+      group.add(b);
+      birds.push({
+        g: b,
+        az: Math.random() * Math.PI * 2,
+        r: 24 + Math.random() * 96,
+        y: SEA_Y + 7.5 + Math.random() * 15,
+        sp: (0.12 + Math.random() * 0.22) * (Math.random() < 0.5 ? 1 : -1),
+        ph: Math.random() * 6.28,
+        flap: 6.2 + Math.random() * 3.2,
+        rw: 0.8 + Math.random() * 0.6,
+        dr: (Math.random() - 0.5) * 3.2
+      });
+    }
+    return birds;
+  }
+
+  function updateBirds(birds, dt, elapsed) {
+    for (var i = 0; i < birds.length; i++) {
+      var b = birds[i];
+      var az = b.az + elapsed * b.sp;
+      var rr = b.r + Math.sin(elapsed * 0.28 + b.ph) * b.dr;
+      var y = b.y + Math.sin(elapsed * 0.55 + b.ph) * 1.4;
+      b.g.position.set(Math.sin(az) * rr, y, -Math.cos(az) * rr);
+      // 진행 방향으로 머리를 두고, 선회 방향으로 살짝 기울인다
+      var heading = Math.atan2(-Math.sin(az) * b.sp, Math.cos(az) * b.sp);
+      b.g.rotation.y = heading;
+      b.g.rotation.z = (b.sp > 0 ? -1 : 1) * 0.28 + Math.sin(elapsed * 1.4 + b.ph) * 0.12;
+      var f = Math.sin(elapsed * b.flap + b.ph);
+      var flapAmt = 0.55 + 0.55 * Math.sin(elapsed * 0.9 + b.ph);
+      b.g.userData.wings[0].rotation.z = f * b.rw * flapAmt;
+      b.g.userData.wings[1].rotation.z = f * b.rw * flapAmt;
+    }
+  }
+
+  /* ══════════════════════════════════════════════════════════════════
+     독도 실시간 라이브 — 해양수산부·KIOST 독도종합정보시스템(dokdo.re.kr)
+     공식 HLS(720p · CORS 허용)를 VideoTexture 파노라마로 창밖에 녹인다.
+     ──────────────────────────────────────────────────────────────
+     · 테두리·액자 없이 좌우/상단/수면 경계를 부드럽게 페더링해
+       3D 동해 바다·하늘과 한 풍경처럼 이어 붙인다.
+     · 실패·차단·야간 암전이면 화면을 비우지 않고 조용히 3D 뷰로 넘어간다.
+     ══════════════════════════════════════════════════════════════════ */
+  var DOKDO_LIVE = {
+    streams: {
+      east: 'https://www.dokdo.re.kr/live/ddeast.stream/playlist.m3u8',
+      west: 'https://www.dokdo.re.kr/live/ddwest.stream/playlist.m3u8'
+    },
+    hlsSrc: 'https://cdn.jsdelivr.net/npm/hls.js@1.5.18/dist/hls.min.js',
+    hlsState: 'idle',        // idle | loading | ready | failed
+    video: null, hls: null, tex: null, screen: null, mat: null,
+    want: 'east',            // 지금 켜려는 스트림(east | west | 3d)
+    mode: 'east',            // 실제로 화면에 보이는 모드
+    playing: false, failed: false, errors: [], darkFrames: 0, lastProbe: 0,
+    startTimer: 0, retryTimer: 0, lastDark: 0,
+
+    ensureVideo: function () {
+      if (DOKDO_LIVE.video) return DOKDO_LIVE.video;
+      var v = document.createElement('video');
+      // ⚠️ src/HLS 연결 전에 CORS·자동재생 설정을 먼저 끝낸다(WebGL 텍스처 오염 방지)
+      v.crossOrigin = 'anonymous';
+      v.muted = true;
+      v.defaultMuted = true;
+      v.playsInline = true;
+      v.autoplay = true;
+      v.loop = false;
+      v.preload = 'auto';
+      v.setAttribute('crossorigin', 'anonymous');
+      v.setAttribute('muted', '');
+      v.setAttribute('playsinline', '');
+      v.setAttribute('webkit-playsinline', '');
+      v.setAttribute('aria-hidden', 'true');
+      v.style.cssText = 'position:fixed;left:-4px;bottom:-4px;width:2px;height:2px;opacity:.001;pointer-events:none;z-index:-1';
+      document.body.appendChild(v);
+      v.addEventListener('error', function () {
+        DOKDO_LIVE.note('video-error');
+        if (!DOKDO_LIVE.playing) DOKDO_LIVE.fallback('video-error');
+      });
+      DOKDO_LIVE.video = v;
+      return v;
+    },
+
+    note: function (why) {
+      DOKDO_LIVE.errors.push(String(why));
+      if (DOKDO_LIVE.errors.length > 8) DOKDO_LIVE.errors.shift();
+    },
+
+    texture: function () {
+      if (DOKDO_LIVE.tex) return DOKDO_LIVE.tex;
+      var v = DOKDO_LIVE.ensureVideo();
+      var t = new THREE.VideoTexture(v);
+      t.minFilter = THREE.LinearFilter;
+      t.magFilter = THREE.LinearFilter;
+      t.generateMipmaps = false;
+      t.encoding = THREE.sRGBEncoding;
+      t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
+      DOKDO_LIVE.tex = t;
+      return t;
+    },
+
+    loadHls: function () {
+      return new Promise(function (resolve, reject) {
+        if (window.Hls) { DOKDO_LIVE.hlsState = 'ready'; return resolve(window.Hls); }
+        if (DOKDO_LIVE.hlsState === 'loading') {
+          var t0 = Date.now();
+          var iv = setInterval(function () {
+            if (window.Hls) { clearInterval(iv); resolve(window.Hls); }
+            else if (Date.now() - t0 > 9000) { clearInterval(iv); reject(new Error('hls-timeout')); }
+          }, 150);
+          return;
+        }
+        DOKDO_LIVE.hlsState = 'loading';
+        var s = document.createElement('script');
+        s.src = DOKDO_LIVE.hlsSrc;
+        s.async = true;
+        s.onload = function () {
+          if (window.Hls) { DOKDO_LIVE.hlsState = 'ready'; resolve(window.Hls); }
+          else { DOKDO_LIVE.hlsState = 'failed'; reject(new Error('hls-missing')); }
+        };
+        s.onerror = function () { DOKDO_LIVE.hlsState = 'failed'; reject(new Error('hls-blocked')); };
+        document.head.appendChild(s);
+      });
+    },
+
+    start: function (which) {
+      var self = DOKDO_LIVE;
+      if (which === '3d') { self.stop(true); self.mode = '3d'; self.applyVisibility(); return; }
+      self.want = which;
+      if (!self.screen) return;
+      self.tex = self.texture();
+      if (self.mat && self.mat.uniforms.uMap.value !== self.tex) self.mat.uniforms.uMap.value = self.tex;
+
+      var v = self.video;
+      if (self.hooked === which && self.playing && !self.failed) { self.mode = which; self.applyVisibility(); return; }
+
+      // 이전 연결을 먼저 깨끗이 정리한 뒤 새 스트림을 붙인다
+      try { if (self.hls) { self.hls.destroy(); self.hls = null; } } catch (e) {}
+      try { v.pause(); v.removeAttribute('src'); v.load(); } catch (e) {}
+
+      self.failed = false; self.darkFrames = 0; self.playing = false; self.mode = which;
+      self.hooked = which;
+      self.retried = false;
+      self.startTimer = performance.now();
+      if (typeof toast === 'function' && state.floor === 2) {
+        toast(which === 'west' ? '📡 독도 실시간 · 서도 연결 중…' : '📡 독도 실시간 · 동도 연결 중…', 2400);
+      }
+
+      var url = self.streams[which];
+      var nativeHls = v.canPlayType('application/vnd.apple.mpegurl') !== '';
+
+      function playNative() {
+        try { v.src = url; self.bindPlay(v); var p = v.play(); if (p && p.catch) p.catch(function () { self.note('play-blocked-native'); }); }
+        catch (e) { self.note('native:' + e.message); self.fallback('native'); }
+      }
+
+      self.loadHls().then(function (Hls) {
+        if (self.want !== which) return;
+        if (!Hls || !Hls.isSupported || !Hls.isSupported()) throw new Error('hls-unsupported');
+        try { if (self.hls) self.hls.destroy(); } catch (e) {}
+        var h = new Hls({
+          // Worker 를 쓰지 않는다 — 일부 모바일 브라우저·임베디드 뷰에서 블롭 워커가 막혀
+          // 재생이 멈추는 사례가 있어 메인 스레드로 안정적으로 붙인다.
+          enableWorker: false, lowLatencyMode: false, maxBufferLength: 8,
+          backBufferLength: 4, capLevelToPlayerSize: true, manifestLoadingMaxRetry: 2
+        });
+        self.hls = h;
+        h.on(Hls.Events.MANIFEST_PARSED, function () {
+          self.bindPlay(v);
+          var p = v.play();
+          if (p && p.catch) p.catch(function () { self.note('play-blocked'); });
+        });
+        h.on(Hls.Events.ERROR, function (evt, data) {
+          if (!data || !data.fatal) return;
+          self.note('hls:' + data.type + '/' + (data.details || ''));
+          self.fallback();
+        });
+        try {
+          h.attachMedia(v);
+          h.loadSource(url);
+        } catch (e) {
+          self.note('attach:' + e.message);
+          self.fallback();
+        }
+      }).catch(function (e) {
+        self.note(e.message);
+        // Safari·iOS 처럼 hls.js 를 못 쓰는 환경은 브라우저 네이티브 HLS 로
+        if (nativeHls && !self.hls) playNative();
+        else self.fallback(e.message);
+      });
+    },
+
+    bindPlay: function (v) {
+      if (DOKDO_LIVE._bound) return;
+      DOKDO_LIVE._bound = true;
+      v.addEventListener('playing', function () {
+        DOKDO_LIVE.playing = true;
+        DOKDO_LIVE.retried = false;
+        DOKDO_LIVE.applyVisibility();
+        if (state.floor === 2 && typeof toast === 'function') {
+          toast(DOKDO_LIVE.mode === 'west' ? '📡 독도 LIVE · 서도' : '📡 독도 LIVE · 동도', 2000);
+        }
+      });
+      v.addEventListener('timeupdate', function () {
+        if (v.currentTime > 0 && v.videoWidth > 0) { DOKDO_LIVE.playing = true; }
+      });
+    },
+
+    fallback: function (why) {
+      var self = DOKDO_LIVE;
+      self.failed = true;
+      self.playing = false;
+      self.mode = '3d';
+      if (why) self.note('fallback:' + why);
+      self.applyVisibility();
+      try { if (self.hls) { self.hls.destroy(); self.hls = null; } } catch (e) {}
+      try { if (self.video) { self.video.pause(); } } catch (e) {}
+      if (self.onFallback) self.onFallback();
+    },
+
+    stop: function (keepMode) {
+      var self = DOKDO_LIVE;
+      try { if (self.hls) { self.hls.destroy(); self.hls = null; } } catch (e) {}
+      try {
+        if (self.video) {
+          self.video.pause();
+          // 1층에서는 스트림을 끊어 데이터·배터리를 아낀다
+          self.video.removeAttribute('src');
+          try { self.video.load(); } catch (e) {}
+        }
+      } catch (e) {}
+      self.playing = false;
+      self._bound = false;
+      self.hooked = null;
+      if (!keepMode) self.mode = '3d';
+      self.applyVisibility();
+    },
+
+    applyVisibility: function () {
+      var self = DOKDO_LIVE;
+      if (!self.mat || !self.screen) return;
+      var live = (self.mode === 'east' || self.mode === 'west') && self.playing && !self.failed;
+      self.screen.visible = live;
+      self.mat.uniforms.uOpacity.value = live ? 1.0 : 0.0;
+      // 라이브가 살아 있으면 3D 독도는 숨겨 '독도 두 개'가 겹치지 않게 한다
+      if (state.vistaIsland) state.vistaIsland.visible = !live;
+      if (typeof updateVistaUi === 'function') updateVistaUi();
+    },
+
+    // 야간 암전·검은 화면 감지 — 실제 프레임이 검으면 3D 뷰로 넘긴다
+    probe: function (now) {
+      var self = DOKDO_LIVE;
+      var v = self.video;
+      if (!v || !self.playing || self.failed) return;
+      if (now - self.lastProbe < 4000) return;
+      self.lastProbe = now;
+      try {
+        var c = self._probeCv || (self._probeCv = document.createElement('canvas'));
+        c.width = 24; c.height = 14;
+        var ctx = c.getContext('2d', { willReadFrequently: true });
+        ctx.drawImage(v, 0, 0, c.width, c.height);
+        var d = ctx.getImageData(0, 0, c.width, c.height).data;
+        var sum = 0;
+        for (var i = 0; i < d.length; i += 4) sum += (d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114);
+        var mean = sum / (d.length / 4);
+        if (mean < 10) {
+          self.darkFrames++;
+          if (self.darkFrames >= 2) { self.note('night-dark'); self.fallback('night'); }
+        } else {
+          self.darkFrames = 0;
+        }
+      } catch (e) { self.note('probe:' + e.message); }
+    },
+
+    state: function () {
+      var self = DOKDO_LIVE, v = self.video;
+      return {
+        mode: self.mode, want: self.want, playing: !!self.playing, failed: !!self.failed,
+        hls: self.hlsState, errors: self.errors.slice(),
+        video: v ? { readyState: v.readyState, width: v.videoWidth, height: v.videoHeight,
+                     currentTime: +v.currentTime.toFixed(2), paused: v.paused,
+                     crossOrigin: v.crossOrigin, muted: v.muted } : null,
+        screenVisible: self.screen ? self.screen.visible : null,
+        opacity: self.mat ? self.mat.uniforms.uOpacity.value : null
+      };
+    }
+  };
+
+  var VISTA_STATE = {
+    mode: 'east',        // east | west | 3d
+    sound: true,
+    built: false
+  };
+
+  function vistaSavedMode() {
+    try {
+      var m = localStorage.getItem('mg_dokdo_view_v1');
+      if (m === 'west' || m === '3d' || m === 'east') return m;
+    } catch (e) {}
+    return 'east';
+  }
+  function vistaSavedSound() {
+    try { return localStorage.getItem('mg_dokdo_sound_v1') !== '0'; } catch (e) { return true; }
+  }
+
+  function updateVistaUi() {
+    var bar = $('vista-bar');
+    if (!bar) return;
+    var on2 = state.floor === 2;
+    bar.classList.toggle('show', on2);
+    var live = DOKDO_LIVE.mode;
+    var btns = bar.querySelectorAll('[data-vista]');
+    for (var i = 0; i < btns.length; i++) {
+      var k = btns[i].getAttribute('data-vista');
+      var active = (k === '3d') ? (live === '3d') : (live === k && DOKDO_LIVE.playing);
+      btns[i].classList.toggle('on', active);
+    }
+    var e = bar.querySelector('[data-vista="east"]');
+    var w = bar.querySelector('[data-vista="west"]');
+    if (e) e.textContent = (DOKDO_LIVE.failed && VISTA_STATE.mode === 'east') ? '📡 동도 (3D)' : '📡 동도 LIVE';
+    if (w) w.textContent = (DOKDO_LIVE.failed && VISTA_STATE.mode === 'west') ? '📡 서도 (3D)' : '📡 서도 LIVE';
+    var s = $('vb-sound');
+    if (s) {
+      s.classList.toggle('on', !!VISTA_STATE.sound && AMBIENCE.running);
+      s.textContent = (VISTA_STATE.sound && AMBIENCE.running) ? '🌊 창밖 소리' : '🔇 창밖 소리';
+      s.setAttribute('aria-pressed', (VISTA_STATE.sound && AMBIENCE.running) ? 'true' : 'false');
+    }
+  }
+
+  function applyVistaMode(mode, silent) {
+    VISTA_STATE.mode = (mode === 'west' || mode === '3d') ? mode : 'east';
+    if (state.floor === 2) {
+      if (VISTA_STATE.mode === '3d') { DOKDO_LIVE.stop(true); DOKDO_LIVE.mode = '3d'; DOKDO_LIVE.applyVisibility(); }
+      else DOKDO_LIVE.start(VISTA_STATE.mode);
+    }
+    if (state.vistaIsland) state.vistaIsland.visible = (VISTA_STATE.mode === '3d' || !(DOKDO_LIVE.playing && !DOKDO_LIVE.failed));
+    try { localStorage.setItem('mg_dokdo_view_v1', VISTA_STATE.mode); } catch (e) {}
+    updateVistaUi();
+    if (!silent) {
+      toast(VISTA_STATE.mode === '3d' ? '🏝️ 3D 동해 파노라마 뷰'
+        : (VISTA_STATE.mode === 'east' ? '📡 독도 실시간 LIVE · 동도' : '📡 독도 실시간 LIVE · 서도'), 2200);
+    }
+  }
+
+  function bindVistaUi() {
+    var bar = $('vista-bar');
+    if (!bar) return;
+    bar.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-vista]');
+      if (b) { applyVistaMode(b.getAttribute('data-vista')); return; }
+      if (e.target.closest('#vb-sound')) toggleVistaSound();
+    });
+  }
+
+  function toggleVistaSound() {
+    VISTA_STATE.sound = !VISTA_STATE.sound;
+    try { localStorage.setItem('mg_dokdo_sound_v1', VISTA_STATE.sound ? '1' : '0'); } catch (e) {}
+    if (VISTA_STATE.sound) { if (state.floor === 2) AMBIENCE.start(); }
+    else AMBIENCE.stop();
+    updateVistaUi();
+    toast(VISTA_STATE.sound ? '🌊 창밖 파도·바람·갈매기 소리 켜짐' : '🔇 창밖 소리 꺼짐', 2000);
+  }
+
+  /* ══════════════════════════════════════════════════════════════════
+     창밖 환경음 — 유리창 안쪽에서 '가만히' 들리는 파도·바람·먼 갈매기
+     · 2층 회의실에만 존재한다(1층에서는 절대 울리지 않는다).
+     · 음성 회의 중에는 20%로 자동 덕킹.
+     ══════════════════════════════════════════════════════════════════ */
+  var AMBIENCE = {
+    ctx: null, master: null, filter: null, nodes: null,
+    running: false, enabled: true, lastGull: 0, nextGull: 0, duck: 1,
+
+    ensure: function () {
+      if (AMBIENCE.ctx) return AMBIENCE.ctx;
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      var ctx = new AC();
+      AMBIENCE.ctx = ctx;
+
+      var master = ctx.createGain();
+      master.gain.value = 0.0;
+      var lp = ctx.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.value = 1750;   // 창문 차음 — 고음 자극을 눌러 실내에 은은하게
+      lp.Q.value = 0.35;
+      master.connect(lp);
+      lp.connect(ctx.destination);
+      AMBIENCE.master = master;
+      AMBIENCE.filter = lp;
+
+      // 파도·바람용 노이즈 버퍼(핑크 노이즈 느낌)
+      var len = ctx.sampleRate * 4;
+      var buf = ctx.createBuffer(2, len, ctx.sampleRate);
+      for (var ch = 0; ch < 2; ch++) {
+        var d = buf.getChannelData(ch), last = 0;
+        for (var i = 0; i < len; i++) {
+          var w = Math.random() * 2 - 1;
+          last = (last + 0.02 * w) / 1.02;
+          d[i] = last * 3.2 + w * 0.22;
+        }
+      }
+      AMBIENCE.noise = buf;
+
+      function noiseSource() {
+        var s = ctx.createBufferSource();
+        s.buffer = buf; s.loop = true;
+        s.playbackRate.value = 0.9 + Math.random() * 0.2;
+        return s;
+      }
+
+      // 파도 A — 느린 밀물·썰물(7~10초 주기)
+      var waveA = noiseSource();
+      var wfA = ctx.createBiquadFilter(); wfA.type = 'lowpass'; wfA.frequency.value = 520; wfA.Q.value = 0.8;
+      var gA = ctx.createGain(); gA.gain.value = 0.30;
+      var lfoA = ctx.createOscillator(); lfoA.type = 'sine'; lfoA.frequency.value = 0.115;
+      var lfoAG = ctx.createGain(); lfoAG.gain.value = 0.22;
+      lfoA.connect(lfoAG); lfoAG.connect(gA.gain);
+      waveA.connect(wfA); wfA.connect(gA); gA.connect(master);
+      waveA.start(); lfoA.start();
+
+      // 파도 B — 살짝 밝은 잔물결(주기 다름)
+      var waveB = noiseSource();
+      var wfB = ctx.createBiquadFilter(); wfB.type = 'lowpass'; wfB.frequency.value = 1150; wfB.Q.value = 0.6;
+      var gB = ctx.createGain(); gB.gain.value = 0.12;
+      var lfoB = ctx.createOscillator(); lfoB.type = 'sine'; lfoB.frequency.value = 0.072;
+      var lfoBG = ctx.createGain(); lfoBG.gain.value = 0.09;
+      lfoB.connect(lfoBG); lfoBG.connect(gB.gain);
+      waveB.connect(wfB); wfB.connect(gB); gB.connect(master);
+      waveB.start(); lfoB.start();
+
+      // 바람 — 유리창 틈을 스치는 얕은 바람결
+      var wind = noiseSource();
+      var wbp = ctx.createBiquadFilter(); wbp.type = 'bandpass'; wbp.frequency.value = 780; wbp.Q.value = 0.9;
+      var wg = ctx.createGain(); wg.gain.value = 0.055;
+      var lfoW = ctx.createOscillator(); lfoW.type = 'sine'; lfoW.frequency.value = 0.048;
+      var lfoWG = ctx.createGain(); lfoWG.gain.value = 0.035;
+      lfoW.connect(lfoWG); lfoWG.connect(wg.gain);
+      wind.connect(wbp); wbp.connect(wg); wg.connect(master);
+      wind.start(); lfoW.start();
+
+      AMBIENCE.nodes = { waveA: waveA, waveB: waveB, wind: wind };
+      return ctx;
+    },
+
+    start: function () {
+      if (!VISTA_STATE.sound) return;
+      if (state.floor !== 2) return;
+      var ctx = AMBIENCE.ensure();
+      if (!ctx || !AMBIENCE.master) return;
+      var resume = ctx.state === 'suspended' ? ctx.resume() : Promise.resolve();
+      resume.then(function () {
+        if (state.floor !== 2 || !VISTA_STATE.sound) return;
+        var t = ctx.currentTime;
+        AMBIENCE.master.gain.cancelScheduledValues(t);
+        AMBIENCE.master.gain.setValueAtTime(Math.max(0.0001, AMBIENCE.master.gain.value), t);
+        AMBIENCE.master.gain.linearRampToValueAtTime(0.20 * (AMBIENCE.duck || 1), t + 2.2);
+        AMBIENCE.running = true;
+        AMBIENCE.nextGull = t + 4 + Math.random() * 8;
+        updateVistaUi();
+      }).catch(function () { AMBIENCE.running = false; updateVistaUi(); });
+    },
+
+    stop: function () {
+      var ctx = AMBIENCE.ctx;
+      if (!ctx) return;
+      var t = ctx.currentTime;
+      try {
+        AMBIENCE.master.gain.cancelScheduledValues(t);
+        AMBIENCE.master.gain.setValueAtTime(Math.max(0.0001, AMBIENCE.master.gain.value), t);
+        AMBIENCE.master.gain.linearRampToValueAtTime(0.0001, t + 0.9);
+      } catch (e) {}
+      AMBIENCE.running = false;
+      setTimeout(function () {
+        if (AMBIENCE.running || !AMBIENCE.ctx) return;
+        if (AMBIENCE.ctx.state === 'running') AMBIENCE.ctx.suspend();
+      }, 1200);
+      updateVistaUi();
+    },
+
+    setDuck: function (on) {
+      var ctx = AMBIENCE.ctx;
+      if (!ctx || !AMBIENCE.master) return;
+      AMBIENCE.duck = on ? 0.2 : 1.0;
+      if (!AMBIENCE.running) return;
+      var t = ctx.currentTime;
+      AMBIENCE.master.gain.cancelScheduledValues(t);
+      AMBIENCE.master.gain.setValueAtTime(Math.max(0.0001, AMBIENCE.master.gain.value), t);
+      AMBIENCE.master.gain.linearRampToValueAtTime(0.20 * AMBIENCE.duck, t + 0.8);
+    },
+
+    // 먼 갈매기 울음 — 12~25초 간격, 아주 작고 여리게
+    gull: function (when) {
+      var ctx = AMBIENCE.ctx;
+      if (!ctx) return;
+      var n = 2 + (Math.random() < 0.5 ? 1 : 0);
+      var pan = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+      var out = ctx.createGain();
+      out.gain.value = 0.0;
+      var lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 2600;
+      if (pan) {
+        pan.pan.value = (Math.random() * 2 - 1) * 0.75;
+        out.connect(lp); lp.connect(pan); pan.connect(AMBIENCE.master);
+      } else {
+        out.connect(lp); lp.connect(AMBIENCE.master);
+      }
+      for (var i = 0; i < n; i++) {
+        var t0 = when + i * (0.16 + Math.random() * 0.08);
+        var osc = ctx.createOscillator();
+        var g = ctx.createGain();
+        osc.type = 'triangle';
+        var f0 = 1150 + Math.random() * 260;
+        osc.frequency.setValueAtTime(f0, t0);
+        osc.frequency.exponentialRampToValueAtTime(f0 * 0.62, t0 + 0.13);
+        osc.frequency.exponentialRampToValueAtTime(f0 * 0.92, t0 + 0.20);
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.exponentialRampToValueAtTime(0.075, t0 + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.26);
+        osc.connect(g); g.connect(out);
+        osc.start(t0); osc.stop(t0 + 0.3);
+      }
+      out.gain.setValueAtTime(0.55, when);
+    },
+
+    update: function (dt) {
+      // 음성 회의 중에는 창밖 소리를 20%로 낮춰 대화를 방해하지 않는다
+      var wantDuck = VOICE.active ? 0.2 : 1.0;
+      if (wantDuck !== AMBIENCE.duck) AMBIENCE.setDuck(!!VOICE.active);
+      if (!AMBIENCE.running || !AMBIENCE.ctx || state.floor !== 2) return;
+      var ctx = AMBIENCE.ctx;
+      if (ctx.state !== 'running') return;
+      if (ctx.currentTime >= AMBIENCE.nextGull) {
+        AMBIENCE.gull(ctx.currentTime + 0.05);
+        AMBIENCE.nextGull = ctx.currentTime + 12 + Math.random() * 13;
+      }
+    },
+
+    state: function () {
+      var c = AMBIENCE.ctx;
+      return {
+        created: !!c, running: !!AMBIENCE.running,
+        ctx: c ? c.state : 'none',
+        gain: c && AMBIENCE.master ? +AMBIENCE.master.gain.value.toFixed(4) : 0,
+        duck: AMBIENCE.duck, floor: state.floor,
+        enabled: !!VISTA_STATE.sound
+      };
+    }
+  };
+
+  /* ── 2층 회의실 바깥 풍경 조립 ─────────────────────────────── */
+  function buildDokdoVista() {
+    var scene = state.scene;
+    var group = new THREE.Group();
+    group.name = 'dokdo-vista';
+    scene.add(group);
+    state.vistaGroup = group;
+
+    buildSkyAndSun(group);
+    var sea = buildSea(group);
+    state.vistaSea = sea;
+    state.vistaClouds = buildClouds(group);
+    var island = buildDokdo(group);
+    state.vistaIsland = island;
+    state.vistaShips = buildShips(group);
+    state.vistaBirds = buildBirds(group);
+
+    // 라이브 파노라마 — 테두리 없는 곡면(페더링으로 하늘·바다에 녹인다)
+    var arc = VISTA.liveArc, D = VISTA.liveDist, H = VISTA.liveH;
+    var cyl = new THREE.CylinderGeometry(D, D, H, 128, 1, true, Math.PI - arc, arc * 2);
+    var mat = new THREE.ShaderMaterial({
+      uniforms: {
+        uMap: { value: DOKDO_LIVE.texture() },
+        uOpacity: { value: 0.0 },
+        uHaze: { value: new THREE.Color(0xd2e4f2) },
+        uFeatherX: { value: 0.17 },
+        uFeatherTop: { value: 0.55 },
+        uSeaY: { value: SEA_Y + 1.5 },
+        uFadeH: { value: 9.0 },
+        uTime: { value: 0 }
+      },
+      vertexShader: `
+        varying vec2 vUv; varying vec3 vWorld;
+        void main() {
+          vUv = uv;
+          vec4 wp = modelMatrix * vec4(position, 1.0);
+          vWorld = wp.xyz;
+          gl_Position = projectionMatrix * viewMatrix * wp;
+        }`,
+      fragmentShader: `
+        precision highp float;
+        uniform sampler2D uMap;
+        uniform float uOpacity, uFeatherX, uFeatherTop, uSeaY, uFadeH, uTime;
+        uniform vec3 uHaze;
+        varying vec2 vUv; varying vec3 vWorld;
+        void main() {
+          vec3 c = texture2D(uMap, vUv).rgb;
+          // 사각 액자 느낌을 없애기 위해 타원형으로 부드럽게 사라진다
+          vec2 q = vUv - vec2(0.5, 0.44);
+          q.y *= 1.45;
+          float radial = 1.0 - smoothstep(0.30, 0.52, length(q));
+          float ex = smoothstep(0.0, uFeatherX, vUv.x) * (1.0 - smoothstep(1.0 - uFeatherX, 1.0, vUv.x));
+          float top = 1.0 - smoothstep(1.0 - uFeatherTop, 1.0, vUv.y);
+          float bot = smoothstep(uSeaY, uSeaY + uFadeH, vWorld.y);
+          float a = uOpacity * ex * top * bot * radial;
+          // 대기 원근 — 조금 하늘빛으로 섞어 3D 바다·하늘과 같은 공기에 잠기게
+          float yy = clamp((vWorld.y - uSeaY) / 26.0, 0.0, 1.0);
+          // 위로 갈수록(영상의 하늘) 우리 3D 하늘빛에 더 녹아들게
+          float topMix = smoothstep(0.50, 1.0, vUv.y);
+          // 실제 피드 색 보정 — 살짝 청량하게(채도·청색) 올려 3D 바다와 같은 공기로
+          float lum = dot(c, vec3(0.299, 0.587, 0.114));
+          c = mix(vec3(lum), c, 1.18);
+          c = mix(c, c * vec3(0.94, 1.02, 1.10), 0.65);
+          vec3 col = mix(c, uHaze, 0.12 + 0.16 * (1.0 - yy) + 0.46 * topMix);
+          gl_FragColor = vec4(col, a);
+        }`,
+      transparent: true, depthWrite: false, side: THREE.BackSide, fog: false, toneMapped: true
+    });
+    var screen = new THREE.Mesh(cyl, mat);
+    screen.position.set(0, VISTA.liveY, 0.6);
+    screen.renderOrder = 2;
+    screen.visible = false;
+    group.add(screen);
+    DOKDO_LIVE.screen = screen;
+    DOKDO_LIVE.mat = mat;
+
+    // 해무 띠 — 라이브 파노라마 아래 수면 경계를 부드럽게 잇는다
+    var hazeTex = (function () {
+      var W = 8, H = 128, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+      var c = cv.getContext('2d');
+      var g = c.createLinearGradient(0, 0, 0, H);
+      g.addColorStop(0, 'rgba(226,240,250,0)');
+      g.addColorStop(0.45, 'rgba(226,240,250,.55)');
+      g.addColorStop(0.62, 'rgba(226,240,250,.32)');
+      g.addColorStop(1, 'rgba(226,240,250,0)');
+      c.fillStyle = g; c.fillRect(0, 0, W, H);
+      return new THREE.CanvasTexture(cv);
+    })();
+    var haze = new THREE.Mesh(
+      new THREE.CylinderGeometry(300, 300, 16, 96, 1, true, Math.PI - 0.55, 1.1),
+      new THREE.MeshBasicMaterial({ map: hazeTex, transparent: true, opacity: 0.46, depthWrite: false,
+        side: THREE.BackSide, fog: false, toneMapped: false })
+    );
+    haze.position.set(0, SEA_Y + 7, 0.6);
+    haze.renderOrder = 3;
+    group.add(haze);
+    state.vistaHaze = haze;
+
+    // 2층 바닥 아래 암반 기단 — 허공에 뜬 느낌 없이 바다에서 솟은 전망대처럼
+    var plinth = new THREE.Mesh(
+      new THREE.BoxGeometry(MEETING_ROOM.x1 - MEETING_ROOM.x0 + 0.9, 3.0, MEETING_ROOM.z1 - MEETING_ROOM.z0 + 0.9),
+      new THREE.MeshStandardMaterial({ color: 0x3c3a36, roughness: 0.98, vertexColors: false })
+    );
+    plinth.position.set((MEETING_ROOM.x0 + MEETING_ROOM.x1) / 2, FLOOR2_Y - 1.7, (MEETING_ROOM.z0 + MEETING_ROOM.z1) / 2);
+    group.add(plinth);
+
+    // 2층 전용 햇빛·하늘빛 — 이 레이어는 2층에서만 켜지므로 1층 조명은 그대로
+    var sun = new THREE.DirectionalLight(0xfff1d8, 0.34);
+    sun.position.set(Math.sin(VISTA.sunAz) * 60, SEA_Y + Math.sin(VISTA.sunEl) * 60, -Math.cos(VISTA.sunAz) * 60);
+    sun.position.y = FLOOR2_Y + 34;
+    group.add(sun);
+    var hemi = new THREE.HemisphereLight(0xdcedff, 0x6a7c8c, 0.16);
+    hemi.position.set(0, FLOOR2_Y + 8, 0);
+    group.add(hemi);
+    var fill = new THREE.DirectionalLight(0xdbe9ff, 0.12);
+    fill.position.set(10, FLOOR2_Y + 10, 40);
+    group.add(fill);
+
+    /* 실내 조명(1층용)이 바깥 물체까지 비추므로, 바깥 재질은 한 단계 어둡게 맞춘다.
+       그래야 흰 선체·컨테이너·암석이 하얗게 타지 않고 실제 원거리 색으로 보인다. */
+    group.traverse(function (o) {
+      if (!o.isMesh || !o.material) return;
+      var mats = Array.isArray(o.material) ? o.material : [o.material];
+      mats.forEach(function (m) {
+        if (m.color && m.isMeshStandardMaterial) m.color.multiplyScalar(0.62);
+      });
+    });
+
+    setLayerDeep(group, OUT_LAYER);
+    group.traverse(function (o) { if (o.isLight) o.layers.set(OUT_LAYER); });
+
+    VISTA_STATE.mode = vistaSavedMode();
+    VISTA_STATE.sound = vistaSavedSound();
+    VISTA_STATE.built = true;
+    state.vistaBuilt = true;
+    applyVistaMode(VISTA_STATE.mode, true);
+    bindVistaUi();
+    return group;
+  }
+
+  /* ── 매 프레임 갱신 — 2층일 때만 돈다 ──────────────────────── */
+  function updateDokdoVista(dt) {
+    if (!state.vistaGroup) return;
+    var on = state.floor === 2;
+    if (!on) return;
+    var t = state.elapsed;
+    var sea = state.vistaSea;
+    if (sea && sea.material.uniforms) sea.material.uniforms.uTime.value = t;
+    var isl = state.vistaIsland;
+    if (isl) {
+      var foam = isl.userData.foam;
+      if (foam) {
+        foam.material.opacity = 0.55 + 0.20 * Math.sin(t * 0.85);
+        foam.scale.setScalar(1 + 0.035 * Math.sin(t * 0.7 + 1.2));
+      }
+      var lh = isl.userData.lighthouse;
+      if (lh && lh.userData.glow) lh.userData.glow.material.opacity = 0.55 + 0.45 * Math.pow(Math.max(0, Math.sin(t * 1.15)), 3);
+    }
+    if (state.vistaClouds) {
+      for (var i = 0; i < state.vistaClouds.length; i++) {
+        var c = state.vistaClouds[i];
+        c.userData.az += c.userData.speed * dt;
+        c.position.set(Math.sin(c.userData.az) * c.userData.dist, c.position.y, -Math.cos(c.userData.az) * c.userData.dist);
+      }
+    }
+    if (state.vistaShips) updateShips(state.vistaShips, dt, t);
+    if (state.vistaBirds) updateBirds(state.vistaBirds, dt, t);
+    var liveMat = DOKDO_LIVE.mat;
+    if (liveMat && liveMat.uniforms) liveMat.uniforms.uTime.value = t;
+    var _now = performance.now();
+    if (DOKDO_LIVE.screen && DOKDO_LIVE.screen.visible) DOKDO_LIVE.probe(_now);
+    if (!DOKDO_LIVE.playing && !DOKDO_LIVE.failed && DOKDO_LIVE.mode !== '3d'
+        && _now - DOKDO_LIVE.startTimer > 40000) {
+      // 느린 회선에서 첫 세그먼트를 기다리다 실패하면, 한 번은 조용히 다시 붙여 본다
+      if (!DOKDO_LIVE.retried && state.floor === 2) {
+        DOKDO_LIVE.retried = true;
+        DOKDO_LIVE.note('retry');
+        DOKDO_LIVE.start(DOKDO_LIVE.mode);
+        DOKDO_LIVE.retried = true;
+      } else {
+        DOKDO_LIVE.fallback('start-timeout');
+      }
+    }
+    AMBIENCE.update(dt);
+  }
+
+  /* ── 층 전환 — 바깥 풍경·안개·라이브·소리·UI 를 한 번에 맞춘다 ── */
+  function setVistaFloor(f) {
+    if (!state.camera) return;
+    var cam = state.camera;
+    if (f === 2) {
+      if (state.scene) {
+        state.floorFog1 = state.floorFog1 || state.scene.fog;
+        state.scene.fog = new THREE.Fog(0xcfe1f0, 140, 2400);
+      }
+      cam.layers.enable(OUT_LAYER);
+      if (cam.far !== 3200) { cam.far = 3200; cam.updateProjectionMatrix(); }
+      if (VISTA_STATE.mode === '3d') { DOKDO_LIVE.stop(true); DOKDO_LIVE.mode = '3d'; DOKDO_LIVE.applyVisibility(); }
+      else DOKDO_LIVE.start(VISTA_STATE.mode);
+      if (VISTA_STATE.sound) AMBIENCE.start(); else AMBIENCE.stop();
+    } else {
+      if (state.scene && state.floorFog1) state.scene.fog = state.floorFog1;
+      cam.layers.disable(OUT_LAYER);
+      if (cam.far !== 300) { cam.far = 300; cam.updateProjectionMatrix(); }
+      DOKDO_LIVE.stop(false);
+      AMBIENCE.stop();
+    }
+    if (state.vistaIsland) state.vistaIsland.visible = (VISTA_STATE.mode === '3d' || !(DOKDO_LIVE.playing && !DOKDO_LIVE.failed));
+    updateVistaUi();
+  }
+
   function buildMeetingRoom() {
     var scene = state.scene, R = MEETING_ROOM, Y = FLOOR2_Y;
     var g = new THREE.Group();
@@ -3835,8 +5258,9 @@
 
     var navy = new THREE.MeshStandardMaterial({ color: 0x16233a, roughness: 0.6, metalness: 0.18 });
     var navyDeep = new THREE.MeshStandardMaterial({ color: 0x0d1728, roughness: 0.7, metalness: 0.15 });
-    var glass = new THREE.MeshStandardMaterial({ color: 0x9fc9ee, roughness: 0.1, metalness: 0.55,
-      transparent: true, opacity: 0.2 });
+    // 사방 통유리 — 맑은 청록/하늘빛, 바깥 바다·독도·배·새가 그대로 비쳐 보인다
+    var glass = new THREE.MeshStandardMaterial({ color: 0xc2e9f8, roughness: 0.05, metalness: 0.0,
+      transparent: true, opacity: 0.11, depthWrite: false, side: THREE.DoubleSide });
     var goldMat = MAT.gold;
     var w = R.x1 - R.x0, d = R.z1 - R.z0, cx = (R.x0 + R.x1) / 2, cz = (R.z0 + R.z1) / 2;
 
@@ -3849,25 +5273,34 @@
     var inlay = new THREE.Mesh(new THREE.BoxGeometry(w - 0.4, 0.02, d - 0.4), goldMat);
     inlay.position.set(cx, Y - 0.38, cz); g.add(inlay);
 
-    // 벽 4면 — 네이비 하부 + 글라스 상부 + 골드 멀리언
+    /* 벽 4면 — 바닥부터 천장까지 사방 통유리(Panoramic Glass)
+       · 불투명 네이비 뒷벽·1.15m 하부 벽을 없애 발끝부터 바다가 뚫려 보인다.
+       · 바닥 몰딩 0.10m + 얇은 골드 창틀(≈3.35m 간격) + 천장 들보 0.24m 만 남긴다. */
     function wallPane(px, pz, len, ry) {
       var grp = new THREE.Group(); grp.position.set(px, Y, pz); grp.rotation.y = ry; g.add(grp);
-      var base = new THREE.Mesh(new THREE.BoxGeometry(len, 1.15, 0.24), navy);
-      base.position.set(0, 0.575, 0); grp.add(base);
-      var trim = new THREE.Mesh(new THREE.BoxGeometry(len, 0.055, 0.28), goldMat);
-      trim.position.set(0, 1.17, 0); grp.add(trim);
-      var glassH = R.h - 1.15 - 0.42;
-      var pane = new THREE.Mesh(new THREE.BoxGeometry(len, glassH, 0.1), glass);
-      pane.position.set(0, 1.19 + glassH / 2, 0); grp.add(pane);
-      var back = new THREE.Mesh(new THREE.BoxGeometry(len, glassH, 0.08), navyDeep);
-      back.position.set(0, 1.19 + glassH / 2, -0.16); grp.add(back);
-      var n = Math.max(2, Math.round(len / 2.2));
+      // 바닥 몰딩 — 발끝 시야를 가리지 않는 슬림 마감
+      var base = new THREE.Mesh(new THREE.BoxGeometry(len, 0.10, 0.16), navyDeep);
+      base.position.set(0, 0.05, 0); grp.add(base);
+      var sill = new THREE.Mesh(new THREE.BoxGeometry(len, 0.025, 0.19), MAT.goldDark || goldMat);
+      sill.position.set(0, 0.112, 0); grp.add(sill);
+      // 통유리 (바닥 0.12 ~ 천장 들보)
+      var glassH = R.h - 0.12 - 0.24;
+      var pane = new THREE.Mesh(new THREE.BoxGeometry(len, glassH, 0.05), glass);
+      pane.position.set(0, 0.12 + glassH / 2, 0); grp.add(pane);
+      // 유리 너머를 본다는 공간감 — 위쪽 유리에 옅은 하늘 반사
+      var sheen = new THREE.Mesh(new THREE.PlaneGeometry(len, glassH * 0.46),
+        new THREE.MeshBasicMaterial({ color: 0xe6f5ff, transparent: true, opacity: 0.055,
+          depthWrite: false, toneMapped: false, side: THREE.DoubleSide }));
+      sheen.position.set(0, 0.12 + glassH * 0.74, 0.03); grp.add(sheen);
+      // 얇은 수직 창틀(멀리언) — 넓은 간격으로만 두어 개방감 유지
+      var n = Math.max(2, Math.round(len / 3.35));
       for (var i = 1; i < n; i++) {
-        var mullion = new THREE.Mesh(new THREE.BoxGeometry(0.07, glassH, 0.15), goldMat);
-        mullion.position.set(-len / 2 + (len / n) * i, 1.19 + glassH / 2, 0); grp.add(mullion);
+        var mullion = new THREE.Mesh(new THREE.BoxGeometry(0.065, glassH, 0.13), goldMat);
+        mullion.position.set(-len / 2 + (len / n) * i, 0.12 + glassH / 2, 0); grp.add(mullion);
       }
-      var crown = new THREE.Mesh(new THREE.BoxGeometry(len, 0.36, 0.28), navyDeep);
-      crown.position.set(0, R.h - 0.18, 0); grp.add(crown);
+      // 천장 들보(상단 프레임)
+      var crown = new THREE.Mesh(new THREE.BoxGeometry(len, 0.24, 0.2), navyDeep);
+      crown.position.set(0, R.h - 0.12, 0); grp.add(crown);
       return grp;
     }
     wallPane(R.x0, cz, d, Math.PI / 2);      // 서쪽 (안쪽 +X)
@@ -3889,11 +5322,14 @@
     });
 
     // 현판 — 독도국제무역 회의실 · VIP · 직원 전용
-    var plaqueBack = new THREE.Mesh(new THREE.BoxGeometry(4.9, 1.26, 0.1), navyDeep);
-    plaqueBack.position.set(cx, Y + 2.72, R.z0 + 0.2); g.add(plaqueBack);
-    var plaque = new THREE.Mesh(new THREE.PlaneGeometry(4.76, 1.14),
+    // 창밖 시야를 가리지 않도록 천장 들보 바로 아래에 슬림하게 매단다
+    var plaqueBack = new THREE.Mesh(new THREE.BoxGeometry(4.04, 0.9, 0.07), navyDeep);
+    plaqueBack.position.set(cx, Y + R.h - 0.62, R.z0 + 0.13); g.add(plaqueBack);
+    var plaqueTrim = new THREE.Mesh(new THREE.BoxGeometry(4.06, 0.035, 0.075), goldMat);
+    plaqueTrim.position.set(cx, Y + R.h - 0.185, R.z0 + 0.13); g.add(plaqueTrim);
+    var plaque = new THREE.Mesh(new THREE.PlaneGeometry(3.9, 0.78),
       new THREE.MeshBasicMaterial({ map: makeMeetingPlaqueTexture(), toneMapped: false }));
-    plaque.position.set(cx, Y + 2.72, R.z0 + 0.26); g.add(plaque);
+    plaque.position.set(cx, Y + R.h - 0.62, R.z0 + 0.175); g.add(plaque);
     state.meetingPlaque = plaque;
     state.meetingPlaqueLabel = '독도국제무역 회의실 · VIP · 직원 전용';
 
@@ -3907,6 +5343,7 @@
     state.portals = [];
     buildPortal('hall');
     buildPortal('meeting');
+    buildDokdoVista();      // 창밖 동해·독도·선박·갈매기·독도 LIVE(2층 전용 레이어)
     return g;
   }
 
@@ -4677,6 +6114,7 @@
     if (f === 1 && state.meeting) state.meeting = null;
     if (changed) state.nearPortal = null;
     updateMeetingHud();
+    setVistaFloor(f);       // 창밖 풍경·안개·독도 LIVE·환경음을 층에 맞춘다
     updateHallVoice();
     renderVoiceNote(VOICE.active ? 'on' : (VOICE.denied ? 'denied' : 'idle'));
     updateFirstVisitGuide();
@@ -8031,6 +9469,7 @@
     updateHosts(dt);      // 프런트데스크 두 캐릭터
     updateNewsTV(dt);
     updatePortals(dt);    // 회의실 ↔ 중앙홀 포털 링 회전
+    updateDokdoVista(dt); // 창밖 동해 물결·선박·갈매기·독도 LIVE(2층에서만)
     updateDeskGreet();    // 프런트데스크 근접 인사(말풍선 + 제스처 + 목소리)
     updateMeetingHud();
     broadcastState(false);
@@ -10945,6 +12384,48 @@
         },
         setFloor: setFloor,
         portalSpec: PORTAL,
+        // ── 2층 창밖 풍경·독도 LIVE·환경음(검증용) ──
+        vista: {
+          group: function () { return state.vistaGroup; },
+          built: function () { return !!state.vistaBuilt; },
+          mode: function () { return VISTA_STATE.mode; },
+          setMode: applyVistaMode,
+          soundOn: function () { return !!VISTA_STATE.sound; },
+          toggleSound: toggleVistaSound,
+          live: function () { return DOKDO_LIVE.state(); },
+          ambience: function () { return AMBIENCE.state(); },
+          island: function () {
+            var i = state.vistaIsland;
+            return i ? { visible: i.visible, x: +i.position.x.toFixed(1), z: +i.position.z.toFixed(1),
+                         y: +i.position.y.toFixed(1) } : null;
+          },
+          sea: function () {
+            var m = state.vistaSea;
+            return m ? { y: +m.position.y.toFixed(2), time: +m.material.uniforms.uTime.value.toFixed(2) } : null;
+          },
+          ships: function () {
+            return (state.vistaShips || []).map(function (s) {
+              return { x: +s.g.position.x.toFixed(1), z: +s.g.position.z.toFixed(1), y: +s.g.position.y.toFixed(2),
+                       rotY: +s.g.rotation.y.toFixed(3) };
+            });
+          },
+          birds: function () {
+            return (state.vistaBirds || []).slice(0, 4).map(function (b) {
+              return { x: +b.g.position.x.toFixed(1), z: +b.g.position.z.toFixed(1), y: +b.g.position.y.toFixed(2),
+                       flap: +b.g.userData.wings[0].rotation.z.toFixed(3) };
+            });
+          },
+          fog: function () {
+            var f = state.scene && state.scene.fog;
+            return f ? { near: f.near, far: f.far, color: '#' + f.color.getHexString() } : null;
+          },
+          far: function () { return state.camera.far; },
+          layers: function () { return { camera: state.camera.layers.mask, outside: OUT_LAYER, seaY: SEA_Y }; },
+          bar: function () {
+            var b = $('vista-bar');
+            return b ? { show: b.classList.contains('show'), text: b.textContent.replace(/\s+/g, ' ').trim() } : null;
+          }
+        },
         gate: {
           open: openMeetingGate, close: closeGate, submit: submitGate,
           msg: function () { return ($('gate-msg') || {}).textContent || ''; },
