@@ -4474,64 +4474,89 @@
     }
   }
 
-  /* ── 갈매기 — 창 가까이에서 멀리까지 깊이감 있게 선회 ────────── */
+  /* ── 갈매기 — 창 가까이에서 멀리까지 깊이감 있게 선회 ──────────
+     · 비행 축(+x)으로 긴 몸통, 좌우(z)로 뻗은 실제 갈매기 날개(앞날개·뒷날개 곡선).
+     · 바깥 날개 끝에 짙은 회색 끝깃 — 가까이 지나가도 벌레가 아니라 갈매기로 보인다.
+     · 날갯짓은 날개 축(pivot.rotation.x)으로 천천히 접혔다 펴진다. */
   function makeGull(scale) {
     var g = new THREE.Group();
-    var bodyMat = new THREE.MeshStandardMaterial({ color: 0xf7f8fa, roughness: 0.85 });
-    var tipMat = new THREE.MeshStandardMaterial({ color: 0x9aa3ad, roughness: 0.85 });
-    var body = new THREE.Mesh(new THREE.SphereGeometry(0.5, 10, 8), bodyMat);
-    body.scale.set(1.7, 0.62, 0.62);
+    g.rotation.order = 'YXZ';   // 진행 방향(yaw) → 선회 기울임(roll) 순으로 자연스럽게
+    var bodyMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.86 });
+    var backMat = new THREE.MeshStandardMaterial({ color: 0xdae2ea, roughness: 0.86 });
+    var tipMat = new THREE.MeshStandardMaterial({ color: 0x4b5563, roughness: 0.8 });
+    var body = new THREE.Mesh(new THREE.SphereGeometry(0.5, 12, 9), bodyMat);
+    body.scale.set(1.7, 0.58, 0.60);
     g.add(body);
-    var head = new THREE.Mesh(new THREE.SphereGeometry(0.26, 8, 7), bodyMat);
-    head.position.set(0.78, 0.12, 0); g.add(head);
-    var beak = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.32, 6),
-      new THREE.MeshStandardMaterial({ color: 0xe0a63c, roughness: 0.6 }));
-    beak.rotation.z = -Math.PI / 2; beak.position.set(1.05, 0.1, 0); g.add(beak);
-    var tail = new THREE.Mesh(new THREE.ConeGeometry(0.24, 0.6, 5), tipMat);
-    tail.rotation.z = Math.PI / 2; tail.position.set(-0.85, 0.02, 0); g.add(tail);
+    // 등쪽 회색 덮개깃 — 흰 배와 구분돼 입체감이 산다
+    var back = new THREE.Mesh(new THREE.SphereGeometry(0.5, 12, 8), backMat);
+    back.scale.set(1.32, 0.32, 0.48); back.position.set(-0.04, 0.17, 0); g.add(back);
+    var head = new THREE.Mesh(new THREE.SphereGeometry(0.26, 10, 8), bodyMat);
+    head.position.set(0.78, 0.14, 0); g.add(head);
+    var beak = new THREE.Mesh(new THREE.ConeGeometry(0.085, 0.34, 6),
+      new THREE.MeshStandardMaterial({ color: 0xe0a63c, roughness: 0.55 }));
+    beak.rotation.z = -Math.PI / 2; beak.position.set(1.06, 0.11, 0); g.add(beak);
+    var tail = new THREE.Mesh(new THREE.ConeGeometry(0.30, 0.62, 5), backMat);
+    tail.rotation.z = Math.PI / 2; tail.position.set(-0.86, 0.03, 0);
+    tail.scale.set(0.34, 1, 1); g.add(tail);
 
     function wing(sign) {
+      // 형상 좌표: x = 날개 길이(앞날개 +, 뒷날개 -), y = 날개 폭(바깥으로)
       var s = new THREE.Shape();
-      s.moveTo(0, 0);
-      s.quadraticCurveTo(0.85, 0.12, 1.9, 0.06);
-      s.quadraticCurveTo(1.1, -0.16, 0, -0.2);
-      s.lineTo(0, 0);
-      var geo = new THREE.ShapeGeometry(s);
-      var m = new THREE.Mesh(geo, bodyMat);
-      m.rotation.x = -Math.PI / 2;
-      m.scale.z = 1;
+      s.moveTo(0.30, 0);
+      s.quadraticCurveTo(0.44, 0.62, 0.16, 1.24);        // 앞날개
+      s.quadraticCurveTo(0.04, 1.72, -0.42, 1.96);       // 끝으로 부드럽게 휘어짐
+      s.quadraticCurveTo(-0.60, 1.26, -0.44, 0.62);      // 뒷날개
+      s.quadraticCurveTo(-0.36, 0.16, -0.30, 0);         // 겨드랑이
+      s.lineTo(0.30, 0);
+      var m = new THREE.Mesh(new THREE.ShapeGeometry(s, 14), bodyMat);
+      m.rotation.x = -Math.PI / 2;   // 형상 y → 3D 좌우(z), 형상 x → 3D 비행축(x)
+      // 바깥 끝깃(검은 회색)
+      var t = new THREE.Shape();
+      t.moveTo(0.09, 1.34);
+      t.quadraticCurveTo(0.04, 1.72, -0.42, 1.96);
+      t.quadraticCurveTo(-0.61, 1.52, -0.62, 1.30);
+      t.lineTo(0.09, 1.34);
+      var mt = new THREE.Mesh(new THREE.ShapeGeometry(t, 10), tipMat);
+      mt.rotation.x = -Math.PI / 2; mt.position.y = 0.006;
       var pivot = new THREE.Group();
-      pivot.add(m);
-      pivot.rotation.z = 0;
-      pivot.scale.x = sign;
+      pivot.add(m); pivot.add(mt);
+      pivot.scale.z = sign;              // 좌우 날개 거울상
+      pivot.position.set(0.12, 0.03, 0);
+      pivot.userData.sign = sign;
+      pivot.rotation.x = 0;
       return pivot;
     }
     var wl = wing(1), wr = wing(-1);
-    wl.position.set(0.1, 0.05, 0); wr.position.set(0.1, 0.05, 0);
     g.add(wl); g.add(wr);
-    g.scale.setScalar(scale || 1.6);
+    g.scale.setScalar(scale || 0.9);
     g.userData.wings = [wl, wr];
     return g;
   }
 
   function buildBirds(group) {
     var birds = [];
-    var n = 16;
+    var n = 11;                                  // 시야가 산만하지 않게 10~12마리
     for (var i = 0; i < n; i++) {
-      // 실제 갈매기(몸통 0.55m · 날개폭 1.3m) 크기 — 가까운 새도 화면을 덮지 않게
-      var scale = i < 6 ? 0.42 + Math.random() * 0.12 : 0.55 + Math.random() * 0.35;
+      var scale = 0.72 + Math.random() * 0.43;   // 0.72~1.15 — 가까이 지나가도 갈매기로 보이는 크기
       var b = makeGull(scale);
       group.add(b);
+      // 반경 34~115m · 실제 갈매기 유영 속도 1.8~4.2m/s 가 되도록 각속도를 잡는다
+      var r = 34 + Math.random() * 81;
+      var sp = Math.min(0.048, Math.max(0.022, (1.8 + Math.random() * 2.4) / r));
       birds.push({
         g: b,
         az: Math.random() * Math.PI * 2,
-        r: 24 + Math.random() * 96,
-        y: SEA_Y + 7.5 + Math.random() * 15,
-        sp: (0.12 + Math.random() * 0.22) * (Math.random() < 0.5 ? 1 : -1),
+        r: r,
+        y: SEA_Y + 8 + Math.random() * 14,
+        sp: sp * (Math.random() < 0.5 ? 1 : -1),
         ph: Math.random() * 6.28,
-        flap: 6.2 + Math.random() * 3.2,
-        rw: 0.8 + Math.random() * 0.6,
-        dr: (Math.random() - 0.5) * 3.2
+        flap: 2.7 + Math.random() * 0.6,           // 느린 날갯짓 2.7~3.3 rad/s
+        flapOn: 1.4 + Math.random() * 1.2,         // 몇 번 천천히 날갯짓 1.4~2.6초
+        glideOn: 3.0 + Math.random() * 2.6,        // 길게 날개 펴고 활공 3.0~5.6초
+        rw: 0.42 + Math.random() * 0.12,           // 날갯짓 폭(부드럽게)
+        glide: 0.05 + Math.random() * 0.05,        // 활공 시 살짝 V자
+        dr: (Math.random() - 0.5) * 1.6,
+        roll: 0.12 + Math.random() * 0.04          // 선회 기울임 0.12~0.16rad
       });
     }
     return birds;
@@ -4541,17 +4566,29 @@
     for (var i = 0; i < birds.length; i++) {
       var b = birds[i];
       var az = b.az + elapsed * b.sp;
-      var rr = b.r + Math.sin(elapsed * 0.28 + b.ph) * b.dr;
-      var y = b.y + Math.sin(elapsed * 0.55 + b.ph) * 1.4;
+      var rr = b.r + Math.sin(elapsed * 0.22 + b.ph) * b.dr;
+      var y = b.y + Math.sin(elapsed * 0.34 + b.ph) * 1.0;
       b.g.position.set(Math.sin(az) * rr, y, -Math.cos(az) * rr);
-      // 진행 방향으로 머리를 두고, 선회 방향으로 살짝 기울인다
+      // 진행 방향으로 머리를 두고, 원의 안쪽으로 부드럽게 기울인다
       var heading = Math.atan2(-Math.sin(az) * b.sp, Math.cos(az) * b.sp);
       b.g.rotation.y = heading;
-      b.g.rotation.z = (b.sp > 0 ? -1 : 1) * 0.28 + Math.sin(elapsed * 1.4 + b.ph) * 0.12;
-      var f = Math.sin(elapsed * b.flap + b.ph);
-      var flapAmt = 0.55 + 0.55 * Math.sin(elapsed * 0.9 + b.ph);
-      b.g.userData.wings[0].rotation.z = f * b.rw * flapAmt;
-      b.g.userData.wings[1].rotation.z = f * b.rw * flapAmt;
+      b.g.rotation.x = (b.sp > 0 ? 1 : -1) * b.roll + Math.sin(elapsed * 0.5 + b.ph) * 0.02;
+      b.g.rotation.z = Math.sin(elapsed * 0.41 + b.ph) * 0.02;
+      // 몇 번 천천히 날갯짓 → 길게 날개 펴고 활공(glide)하는 실제 갈매기 주기
+      var P = b.flapOn + b.glideOn;
+      var u = ((elapsed + b.ph) % P + P) % P;
+      var w = 0;                                  // 0 = 활공, 1 = 날갯짓
+      if (u < b.flapOn) {
+        var d = Math.min(u, b.flapOn - u);
+        var e = d >= 0.5 ? 1 : d / 0.5;
+        w = e * e * (3 - 2 * e);                  // 0.5초에 걸쳐 부드럽게 오르내림
+      }
+      var flapAng = Math.sin(elapsed * b.flap + b.ph) * b.rw;
+      var glideAng = b.glide + Math.sin(elapsed * 0.41 + b.ph) * 0.018;
+      var ang = glideAng + w * (flapAng - glideAng);
+      var wings = b.g.userData.wings;
+      wings[0].rotation.x = ang * wings[0].userData.sign;
+      wings[1].rotation.x = ang * wings[1].userData.sign;
     }
   }
 
@@ -5098,7 +5135,7 @@
     if (VISTA_STATE.sound) { if (state.floor === 2) AMBIENCE.start(); }
     else AMBIENCE.stop();
     updateVistaUi();
-    toast(VISTA_STATE.sound ? '🌊 창밖 파도·바람·갈매기 소리 켜짐' : '🔇 창밖 소리 꺼짐', 2000);
+    toast(VISTA_STATE.sound ? '🌊 창밖 파도·갈매기 소리 켜짐' : '🔇 창밖 소리 꺼짐', 2000);
   }
 
   /* ══════════════════════════════════════════════════════════════════
@@ -5109,6 +5146,7 @@
   var AMBIENCE = {
     ctx: null, master: null, filter: null, nodes: null,
     running: false, enabled: true, lastGull: 0, nextGull: 0, duck: 1,
+    LEVEL: 0.13,          // 창밖 파도 기본 볼륨(음성 회의 중에는 20%로 덕킹)
 
     ensure: function () {
       if (AMBIENCE.ctx) return AMBIENCE.ctx;
@@ -5121,64 +5159,78 @@
       master.gain.value = 0.0;
       var lp = ctx.createBiquadFilter();
       lp.type = 'lowpass';
-      lp.frequency.value = 1750;   // 창문 차음 — 고음 자극을 눌러 실내에 은은하게
-      lp.Q.value = 0.35;
+      lp.frequency.value = 880;   // 창문 차음 — 1kHz 위 자극적인 치찰음을 완전히 걷어 낸다
+      lp.Q.value = 0.4;
       master.connect(lp);
       lp.connect(ctx.destination);
       AMBIENCE.master = master;
       AMBIENCE.filter = lp;
 
-      // 파도·바람용 노이즈 버퍼(핑크 노이즈 느낌)
-      var len = ctx.sampleRate * 4;
-      var buf = ctx.createBuffer(2, len, ctx.sampleRate);
+      /* ── 노이즈 버퍼: 날 화이트 노이즈 없이 저역으로 다듬은 14초 갈색 노이즈 루프 ──
+         마지막 1.5초를 시작 구간과 크로스페이드해 반복 이음새를 없앤다. */
+      var sr = ctx.sampleRate;
+      var len = Math.floor(sr * 14);
+      var fade = Math.floor(sr * 1.5);
+      var buf = ctx.createBuffer(2, len, sr);
       for (var ch = 0; ch < 2; ch++) {
-        var d = buf.getChannelData(ch), last = 0;
-        for (var i = 0; i < len; i++) {
+        var tmp = new Float32Array(len + fade), last = 0, peak = 0;
+        for (var i = 0; i < len + fade; i++) {
           var w = Math.random() * 2 - 1;
-          last = (last + 0.02 * w) / 1.02;
-          d[i] = last * 3.2 + w * 0.22;
+          last = (last + 0.02 * w) / 1.02;     // 브라운 노이즈 — 저역으로 자연스럽게 가라앉는다
+          tmp[i] = last;
+          if (Math.abs(last) > peak) peak = Math.abs(last);
+        }
+        var k = peak > 1e-6 ? 0.72 / peak : 1;
+        var d = buf.getChannelData(ch);
+        for (var j = 0; j < len; j++) d[j] = tmp[j] * k;
+        for (var f = 0; f < fade; f++) {
+          var m = f / fade;
+          d[f] = (tmp[f] * m + tmp[len + f] * (1 - m)) * k;
         }
       }
       AMBIENCE.noise = buf;
 
-      function noiseSource() {
+      // “끼” 마찰감용 짧은 숨결 노이즈(대역 제한해서만 쓴다)
+      var blen = Math.floor(sr * 0.6);
+      var bbuf = ctx.createBuffer(1, blen, sr);
+      var bd = bbuf.getChannelData(0);
+      for (var b = 0; b < blen; b++) bd[b] = (Math.random() * 2 - 1) * 0.8;
+      AMBIENCE.breath = bbuf;
+
+      function noiseSource(rate) {
         var s = ctx.createBufferSource();
         s.buffer = buf; s.loop = true;
-        s.playbackRate.value = 0.9 + Math.random() * 0.2;
+        s.playbackRate.value = rate || 1;
         return s;
       }
 
-      // 파도 A — 느린 밀물·썰물(7~10초 주기)
-      var waveA = noiseSource();
-      var wfA = ctx.createBiquadFilter(); wfA.type = 'lowpass'; wfA.frequency.value = 520; wfA.Q.value = 0.8;
-      var gA = ctx.createGain(); gA.gain.value = 0.30;
-      var lfoA = ctx.createOscillator(); lfoA.type = 'sine'; lfoA.frequency.value = 0.115;
-      var lfoAG = ctx.createGain(); lfoAG.gain.value = 0.22;
-      lfoA.connect(lfoAG); lfoAG.connect(gA.gain);
-      waveA.connect(wfA); wfA.connect(gA); gA.connect(master);
-      waveA.start(); lfoA.start();
+      // 저음 기반 — 아주 낮고 평온한 바다 기저음(240Hz 이하)
+      var bed = noiseSource(0.85);
+      var bedLp = ctx.createBiquadFilter(); bedLp.type = 'lowpass';
+      bedLp.frequency.value = 240; bedLp.Q.value = 0.5;
+      var bedG = ctx.createGain(); bedG.gain.value = 0.34;
+      bed.connect(bedLp); bedLp.connect(bedG); bedG.connect(master);
+      bed.start();
 
-      // 파도 B — 살짝 밝은 잔물결(주기 다름)
-      var waveB = noiseSource();
-      var wfB = ctx.createBiquadFilter(); wfB.type = 'lowpass'; wfB.frequency.value = 1150; wfB.Q.value = 0.6;
-      var gB = ctx.createGain(); gB.gain.value = 0.12;
-      var lfoB = ctx.createOscillator(); lfoB.type = 'sine'; lfoB.frequency.value = 0.072;
-      var lfoBG = ctx.createGain(); lfoBG.gain.value = 0.09;
-      lfoB.connect(lfoBG); lfoBG.connect(gB.gain);
-      waveB.connect(wfB); wfB.connect(gB); gB.connect(master);
-      waveB.start(); lfoB.start();
+      // 잔잔한 파도 두 겹 — 6~9초 주기로 부풀었다 사그라들고, 밀려올 때만 살짝 밝아진다
+      function waveLayer(period, depth, rate) {
+        var src = noiseSource(rate);
+        var fo = ctx.createBiquadFilter(); fo.type = 'lowpass';
+        fo.frequency.value = 360; fo.Q.value = 0.7;      // LFO로 180~540Hz 스윕
+        var g = ctx.createGain(); g.gain.value = 0.10;
+        var lfo = ctx.createOscillator(); lfo.type = 'sine'; lfo.frequency.value = 1 / period;
+        var lfoG = ctx.createGain(); lfoG.gain.value = depth;   // 게인 부풀림/사그라짐
+        lfo.connect(lfoG); lfoG.connect(g.gain);
+        var lfoF = ctx.createGain(); lfoF.gain.value = 180;
+        lfo.connect(lfoF); lfoF.connect(fo.frequency);
+        src.connect(fo); fo.connect(g); g.connect(master);
+        src.start(); lfo.start();
+        return { src: src, g: g, f: fo, lfo: lfo, period: period };
+      }
+      var waveA = waveLayer(8.2, 0.090, 0.94);
+      var waveB = waveLayer(6.4, 0.075, 1.03);   // 위상이 다른 잔물결
 
-      // 바람 — 유리창 틈을 스치는 얕은 바람결
-      var wind = noiseSource();
-      var wbp = ctx.createBiquadFilter(); wbp.type = 'bandpass'; wbp.frequency.value = 780; wbp.Q.value = 0.9;
-      var wg = ctx.createGain(); wg.gain.value = 0.055;
-      var lfoW = ctx.createOscillator(); lfoW.type = 'sine'; lfoW.frequency.value = 0.048;
-      var lfoWG = ctx.createGain(); lfoWG.gain.value = 0.035;
-      lfoW.connect(lfoWG); lfoWG.connect(wg.gain);
-      wind.connect(wbp); wbp.connect(wg); wg.connect(master);
-      wind.start(); lfoW.start();
-
-      AMBIENCE.nodes = { waveA: waveA, waveB: waveB, wind: wind };
+      AMBIENCE.nodes = { bed: bed, waves: [waveA, waveB] };
       return ctx;
     },
 
@@ -5193,9 +5245,9 @@
         var t = ctx.currentTime;
         AMBIENCE.master.gain.cancelScheduledValues(t);
         AMBIENCE.master.gain.setValueAtTime(Math.max(0.0001, AMBIENCE.master.gain.value), t);
-        AMBIENCE.master.gain.linearRampToValueAtTime(0.20 * (AMBIENCE.duck || 1), t + 2.2);
+        AMBIENCE.master.gain.linearRampToValueAtTime(AMBIENCE.LEVEL * (AMBIENCE.duck || 1), t + 2.2);
         AMBIENCE.running = true;
-        AMBIENCE.nextGull = t + 4 + Math.random() * 8;
+        AMBIENCE.nextGull = t + 6 + Math.random() * 10;
         updateVistaUi();
       }).catch(function () { AMBIENCE.running = false; updateVistaUi(); });
     },
@@ -5225,40 +5277,112 @@
       var t = ctx.currentTime;
       AMBIENCE.master.gain.cancelScheduledValues(t);
       AMBIENCE.master.gain.setValueAtTime(Math.max(0.0001, AMBIENCE.master.gain.value), t);
-      AMBIENCE.master.gain.linearRampToValueAtTime(0.20 * AMBIENCE.duck, t + 0.8);
+      AMBIENCE.master.gain.linearRampToValueAtTime(AMBIENCE.LEVEL * AMBIENCE.duck, t + 0.8);
     },
 
-    // 먼 갈매기 울음 — 12~25초 간격, 아주 작고 여리게
+    /* 먼 바다 위 갈매기 — "끼-룩, 끼-룩" 실측 합성
+       · 기본음(saw) + 배음(triangle) 에 조류特有的 거친 떨림(32~45Hz FM/AM)
+       · 포먼트 대역필터 1.35~1.95kHz + 저역 몸통 대역, "끼" 순간의 숨결 마찰
+       · 한 번 0.42~0.52초: 780Hz → 1360Hz(70ms 치솟음) → 720Hz(꺾여 내려감)
+       · 0.47~0.62초 간격 2~3회 + 25% 짧은 해변 딜레이(130ms) */
     gull: function (when) {
       var ctx = AMBIENCE.ctx;
-      if (!ctx) return;
-      var n = 2 + (Math.random() < 0.5 ? 1 : 0);
+      if (!ctx || !AMBIENCE.master) return;
+      var t0 = (when == null) ? ctx.currentTime + 0.06 : when;
+      var n = 2 + (Math.random() < 0.55 ? 1 : 0);
+
+      // 창밖 먼 바다 공간감 — 어두운 스피커 + 25% 짧은 해변 딜레이(130ms)
+      var bus = ctx.createGain(); bus.gain.value = 1;
+      var far = ctx.createBiquadFilter(); far.type = 'lowpass';
+      far.frequency.value = 2400; far.Q.value = 0.5;
+      var dly = ctx.createDelay(0.4); dly.delayTime.value = 0.13;
+      var dlp = ctx.createBiquadFilter(); dlp.type = 'lowpass'; dlp.frequency.value = 1250;
+      var wet = ctx.createGain(); wet.gain.value = 0.25;
+      var post = ctx.createGain(); post.gain.value = 1;
       var pan = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
-      var out = ctx.createGain();
-      out.gain.value = 0.0;
-      var lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 2600;
+      bus.connect(far);
+      far.connect(post);
+      far.connect(dly); dly.connect(dlp); dlp.connect(wet); wet.connect(post);
       if (pan) {
-        pan.pan.value = (Math.random() * 2 - 1) * 0.75;
-        out.connect(lp); lp.connect(pan); pan.connect(AMBIENCE.master);
+        pan.pan.value = (Math.random() * 2 - 1) * 0.7;
+        post.connect(pan); pan.connect(AMBIENCE.master);
       } else {
-        out.connect(lp); lp.connect(AMBIENCE.master);
+        post.connect(AMBIENCE.master);
       }
+
+      function cry(t, base) {
+        var dur = 0.42 + Math.random() * 0.10;          // 한 번 울 때 0.42~0.52초
+        var f1 = base;                                  // ~780Hz 에서 시작
+        var f2 = f1 * (1.70 + Math.random() * 0.08);    // "끼-" 정점 ~1360Hz
+        var f3 = f1 * (0.90 + Math.random() * 0.05);    // "-룩" 끝 ~720Hz
+
+        var env = ctx.createGain(); env.gain.value = 0.0001;
+        var am = ctx.createGain(); am.gain.value = 1;
+        var sum = ctx.createGain(); sum.gain.value = 1;
+
+        // 포먼트 — 갈매기 울음의 금속성 대역 + 저역 몸통
+        var form = ctx.createBiquadFilter(); form.type = 'bandpass';
+        form.frequency.value = 1350 + Math.random() * 600;   // 1.35~1.95kHz
+        form.Q.value = 2.6 + Math.random() * 0.9;            // Q 2.6~3.5
+        var form2 = ctx.createBiquadFilter(); form2.type = 'bandpass';
+        form2.frequency.value = 780 + Math.random() * 160; form2.Q.value = 1.5;
+
+        var o1 = ctx.createOscillator(); o1.type = 'sawtooth';
+        var o2 = ctx.createOscillator(); o2.type = 'triangle';
+        var g1 = ctx.createGain(); g1.gain.value = 0.50;
+        var g2 = ctx.createGain(); g2.gain.value = 0.90;
+        o2.detune.value = 7;
+        [o1, o2].forEach(function (o) {
+          o.frequency.setValueAtTime(f1, t);
+          o.frequency.exponentialRampToValueAtTime(f2, t + 0.07);         // "끼-" 빠르게 치솟음
+          o.frequency.setValueAtTime(f2, t + 0.16);                       // 잠깐 머묾
+          o.frequency.exponentialRampToValueAtTime(f3, t + dur - 0.03);   // "-룩" 힘있게 꺾임
+        });
+
+        // 조류 특유의 거친 떨림(32~45Hz) — 미세 FM + 미세 AM
+        var rough = ctx.createOscillator(); rough.type = 'sawtooth';
+        rough.frequency.value = 32 + Math.random() * 13;
+        var roughF = ctx.createGain(); roughF.gain.value = 14 + Math.random() * 10;
+        rough.connect(roughF); roughF.connect(o1.frequency); roughF.connect(o2.frequency);
+        var roughA = ctx.createGain(); roughA.gain.value = 0.18;
+        rough.connect(roughA); roughA.connect(am.gain);
+
+        o1.connect(g1); g1.connect(sum);
+        o2.connect(g2); g2.connect(sum);
+        sum.connect(form); form.connect(am);
+        sum.connect(form2); form2.connect(am);
+        am.connect(env); env.connect(bus);
+
+        var peak = 0.17;
+        env.gain.setValueAtTime(0.0001, t);
+        env.gain.exponentialRampToValueAtTime(peak, t + 0.045);
+        env.gain.linearRampToValueAtTime(peak * 0.72, t + 0.15);
+        env.gain.exponentialRampToValueAtTime(peak * 0.40, t + 0.30);
+        env.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+
+        // "끼" 순간의 공기 마찰 — 같은 엔벨로프로 묶어 짧게
+        if (AMBIENCE.breath) {
+          var nsrc = ctx.createBufferSource(); nsrc.buffer = AMBIENCE.breath;
+          nsrc.playbackRate.value = 1.4;
+          var nbp = ctx.createBiquadFilter(); nbp.type = 'bandpass';
+          nbp.frequency.value = 2100 + Math.random() * 500; nbp.Q.value = 1.1;
+          var ng = ctx.createGain(); ng.gain.value = 0.0001;
+          ng.gain.setValueAtTime(0.0001, t);
+          ng.gain.exponentialRampToValueAtTime(0.05, t + 0.03);
+          ng.gain.exponentialRampToValueAtTime(0.0001, t + 0.14);
+          nsrc.connect(nbp); nbp.connect(ng); ng.connect(bus);
+          nsrc.start(t); nsrc.stop(t + 0.2);
+        }
+
+        [o1, o2, rough].forEach(function (o) { o.start(t); o.stop(t + dur + 0.05); });
+      }
+
+      var t = t0, base = 770 + Math.random() * 40;
       for (var i = 0; i < n; i++) {
-        var t0 = when + i * (0.16 + Math.random() * 0.08);
-        var osc = ctx.createOscillator();
-        var g = ctx.createGain();
-        osc.type = 'triangle';
-        var f0 = 1150 + Math.random() * 260;
-        osc.frequency.setValueAtTime(f0, t0);
-        osc.frequency.exponentialRampToValueAtTime(f0 * 0.62, t0 + 0.13);
-        osc.frequency.exponentialRampToValueAtTime(f0 * 0.92, t0 + 0.20);
-        g.gain.setValueAtTime(0.0001, t0);
-        g.gain.exponentialRampToValueAtTime(0.075, t0 + 0.02);
-        g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.26);
-        osc.connect(g); g.connect(out);
-        osc.start(t0); osc.stop(t0 + 0.3);
+        cry(t, base * (1 + (Math.random() - 0.5) * 0.05));
+        t += 0.47 + Math.random() * 0.15;          // 끼룩… 끼룩… 0.47~0.62초 간격
       }
-      out.gain.setValueAtTime(0.55, when);
+      AMBIENCE.lastGull = t0;
     },
 
     update: function (dt) {
@@ -5270,16 +5394,24 @@
       if (ctx.state !== 'running') return;
       if (ctx.currentTime >= AMBIENCE.nextGull) {
         AMBIENCE.gull(ctx.currentTime + 0.05);
-        AMBIENCE.nextGull = ctx.currentTime + 12 + Math.random() * 13;
+        AMBIENCE.nextGull = ctx.currentTime + 14 + Math.random() * 14;   // 14~28초
       }
     },
 
     state: function () {
       var c = AMBIENCE.ctx;
+      var nodes = AMBIENCE.nodes;
       return {
         created: !!c, running: !!AMBIENCE.running,
         ctx: c ? c.state : 'none',
         gain: c && AMBIENCE.master ? +AMBIENCE.master.gain.value.toFixed(4) : 0,
+        level: AMBIENCE.LEVEL, cutoff: AMBIENCE.filter ? AMBIENCE.filter.frequency.value : 0,
+        loopSec: AMBIENCE.noise ? +AMBIENCE.noise.duration.toFixed(1) : 0,
+        waves: nodes && nodes.waves ? nodes.waves.map(function (w) {
+          return { period: +w.period.toFixed(1), gain: +w.g.gain.value.toFixed(3),
+                   cutoff: +w.f.frequency.value.toFixed(0) };
+        }) : [],
+        nextGullIn: c ? +(AMBIENCE.nextGull - c.currentTime).toFixed(1) : 0,
         duck: AMBIENCE.duck, floor: state.floor,
         enabled: !!VISTA_STATE.sound
       };
@@ -11533,12 +11665,57 @@
       }
       return ko;
     },
+    /* 기기에 깔린 한국어 음성에서 루아=여성, 도현=남성 목소리를 실제로 골라낸다.
+       이름에 female/woman/여자… 가 있으면 여성, male/man/남자… 면 남성으로 본다.
+       (female 안에 male 이 들어 있으므로 반드시 단어 경계 \bmale\b 로 검사하고,
+        여성 키워드에 걸린 음성은 남성 후보에서 제외한다.) */
+    FEMALE_RE: /female|woman|여자|여성|yuna|sora|narae|sunhi|seohyeon|yujin|jimin|jiyeon|heami|ism|koc|kob|koe|wavenet-[ab]|standard-[ab]|neural2-[ab]|kore|aoede|leda|zephyr/i,
+    MALE_RE: /\bmale\b|\bman\b|남자|남성|injoon|bongjin|gookmin|hyunsu|minho|jinsu|kod|wavenet-[cd]|standard-[cd]|neural2-[cd]|charon|fenrir|orus|puck|smtm|ko_kr_m|-m-|_m_/i,
+    voiceName: function (v) {
+      if (!v) return '';
+      return String(v.name || '') + ' ' + String(v.voiceURI || '');
+    },
+    isFemaleName: function (n) { return SPEAK.FEMALE_RE.test(String(n || '')); },
+    isMaleName: function (n) {
+      n = String(n || '');
+      return SPEAK.MALE_RE.test(n) && !SPEAK.FEMALE_RE.test(n);
+    },
     pick: function (who) {
       var ko = SPEAK.korean();
       if (!ko.length) return null;
-      if (ko.length === 1) return ko[0];
-      // 두 목소리가 있으면 루아는 첫 번째, 도현은 두 번째 — 톤까지 다르게
-      return who === 'lua' ? ko[0] : ko[1];
+      var i, n, v, lua = (who || 'lua') === 'lua';
+      if (lua) {
+        // 루아 — 여성 키워드에 맞는 음성 우선, 없으면 남성으로 보이지 않는 첫 음성
+        for (i = 0; i < ko.length; i++) {
+          n = SPEAK.voiceName(ko[i]);
+          if (SPEAK.isFemaleName(n) && !SPEAK.isMaleName(n)) {
+            return { voice: ko[i], isMale: false, name: ko[i].name || '' };
+          }
+        }
+        for (i = 0; i < ko.length; i++) {
+          if (!SPEAK.isMaleName(SPEAK.voiceName(ko[i]))) {
+            return { voice: ko[i], isMale: false, name: ko[i].name || '' };
+          }
+        }
+        v = ko[0];
+        return { voice: v, isMale: false, name: v.name || '' };
+      }
+      // 도현 — 명시적 남성 음성 우선
+      for (i = 0; i < ko.length; i++) {
+        if (SPEAK.isMaleName(SPEAK.voiceName(ko[i]))) {
+          return { voice: ko[i], isMale: true, name: ko[i].name || '' };
+        }
+      }
+      // 남성 음성이 없으면 루아와 다른 음성 중 여성 전용으로 보이지 않는 것, 그것도 없으면 마지막 음성
+      var lp = SPEAK.pick('lua');
+      for (i = 0; i < ko.length; i++) {
+        if (lp && lp.voice === ko[i]) continue;
+        if (!SPEAK.isFemaleName(SPEAK.voiceName(ko[i]))) {
+          return { voice: ko[i], isMale: false, name: ko[i].name || '' };
+        }
+      }
+      v = ko[ko.length - 1];
+      return { voice: v, isMale: false, name: v.name || '' };
     },
 
     /* ── 말하기 ───────────────────────────────────────────────────
@@ -11653,15 +11830,23 @@
         speechSynthesis.cancel();
         var u = new SpeechSynthesisUtterance(body.slice(0, 240));
         u.lang = 'ko-KR';
-        var v = SPEAK.pick(who);
-        if (v) u.voice = v;
-        u.pitch = who === 'lua' ? 1.16 : 0.86;      // 루아 밝은 톤 · 도현 낮고 차분한 톤
-        u.rate = who === 'lua' ? 1.05 : 0.95;
+        var pv = SPEAK.pick(who);
+        var isMale = !!(pv && pv.isMale);
+        if (pv && pv.voice) u.voice = pv.voice;
+        // 도현이 여자 목소리로 들리지 않게 — 기기에 남성 음성이 없으면 음정을 크게 낮춘다
+        var pitch, rate;
+        if (who === 'lua') { pitch = 1.15; rate = 1.04; }          // 밝고 친근한 여성 톤
+        else if (isMale) { pitch = 0.90; rate = 0.94; }            // 실제 남성 음성이 잡힌 경우
+        else { pitch = 0.62; rate = 0.93; }                        // 여성 음성뿐 — 확실히 낮고 굵게
+        u.pitch = pitch;
+        u.rate = rate;
         u.onend = function () { finish('done'); };
         u.onerror = function () { finish('error'); };
         SPEAK.mode = 'browser-tts';
         SPEAK.speaking = true;
-        SPEAK.state(who, body, 'browser-tts', { pitch: u.pitch, rate: u.rate });
+        SPEAK.state(who, body, 'browser-tts', {
+          pitch: pitch, rate: rate, voiceName: pv ? pv.name : '', isMale: isMale
+        });
         SPEAK.armGuard(seq, body, finish);
         speechSynthesis.speak(u);
         return true;
@@ -11674,7 +11859,9 @@
     state: function (who, body, mode, extra) {
       state.lastSpeech = {
         text: body, who: who || 'lua', lang: 'ko-KR', mode: mode || SPEAK.mode,
-        pitch: extra && extra.pitch, rate: extra && extra.rate, at: performance.now()
+        pitch: extra && extra.pitch, rate: extra && extra.rate,
+        voiceName: extra && extra.voiceName, isMale: extra && extra.isMale,
+        at: performance.now()
       };
     },
     /* 말이 끝나지 않아도(이벤트 유실) 다음 단계로 넘어가게 하는 안전장치 */
@@ -11734,10 +11921,12 @@
     },
     /* 검증·화면용 상태 */
     status: function () {
+      var ls = state.lastSpeech || {};
       return {
         mode: SPEAK.mode, speaking: !!SPEAK.speaking, on: SPEAK.on, unlocked: SPEAK.unlocked,
         cache: SPEAK.cache.length, lastEnd: SPEAK.lastEnd, lastVoiceMode: SPEAK.lastVoiceMode,
-        hasAudio: !!SPEAK.audio
+        hasAudio: !!SPEAK.audio,
+        lastVoiceName: ls.voiceName || '', lastIsMale: ls.isMale, lastPitch: ls.pitch, lastRate: ls.rate
       };
     }
   };
@@ -12858,6 +13047,7 @@
           toggleSound: toggleVistaSound,
           live: function () { return DOKDO_LIVE.state(); },
           ambience: function () { return AMBIENCE.state(); },
+          triggerGull: function () { AMBIENCE.gull(AMBIENCE.ctx ? AMBIENCE.ctx.currentTime + 0.05 : 0); },
           island: function () {
             var i = state.vistaIsland;
             return i ? { visible: i.visible, x: +i.position.x.toFixed(1), z: +i.position.z.toFixed(1),
@@ -12874,9 +13064,11 @@
             });
           },
           birds: function () {
-            return (state.vistaBirds || []).slice(0, 4).map(function (b) {
+            return (state.vistaBirds || []).map(function (b) {
               return { x: +b.g.position.x.toFixed(1), z: +b.g.position.z.toFixed(1), y: +b.g.position.y.toFixed(2),
-                       flap: +b.g.userData.wings[0].rotation.z.toFixed(3) };
+                       flap: +b.g.userData.wings[0].rotation.x.toFixed(3),
+                       sp: +b.sp.toFixed(4), r: +b.r.toFixed(1),
+                       speed: +(Math.abs(b.sp) * b.r).toFixed(2) };
             });
           },
           fog: function () {
@@ -12911,6 +13103,8 @@
           setOn: function (on) { SPEAK.setOn(on); }, on: function () { return SPEAK.on; },
           unlocked: function () { return SPEAK.unlocked; }, stop: function () { SPEAK.stop(); },
           status: function () { return SPEAK.status(); },
+          pickVoice: function (who) { return SPEAK.pick(who); },
+          voiceList: function () { return SPEAK.korean().map(function (v) { return String(v.name || '') + ' | ' + String(v.voiceURI || ''); }); },
           clean: cleanForSpeech,
           cache: function () { return SPEAK.cache.length; }
         },
