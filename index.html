@@ -35,6 +35,8 @@
   .brand span{font-size:11px;color:var(--ink-2);opacity:.85}
   #zones{display:flex;gap:6px;overflow-x:auto;padding:2px 2px 3px;pointer-events:auto;
     scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  /* 2층 회의실에서는 1층 전시실 이동 줄을 숨긴다 — 창밖 시야를 가리지 않게 */
+  body.floor-2 #zones{display:none}
   #zones::-webkit-scrollbar{display:none}
   .zone-btn{flex:0 0 auto;display:flex;align-items:center;gap:6px;border:0;cursor:pointer;
     padding:8px 13px;border-radius:999px;font-family:inherit;font-size:13px;font-weight:700;color:var(--ink);
@@ -233,6 +235,8 @@
     z-index:35;background:var(--navy-solid);color:#fff;font-size:13px;font-weight:700;padding:11px 17px;border-radius:12px;
     opacity:0;transition:all .24s ease;pointer-events:none;box-shadow:var(--shadow);max-width:88vw;text-align:center}
   #toast.show{opacity:1;transform:translate(-50%,0)}
+  /* 2층에서는 회의 바·창밖 전환 바 아래로 — 바를 가리지 않게 */
+  body.floor-2 #toast{top:calc(176px + env(safe-area-inset-top))}
   #vignette{position:fixed;inset:0;z-index:5;pointer-events:none;
     background:radial-gradient(ellipse at 50% 46%, rgba(255,255,255,0) 42%, rgba(15,23,36,.10) 78%, rgba(15,23,36,.22) 100%)}
 
@@ -725,7 +729,7 @@
 
   /* 2층 회의실 음성 회의 바 */
   #meeting-voice{position:fixed;left:50%;transform:translateX(-50%);top:calc(96px + env(safe-area-inset-top));
-    z-index:13;display:none;align-items:center;gap:9px;width:min(94vw,560px);padding:9px 12px;border-radius:14px;
+    z-index:13;display:none;align-items:center;gap:8px;width:min(94vw,560px);padding:7px 12px;border-radius:13px;
     background:rgba(13,20,33,.92);color:#eaf0fa;box-shadow:0 12px 28px rgba(9,15,28,.34)}
   #meeting-voice.show{display:flex}
   #meeting-voice .mv-ico{font-size:16px}
@@ -874,7 +878,7 @@
     #first-visit .fv-txt{font-size:11.5px;line-height:1.45}
     #first-visit .fv-txt .fv-sub{display:none}
     #first-visit .fv-act{font-size:11px;padding:6px 9px}
-    #meeting-voice{top:calc(98px + env(safe-area-inset-top));width:calc(100vw - 20px)}
+    #meeting-voice{top:calc(98px + env(safe-area-inset-top));width:calc(100vw - 20px);padding:7px 10px}
     #meeting-voice .mv-txt span{font-size:10px}
     #desk-modal .dm-voice{font-size:10.5px;padding:4px 9px}
     #desk-modal .dm-convo{font-size:10.5px;padding:4px 9px}
@@ -4908,17 +4912,23 @@
     try { return localStorage.getItem('mg_dokdo_sound_v1') !== '0'; } catch (e) { return true; }
   }
 
-  /* 2층 창밖 전환 바 위치 — 음성 회의 바(#meeting-voice)의 실제 높이를 재어 8px 아래에 둔다.
-     기본 글자에서는 2px 밀착, 큰 글자에서는 겹쳐 터치를 가로챘다. 이제 어떤 기기·글꼴에서도 겹치지 않는다. */
+  /* 2층 창밖 전환 바 위치 — 상단 브랜드 줄(#top) 바로 아래로 바싹 붙인다.
+     #meeting-voice 의 실제 높이를 재어 그 아래 6px 에 #vista-bar 를 두므로
+     어떤 기기·글꼴 크기에서도 겹치지 않고, 창밖 시야를 가리지 않는다. */
   function positionVistaBar() {
     var bar = $('vista-bar');
     if (!bar) return;
+    var topEl = $('top');
+    var underTop = topEl ? Math.ceil(topEl.getBoundingClientRect().bottom) + 6 : 100;
+    var on2 = state.floor === 2;
     var mv = $('meeting-voice');
-    if (state.floor === 2 && mv && mv.classList.contains('show')) {
-      var r = mv.getBoundingClientRect();
-      if (r.height > 0.5) { bar.style.top = Math.ceil(r.bottom + 8) + 'px'; return; }
+    if (mv) {
+      if (on2 && mv.classList.contains('show')) mv.style.top = underTop + 'px';
+      else mv.style.top = '';           // 1층·회의 바 없음 → 원래 CSS 위치
     }
-    bar.style.top = 'calc(98px + env(safe-area-inset-top))';
+    var mvShown = on2 && mv && mv.classList.contains('show') && mv.getBoundingClientRect().height > 0.5;
+    if (mvShown) bar.style.top = Math.ceil(mv.getBoundingClientRect().bottom + 6) + 'px';
+    else bar.style.top = underTop + 'px';
   }
 
   function updateVistaUi() {
@@ -6263,6 +6273,7 @@
     if (VOICE.active && (changed || VOICE.room !== room)) VOICE.leave();   // 층이 바뀌면 음성 자동 퇴장
     state.floor = f;
     state.floorY = y;
+    if (document.body) document.body.classList.toggle('floor-2', f === 2);   // 2층에서는 1층 구역 줄 숨김
     if (state.avatar) state.avatar.position.y = y;
     if (state.seated) state.seated = null;
     if (state.camPos) state.camPos.y = changed ? (y + 2.0) : state.camPos.y;
@@ -12031,6 +12042,7 @@
     var on = state.floor === 2 && !!state.meeting;
     bar.classList.toggle('show', on);
     positionVistaBar();          // 회의 바 높이가 바뀌면 창밖 전환 바도 바로 따라 내려간다
+    setTimeout(positionVistaBar, 60);   // 글자가 여러 줄로 늘어난 뒤 한 번 더 맞춘다
     if (!on) return;
     var msg = $('mv-msg'), btn = $('mv-join');
     var key = (VOICE.active ? 'on' : (VOICE.denied ? 'denied' : (VOICE.supported ? 'idle' : 'no'))) + '|' +
