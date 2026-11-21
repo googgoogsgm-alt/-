@@ -735,20 +735,27 @@
   #meeting-voice button{flex:0 0 auto;border:0;cursor:pointer;font-family:inherit;font-size:11px;font-weight:900;
     color:#241c00;background:var(--gold);border-radius:999px;padding:7px 11px}
   #meeting-voice button.on{background:#2f9e5f;color:#fff}
-  /* 2층 회의실 창밖 전환 바 — 음성 회의 바 바로 아래 */
+  /* 2층 회의실 창밖 전환 바 — 음성 회의 바 바로 아래.
+     top 은 positionVistaBar() 가 #meeting-voice 의 실제 높이를 재어 정한다(겹침 0). */
   #vista-bar{position:fixed;left:50%;transform:translateX(-50%);top:calc(146px + env(safe-area-inset-top));
-    display:none;gap:6px;align-items:center;z-index:7;max-width:calc(100vw - 16px)}
+    display:none;gap:6px;align-items:center;z-index:16;max-width:calc(100vw - 16px);
+    touch-action:manipulation;pointer-events:auto}
   #vista-bar.show{display:flex}
-  #vista-bar .vb{border:1px solid rgba(163,208,242,.42);background:rgba(10,24,42,.74);
+  #vista-bar .vb{border:1px solid rgba(163,208,242,.42);background:rgba(10,24,42,.80);
     color:#dae9f7;font-family:inherit;font-size:11px;font-weight:800;letter-spacing:-.25px;
-    padding:6px 10px;border-radius:999px;cursor:pointer;white-space:nowrap;
+    min-height:30px;padding:6px 9px;border-radius:999px;cursor:pointer;white-space:nowrap;
+    display:inline-flex;align-items:center;justify-content:center;
+    -webkit-tap-highlight-color:transparent;touch-action:manipulation;
     box-shadow:0 2px 10px rgba(4,12,24,.35);transition:background .18s,color .18s,box-shadow .18s}
   #vista-bar .vb.on{background:linear-gradient(180deg,#2f88d8,#1d5da6);color:#fff;
     border-color:rgba(170,222,255,.9);box-shadow:0 0 0 1px rgba(130,205,255,.28),0 5px 16px rgba(18,86,156,.5)}
+  #vista-bar .vb.loading{border-color:rgba(255,214,120,.8);color:#ffe9b8;background:rgba(54,40,10,.82);
+    animation:vbWait 1.15s ease-in-out infinite}
+  @keyframes vbWait{0%,100%{box-shadow:0 0 0 0 rgba(255,208,110,.34)}50%{box-shadow:0 0 0 4px rgba(255,208,110,.08)}}
   #vista-bar .vb:active{transform:translateY(1px)}
   @media (max-width:520px){
-    #vista-bar{top:calc(148px + env(safe-area-inset-top));gap:5px}
-    #vista-bar .vb{font-size:10px;padding:5px 8px;letter-spacing:-.35px}
+    #vista-bar{gap:5px}
+    #vista-bar .vb{font-size:10px;padding:6px 8px;min-height:30px;letter-spacing:-.35px}
   }
 
   /* 회의실 입장 인증 · 직원 등급 관리 */
@@ -3866,11 +3873,11 @@
   var SEA_Y = 9.0;
   var VISTA = {
     azIsland: 0.10,          // 독도 방위(라디안, 정북=0 · 동쪽 +)
-    distIsland: 560,         // 독도까지 거리(m)
+    distIsland: 380,         // 독도까지 거리(m) — 560m 은 해무에 묻혀 흐릿했다
     liveDist: 240,           // 라이브 파노라마 곡면 반지름(m)
-    liveArc: 0.215,          // 라이브 파노라마 좌우 반각(라디안 ≈ 12.3°)
-    liveH: 38,               // 라이브 파노라마 높이(m)
-    liveY: 17.6,             // 라이브 파노라마 중심 높이 — 영상 수평선을 실제 수평선(13.6m)에 맞춤
+    liveArc: 0.28,           // 라이브 파노라마 좌우 반각(라디안 ≈ 16°)
+    liveH: 46,               // 라이브 파노라마 높이(m)
+    liveY: 19.5,             // 라이브 파노라마 중심 높이
     sunAz: -0.52,            // 태양 방위(라디안) — 북서쪽 오후 햇살
     sunEl: 0.60
   };
@@ -4547,6 +4554,7 @@
     mode: 'east',            // 실제로 화면에 보이는 모드
     playing: false, failed: false, errors: [], darkFrames: 0, lastProbe: 0,
     startTimer: 0, retryTimer: 0, lastDark: 0,
+    needGesture: false, _warned: false,
 
     ensureVideo: function () {
       if (DOKDO_LIVE.video) return DOKDO_LIVE.video;
@@ -4571,6 +4579,7 @@
         if (!DOKDO_LIVE.playing) DOKDO_LIVE.fallback('video-error');
       });
       DOKDO_LIVE.video = v;
+      DOKDO_LIVE.bindVideo();     // 리스너는 요소당 딱 한 번만 건다
       return v;
     },
 
@@ -4618,23 +4627,39 @@
 
     start: function (which) {
       var self = DOKDO_LIVE;
-      if (which === '3d') { self.stop(true); self.mode = '3d'; self.applyVisibility(); return; }
+      if (which === '3d') {
+        self.stop(true); self.mode = '3d'; self.applyVisibility();
+        if (typeof updateVistaUi === 'function') updateVistaUi();
+        return;
+      }
       self.want = which;
       if (!self.screen) return;
+
+      // 버튼을 누른 그 제스처 안에서 <video> 를 만들고 재생을 걸어 둔다(모바일 자동재생 정책)
+      var v = self.ensureVideo();
+      self.armGesture();
       self.tex = self.texture();
       if (self.mat && self.mat.uniforms.uMap.value !== self.tex) self.mat.uniforms.uMap.value = self.tex;
 
-      var v = self.video;
-      if (self.hooked === which && self.playing && !self.failed) { self.mode = which; self.applyVisibility(); return; }
+      if (self.hooked === which && self.playing && !self.failed) {
+        self.mode = which; self.applyVisibility();
+        if (typeof updateVistaUi === 'function') updateVistaUi();
+        return;
+      }
 
-      // 이전 연결을 먼저 깨끗이 정리한 뒤 새 스트림을 붙인다
+      /* 이전 연결은 hls 연결만 끊는다.
+         video 에서 src 를 지우고 load() 하면 모바일 브라우저에서 새 MediaSource 가 취소되어
+         readyState 0 으로 멈춰 버린다(서도 LIVE 를 눌렀을 때 play-blocked 로 죽던 원인). */
       try { if (self.hls) { self.hls.destroy(); self.hls = null; } } catch (e) {}
-      try { v.pause(); v.removeAttribute('src'); v.load(); } catch (e) {}
+      try { v.pause(); } catch (e) {}
 
       self.failed = false; self.darkFrames = 0; self.playing = false; self.mode = which;
       self.hooked = which;
       self.retried = false;
+      self._warned = false;
       self.startTimer = performance.now();
+      self.applyVisibility();                  // 새 영상이 뜨기 전까지는 3D 섬을 보여 준다
+      if (typeof updateVistaUi === 'function') updateVistaUi();
       if (typeof toast === 'function' && state.floor === 2) {
         toast(which === 'west' ? '📡 독도 실시간 · 서도 연결 중…' : '📡 독도 실시간 · 동도 연결 중…', 2400);
       }
@@ -4643,8 +4668,11 @@
       var nativeHls = v.canPlayType('application/vnd.apple.mpegurl') !== '';
 
       function playNative() {
-        try { v.src = url; self.bindPlay(v); var p = v.play(); if (p && p.catch) p.catch(function () { self.note('play-blocked-native'); }); }
-        catch (e) { self.note('native:' + e.message); self.fallback('native'); }
+        try {
+          v.src = url;                       // 네이티브 HLS(Safari·iOS)에서만 src 를 직접 교체
+          var p = v.play();
+          if (p && p.catch) p.catch(function () { self.note('play-blocked-native'); self.needGesture = true; });
+        } catch (e) { self.note('native:' + e.message); self.fallback('native'); }
       }
 
       self.loadHls().then(function (Hls) {
@@ -4654,18 +4682,29 @@
         var h = new Hls({
           // Worker 를 쓰지 않는다 — 일부 모바일 브라우저·임베디드 뷰에서 블롭 워커가 막혀
           // 재생이 멈추는 사례가 있어 메인 스레드로 안정적으로 붙인다.
-          enableWorker: false, lowLatencyMode: false, maxBufferLength: 8,
+          enableWorker: false, lowLatencyMode: false,
+          // 라이브 지연 최소화 — 기본값(liveSyncDurationCount 3 = 30초 지점부터)이면
+          // 10초짜리 3MB 세그먼트를 여러 개 받아 첫 화면까지 25초씩 걸렸다
+          liveSyncDurationCount: 1, liveMaxLatencyDurationCount: 3,
+          maxBufferLength: 3, maxMaxBufferLength: 6, startFragPrefetch: true,
           backBufferLength: 4, capLevelToPlayerSize: true, manifestLoadingMaxRetry: 2
         });
         self.hls = h;
         h.on(Hls.Events.MANIFEST_PARSED, function () {
-          self.bindPlay(v);
-          var p = v.play();
-          if (p && p.catch) p.catch(function () { self.note('play-blocked'); });
+          if (self.want !== which) return;
+          self.tryPlay('manifest');
+        });
+        h.on(Hls.Events.FRAG_BUFFERED, function () {
+          if (self.want !== which) return;
+          self.tryPlay('frag');
         });
         h.on(Hls.Events.ERROR, function (evt, data) {
           if (!data || !data.fatal) return;
           self.note('hls:' + data.type + '/' + (data.details || ''));
+          // 미디어 오류는 hls.js 가 스스로 회복할 수 있는 경우가 있어 먼저 살려 본다
+          if (data.type === Hls.ErrorTypes.MEDIA_ERROR && h.recoverMediaError) {
+            try { h.recoverMediaError(); return; } catch (e) {}
+          }
           self.fallback();
         });
         try {
@@ -4683,20 +4722,76 @@
       });
     },
 
-    bindPlay: function (v) {
-      if (DOKDO_LIVE._bound) return;
-      DOKDO_LIVE._bound = true;
-      v.addEventListener('playing', function () {
-        DOKDO_LIVE.playing = true;
-        DOKDO_LIVE.retried = false;
-        DOKDO_LIVE.applyVisibility();
-        if (state.floor === 2 && typeof toast === 'function') {
-          toast(DOKDO_LIVE.mode === 'west' ? '📡 독도 LIVE · 서도' : '📡 독도 LIVE · 동도', 2000);
-        }
-      });
-      v.addEventListener('timeupdate', function () {
-        if (v.currentTime > 0 && v.videoWidth > 0) { DOKDO_LIVE.playing = true; }
-      });
+    /* video 리스너는 요소당 딱 한 번만 건다(stop 에서 _bound 를 풀면 중복으로 쌓인다).
+       'playing' 만 기다리지 않고 canplay·loadeddata·timeupdate 까지 보아
+       첫 프레임이 준비되는 즉시 playing 으로 전환한다. */
+    bindVideo: function () {
+      var self = DOKDO_LIVE, v = self.video;
+      if (!v || self._bound) return;
+      self._bound = true;
+      var evs = ['loadedmetadata', 'loadeddata', 'canplay', 'canplaythrough', 'playing', 'timeupdate'];
+      for (var i = 0; i < evs.length; i++) v.addEventListener(evs[i], function () { self.markPlaying(); });
+    },
+
+    markPlaying: function () {
+      var self = DOKDO_LIVE, v = self.video;
+      if (!v || self.failed) return;
+      if (self.mode !== 'east' && self.mode !== 'west') return;   // 3D 로 돌린 뒤엔 라이브로 되돌리지 않는다
+      if (v.readyState < 2 || !v.videoWidth) return;
+      self.startTimer = performance.now();
+      self.needGesture = false;
+      if (self.playing) return;
+      self.playing = true;
+      self.retried = false;
+      self.applyVisibility();
+      if (state.floor === 2 && typeof toast === 'function') {
+        toast(self.mode === 'west' ? '🔴 독도 LIVE · 서도 재생 중' : '🔴 독도 LIVE · 동도 재생 중', 2200);
+      }
+    },
+
+    tryPlay: function (why) {
+      var self = DOKDO_LIVE, v = self.video;
+      if (!v || self.failed) return;
+      if (self.mode !== 'east' && self.mode !== 'west') return;
+      try {
+        var p = v.play();
+        if (p && p.catch) p.catch(function () {
+          // 데이터가 아직 없을 때의 거절은 정상(첫 세그먼트 대기) — 실제로 막힌 경우만 기록한다
+          if (v.readyState >= 2 && v.videoWidth > 0) {
+            self.note('play-blocked');
+            self.needGesture = true;
+          }
+          if (why !== 'manifest' && !self._warned && v.readyState >= 2) {
+            self._warned = true;
+            if (state.floor === 2 && typeof toast === 'function') {
+              toast('🔔 화면을 한 번 탭하면 독도 LIVE 영상이 시작됩니다', 3200);
+            }
+          }
+          if (typeof updateVistaUi === 'function') updateVistaUi();
+        });
+      } catch (e) {
+        self.note('play:' + (e && e.message ? e.message : 'err'));
+        self.needGesture = true;
+      }
+    },
+
+    /* 사용자가 버튼을 누른 바로 그 제스처 안에서 호출한다.
+       브라우저가 요구하는 사용자 제스처를 잃지 않게 동기적으로 <video> 를 만들고 재생을 걸고,
+       그래도 막히면 화면 어디든 첫 탭에서 곧바로 다시 재생한다. */
+    armGesture: function () {
+      var self = DOKDO_LIVE;
+      var v = self.ensureVideo();
+      try { var p = v.play(); if (p && p.catch) p.catch(function () {}); } catch (e) {}
+      if (self._gestureBound) return;
+      self._gestureBound = true;
+      var retry = function () {
+        if (!DOKDO_LIVE.needGesture) return;
+        if (DOKDO_LIVE.mode !== 'east' && DOKDO_LIVE.mode !== 'west') return;
+        DOKDO_LIVE.tryPlay('gesture');
+      };
+      document.addEventListener('pointerdown', retry, true);
+      document.addEventListener('touchstart', retry, true);
+      document.addEventListener('click', retry, true);
     },
 
     fallback: function (why) {
@@ -4723,7 +4818,8 @@
         }
       } catch (e) {}
       self.playing = false;
-      self._bound = false;
+      self.needGesture = false;
+      self._warned = false;
       self.hooked = null;
       if (!keepMode) self.mode = '3d';
       self.applyVisibility();
@@ -4769,7 +4865,7 @@
       var self = DOKDO_LIVE, v = self.video;
       return {
         mode: self.mode, want: self.want, playing: !!self.playing, failed: !!self.failed,
-        hls: self.hlsState, errors: self.errors.slice(),
+        needGesture: !!self.needGesture, hls: self.hlsState, errors: self.errors.slice(),
         video: v ? { readyState: v.readyState, width: v.videoWidth, height: v.videoHeight,
                      currentTime: +v.currentTime.toFixed(2), paused: v.paused,
                      crossOrigin: v.crossOrigin, muted: v.muted } : null,
@@ -4796,22 +4892,45 @@
     try { return localStorage.getItem('mg_dokdo_sound_v1') !== '0'; } catch (e) { return true; }
   }
 
+  /* 2층 창밖 전환 바 위치 — 음성 회의 바(#meeting-voice)의 실제 높이를 재어 8px 아래에 둔다.
+     기본 글자에서는 2px 밀착, 큰 글자에서는 겹쳐 터치를 가로챘다. 이제 어떤 기기·글꼴에서도 겹치지 않는다. */
+  function positionVistaBar() {
+    var bar = $('vista-bar');
+    if (!bar) return;
+    var mv = $('meeting-voice');
+    if (state.floor === 2 && mv && mv.classList.contains('show')) {
+      var r = mv.getBoundingClientRect();
+      if (r.height > 0.5) { bar.style.top = Math.ceil(r.bottom + 8) + 'px'; return; }
+    }
+    bar.style.top = 'calc(98px + env(safe-area-inset-top))';
+  }
+
   function updateVistaUi() {
     var bar = $('vista-bar');
     if (!bar) return;
     var on2 = state.floor === 2;
     bar.classList.toggle('show', on2);
-    var live = DOKDO_LIVE.mode;
+    positionVistaBar();
+    var chosen = VISTA_STATE.mode;
+    var e = bar.querySelector('[data-vista="east"]');
+    var w = bar.querySelector('[data-vista="west"]');
+    var playing = !!DOKDO_LIVE.playing && !DOKDO_LIVE.failed;
+    var connecting = !playing && !DOKDO_LIVE.failed && chosen !== '3d';
+    var fellBack = !!DOKDO_LIVE.failed && DOKDO_LIVE.mode === '3d';
+    // 누르는 순간 바로 불이 들어오게 — 실제 재생 여부가 아니라 '지금 고른 모드'로 켠다
     var btns = bar.querySelectorAll('[data-vista]');
     for (var i = 0; i < btns.length; i++) {
       var k = btns[i].getAttribute('data-vista');
-      var active = (k === '3d') ? (live === '3d') : (live === k && DOKDO_LIVE.playing);
+      var active = (k === '3d') ? (chosen === '3d' || fellBack) : (k === chosen);
       btns[i].classList.toggle('on', active);
+      btns[i].classList.toggle('loading', k !== '3d' && connecting && k === chosen);
     }
-    var e = bar.querySelector('[data-vista="east"]');
-    var w = bar.querySelector('[data-vista="west"]');
-    if (e) e.textContent = (DOKDO_LIVE.failed && VISTA_STATE.mode === 'east') ? '📡 동도 (3D)' : '📡 동도 LIVE';
-    if (w) w.textContent = (DOKDO_LIVE.failed && VISTA_STATE.mode === 'west') ? '📡 서도 (3D)' : '📡 서도 LIVE';
+    if (e) e.textContent = (connecting && chosen === 'east') ? '⏳ 동도 연결 중'
+      : ((playing && chosen === 'east') ? '🔴 동도 LIVE'
+      : ((fellBack && chosen === 'east') ? '📡 동도 (3D)' : '📡 동도 LIVE'));
+    if (w) w.textContent = (connecting && chosen === 'west') ? '⏳ 서도 연결 중'
+      : ((playing && chosen === 'west') ? '🔴 서도 LIVE'
+      : ((fellBack && chosen === 'west') ? '📡 서도 (3D)' : '📡 서도 LIVE'));
     var s = $('vb-sound');
     if (s) {
       s.classList.toggle('on', !!VISTA_STATE.sound && AMBIENCE.running);
@@ -4820,8 +4939,19 @@
     }
   }
 
+  /* 창밖 독도 정면(동도·서도·3D 섬 모두)을 바라보게 시선을 맞춘다.
+     남·동·서쪽 벽을 보고 있었어도 버튼을 누르면 눈앞 창밖에 독도가 나타난다. */
+  function alignToVista() {
+    if (!state.camera || state.seated) return;   // 앉아 있으면 의자 방향을 지킨다
+    state.yaw = Math.PI - VISTA.azIsland;
+    state.pitch = 0.04;
+    if (state.vel) state.vel.set(0, 0, 0);
+    updateCamera(1);
+  }
+
   function applyVistaMode(mode, silent) {
     VISTA_STATE.mode = (mode === 'west' || mode === '3d') ? mode : 'east';
+    if (!silent) alignToVista();
     if (state.floor === 2) {
       if (VISTA_STATE.mode === '3d') { DOKDO_LIVE.stop(true); DOKDO_LIVE.mode = '3d'; DOKDO_LIVE.applyVisibility(); }
       else DOKDO_LIVE.start(VISTA_STATE.mode);
@@ -4838,10 +4968,20 @@
   function bindVistaUi() {
     var bar = $('vista-bar');
     if (!bar) return;
+    // 탭이 캔버스 드래그·다른 UI 로 새지 않게 바 안에서 포인터 이벤트를 끝낸다
+    ['pointerdown', 'touchstart', 'pointerup', 'touchend', 'mousedown'].forEach(function (t) {
+      bar.addEventListener(t, function (e) { e.stopPropagation(); }, { passive: true });
+    });
     bar.addEventListener('click', function (e) {
-      var b = e.target.closest('[data-vista]');
-      if (b) { applyVistaMode(b.getAttribute('data-vista')); return; }
-      if (e.target.closest('#vb-sound')) toggleVistaSound();
+      e.stopPropagation();
+      var b = (e.target && e.target.closest) ? e.target.closest('[data-vista]') : null;
+      if (b) {
+        var m = b.getAttribute('data-vista');
+        if (m !== '3d') DOKDO_LIVE.armGesture();   // 제스처 안에서 재생 잠금 해제
+        applyVistaMode(m);
+        return;
+      }
+      if ((e.target && e.target.closest) && e.target.closest('#vb-sound')) toggleVistaSound();
     });
   }
 
@@ -5102,7 +5242,7 @@
           float lum = dot(c, vec3(0.299, 0.587, 0.114));
           c = mix(vec3(lum), c, 1.18);
           c = mix(c, c * vec3(0.94, 1.02, 1.10), 0.65);
-          vec3 col = mix(c, uHaze, 0.12 + 0.16 * (1.0 - yy) + 0.46 * topMix);
+          vec3 col = mix(c, uHaze, 0.04 + 0.08 * (1.0 - yy) + 0.28 * topMix);
           gl_FragColor = vec4(col, a);
         }`,
       transparent: true, depthWrite: false, side: THREE.BackSide, fog: false, toneMapped: true
@@ -5211,14 +5351,13 @@
     var _now = performance.now();
     if (DOKDO_LIVE.screen && DOKDO_LIVE.screen.visible) DOKDO_LIVE.probe(_now);
     if (!DOKDO_LIVE.playing && !DOKDO_LIVE.failed && DOKDO_LIVE.mode !== '3d'
-        && _now - DOKDO_LIVE.startTimer > 40000) {
-      // 느린 회선에서 첫 세그먼트를 기다리다 실패하면, 한 번은 조용히 다시 붙여 본다
-      if (!DOKDO_LIVE.retried && state.floor === 2) {
-        DOKDO_LIVE.retried = true;
-        DOKDO_LIVE.note('retry');
-        DOKDO_LIVE.start(DOKDO_LIVE.mode);
-        DOKDO_LIVE.retried = true;
+        && _now - DOKDO_LIVE.startTimer > 75000) {
+      var _v = DOKDO_LIVE.video;
+      if (DOKDO_LIVE.needGesture && _v && _v.readyState >= 2 && _v.videoWidth > 0) {
+        // 데이터는 다 왔는데 브라우저가 재생만 막은 상태 — 3D 로 넘기지 않고 탭을 기다린다
+        DOKDO_LIVE.startTimer = _now;
       } else {
+        // 느린 회선에서 첫 세그먼트를 기다리다 실패하면 조용히 3D 뷰로 (아래 버튼으로 다시 시도 가능)
         DOKDO_LIVE.fallback('start-timeout');
       }
     }
@@ -5232,7 +5371,7 @@
     if (f === 2) {
       if (state.scene) {
         state.floorFog1 = state.floorFog1 || state.scene.fog;
-        state.scene.fog = new THREE.Fog(0xcfe1f0, 140, 2400);
+        state.scene.fog = new THREE.Fog(0xcfe1f0, 240, 3000);   // 독도(380m)가 해무에 묻히지 않게
       }
       cam.layers.enable(OUT_LAYER);
       if (cam.far !== 3200) { cam.far = 3200; cam.updateProjectionMatrix(); }
@@ -9454,6 +9593,7 @@
     state.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     state.renderer.setSize(w, h, true);
     applyViewport(w / h);
+    positionVistaBar();  // 화면 폭·글자 크기가 바뀌면 창밖 전환 바를 다시 잰다
     fitNewsModal();     // 📺 크게 보기가 열려 있으면 새 화면에 맞춰 다시 크게
   }
 
@@ -11874,6 +12014,7 @@
     if (!bar) return;
     var on = state.floor === 2 && !!state.meeting;
     bar.classList.toggle('show', on);
+    positionVistaBar();          // 회의 바 높이가 바뀌면 창밖 전환 바도 바로 따라 내려간다
     if (!on) return;
     var msg = $('mv-msg'), btn = $('mv-join');
     var key = (VOICE.active ? 'on' : (VOICE.denied ? 'denied' : (VOICE.supported ? 'idle' : 'no'))) + '|' +
@@ -11899,7 +12040,7 @@
     var g = $('gate-close');
     if (g) g.addEventListener('click', closeGate);
     var gf = $('gate-form');
-    if (gf) gf.addEventListener('submit', function (e) { e.preventDefault(); submitGate(); });
+    if (gf) gf.addEventListener('submit', function (e) { e.preventDefault(); DOKDO_LIVE.armGesture(); submitGate(); });
     var gm = $('gate-manage');
     if (gm) gm.addEventListener('click', function () { openStaffAdmin(); });
     var ge = $('gate-admin-enter');
@@ -11913,6 +12054,7 @@
     if (gpc) gpc.addEventListener('click', function () { var pr = $('gate-pinrow'); if (pr) pr.classList.add('hidden'); });
     var gpo = $('gate-pin-ok');
     if (gpo) gpo.addEventListener('click', function () {
+      DOKDO_LIVE.armGesture();   // 입장 제스처 안에서 독도 LIVE 재생을 미리 열어 둔다
       var pin = String(($('gate-pin') && $('gate-pin').value) || '').trim();
       if (pin.length < 4) { gateMsg('관리자 PIN을 입력해 주세요.', 'err'); return; }
       gateMsg('관리자 확인 중…');
