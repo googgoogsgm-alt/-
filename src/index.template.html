@@ -1007,7 +1007,7 @@
     <div class="head">
       <span class="chip" style="background:#1d3f78">🏛️ 2층 회의실</span>
       <h2 id="gate-title">회의실 입장 인증</h2>
-      <p class="sub">직원 A·B 등급 전용 · 음성 회의실 · 이름과 입장 코드를 확인합니다</p>
+      <p class="sub">직원 전용 · 음성 회의실 · 이름과 입장 코드를 확인합니다</p>
     </div>
     <form class="gate-form" id="gate-form">
       <div class="gate-row"><label for="gate-name">이름</label>
@@ -3670,7 +3670,7 @@
     ctx.fillText('독도국제무역 회의실', W / 2, 118);
     ctx.fillStyle = '#e7cd77';
     ctx.font = '700 38px ' + fontOf();
-    ctx.fillText('VIP · 직원 A·B 등급 전용 · 음성 회의', W / 2, 214);
+    ctx.fillText('VIP · 직원 전용 · 음성 회의', W / 2, 214);
     var tex = new THREE.CanvasTexture(cv);
     tex.encoding = THREE.sRGBEncoding; tex.anisotropy = maxAniso;
     return tex;
@@ -3720,11 +3720,33 @@
     return tex;
   }
 
+  /* 포털 정중앙의 '노크!' 글씨 — 1층 중앙홀의 '회의실' 포털에만 붙는다.
+     푸른 발광 원 위에서도 읽히도록 진한 남색 외곽선 + 밝은 흰색 굵은 글씨. */
+  function makePortalKnockTexture() {
+    var S = 512;
+    var cv = document.createElement('canvas'); cv.width = cv.height = S;
+    var ctx = cv.getContext('2d');
+    ctx.clearRect(0, 0, S, S);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    ctx.font = '900 172px ' + fontOf();
+    ctx.shadowColor = 'rgba(6,16,36,.95)'; ctx.shadowBlur = 20;
+    ctx.strokeStyle = '#0a1930'; ctx.lineWidth = 20;
+    ctx.strokeText('노크!', S / 2, S / 2 + 4);
+    ctx.strokeText('노크!', S / 2, S / 2 + 4);
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText('노크!', S / 2, S / 2 + 4);
+    var tex = new THREE.CanvasTexture(cv);
+    tex.encoding = THREE.sRGBEncoding; tex.anisotropy = maxAniso;
+    return tex;
+  }
+
   function buildPortal(side) {
     var spec = side === 'hall' ? PORTAL.hall : PORTAL.meeting;
     var baseY = side === 'hall' ? 0 : FLOOR2_Y;
     var label = side === 'hall' ? '회의실' : '중앙홀';
-    var sub = side === 'hall' ? '2층 회의실 · 직원 A·B 등급' : '1층 중앙홀 복귀';
+    var sub = side === 'hall' ? '2층 회의실 · 직원 전용' : '1층 중앙홀 복귀';
     var g = new THREE.Group();
     g.position.set(spec.x, baseY, spec.z);
     g.rotation.y = spec.ry;                 // 링 평면이 벽을 향하고 앞면은 -X(홀 안쪽)
@@ -3754,6 +3776,19 @@
     var spinB = new THREE.Mesh(new THREE.TorusGeometry(0.55, 0.018, 8, 36),
       new THREE.MeshBasicMaterial({ color: 0xc9a227, transparent: true, opacity: 0.9 }));
     spinB.position.set(0, 1.92, 0.03); g.add(spinB);
+
+    // 정중앙 '노크!' — 1층 중앙홀의 '회의실' 포털에만. 글자를 눌러도 입장 인증이 열린다.
+    // (뒤에서 보면 앞면만 그려지므로 거울상 글씨가 생기지 않는다)
+    if (side === 'hall') {
+      var knock = new THREE.Mesh(new THREE.PlaneGeometry(0.92, 0.92),
+        new THREE.MeshBasicMaterial({ map: makePortalKnockTexture(), transparent: true,
+          toneMapped: false, depthWrite: false }));
+      knock.position.set(0, 1.92, 0.05);
+      knock.renderOrder = 4;            // 푸른 발광 원(hazy) 뒤에서도 글자가 위에 또렷하게
+      knock.userData.hit = { kind: 'portal', side: side };
+      g.add(knock);
+      state.pickable.push(knock);
+    }
 
     // 발판과 기둥
     var step = new THREE.Mesh(new THREE.BoxGeometry(2.7, 0.12, 0.8), MAT.dark);
@@ -3853,14 +3888,14 @@
       pl.position.set(cx, Y + R.h - 0.7, zz); g.add(pl);
     });
 
-    // 현판 — 독도국제무역 회의실 · VIP · 직원 A·B 등급
+    // 현판 — 독도국제무역 회의실 · VIP · 직원 전용
     var plaqueBack = new THREE.Mesh(new THREE.BoxGeometry(4.9, 1.26, 0.1), navyDeep);
     plaqueBack.position.set(cx, Y + 2.72, R.z0 + 0.2); g.add(plaqueBack);
     var plaque = new THREE.Mesh(new THREE.PlaneGeometry(4.76, 1.14),
       new THREE.MeshBasicMaterial({ map: makeMeetingPlaqueTexture(), toneMapped: false }));
     plaque.position.set(cx, Y + 2.72, R.z0 + 0.26); g.add(plaque);
     state.meetingPlaque = plaque;
-    state.meetingPlaqueLabel = '독도국제무역 회의실 · VIP · 직원 A·B 등급';
+    state.meetingPlaqueLabel = '독도국제무역 회의실 · VIP · 직원 전용';
 
     // 벽 충돌(2층) — 벽 밖으로 걸어 나가지 못하게
     state.colliders.push({ type: 'box', x: R.x0, z: cz, hw: 0.22, hd: d / 2, level: 2 });
@@ -5063,8 +5098,8 @@
     if (dph < PORTAL.hall.r) {
       state.nearPortal = 'hall';
       state.near = null; state.nearTV = null; state.nearDesk = null;
-      if ($('near-text').textContent !== '🏛️ 회의실 포털 · 눌러서 입장(A·B 등급)') {
-        $('near-text').textContent = '🏛️ 회의실 포털 · 눌러서 입장(A·B 등급)';
+      if ($('near-text').textContent !== '🏛️ 회의실 포털 · 눌러서 입장(직원 전용)') {
+        $('near-text').textContent = '🏛️ 회의실 포털 · 눌러서 입장(직원 전용)';
       }
       el.classList.add('show');
       return;
@@ -7531,7 +7566,7 @@
     var here = inMeeting ? 'meeting' : 'gallery';
     var onHere = VOICE.active && VOICE.room === here;
     var where = inMeeting
-      ? '2층 회의실 전용 음성 회의 (A·B 등급 전용)'
+      ? '2층 회의실 전용 음성 회의 (직원 전용)'
       : '1층 중앙홀·전시실 방문자 음성 대화 (같은 1층 방문자끼리 연결)';
     if (title) title.textContent = inMeeting ? '🎙️ 음성 회의 = 2층 회의실' : '🎙️ 음성 대화 = 1층 중앙홀·전시실';
     if (goto) goto.style.display = inMeeting ? 'none' : '';
@@ -8811,7 +8846,7 @@
       gallery: {
         name: '독도국제무역.com 국제상품 3D 전시관',
         channel: '@재롱둥이-r4y',
-        layout: '중앙홀(뉴스 TV·방명록 키오스크·안내데스크·프런트데스크) + 전시실 6개 + 2층 회의실(직원 A·B 등급 전용)',
+        layout: '중앙홀(뉴스 TV·방명록 키오스크·안내데스크·프런트데스크) + 전시실 6개 + 2층 회의실(직원 전용)',
         exhibits: '종목 ' + allTickers.length + '개 · 부스마다 쇼츠 판넬 5칸(#1 자동 최신, #2~#5 직접 등록)',
         indicators: 'MACD 12·130·9 / CCI 90 ±100 / OI / COT / 만기·롤오버 / 1~6개월 스윙',
         doctrine: '독도국제무역.com — 정확한 정보와 신뢰가 1순위. 확인된 값만 수치로 말한다.'
