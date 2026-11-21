@@ -4477,45 +4477,62 @@
     g.rotation.order = 'YXZ';   // 진행 방향(yaw) → 선회 기울임(roll) 순으로 자연스럽게
     var bodyMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.86 });
     var backMat = new THREE.MeshStandardMaterial({ color: 0xdae2ea, roughness: 0.86 });
-    var tipMat = new THREE.MeshStandardMaterial({ color: 0x4b5563, roughness: 0.8 });
     var body = new THREE.Mesh(new THREE.SphereGeometry(0.5, 12, 9), bodyMat);
-    body.scale.set(1.7, 0.58, 0.60);
+    body.scale.set(1.50, 0.36, 0.34);
     g.add(body);
     // 등쪽 회색 덮개깃 — 흰 배와 구분돼 입체감이 산다
     var back = new THREE.Mesh(new THREE.SphereGeometry(0.5, 12, 8), backMat);
-    back.scale.set(1.32, 0.32, 0.48); back.position.set(-0.04, 0.17, 0); g.add(back);
-    var head = new THREE.Mesh(new THREE.SphereGeometry(0.26, 10, 8), bodyMat);
-    head.position.set(0.78, 0.14, 0); g.add(head);
-    var beak = new THREE.Mesh(new THREE.ConeGeometry(0.085, 0.34, 6),
+    back.scale.set(1.24, 0.24, 0.34); back.position.set(-0.04, 0.12, 0); g.add(back);
+    var head = new THREE.Mesh(new THREE.SphereGeometry(0.17, 10, 8), bodyMat);
+    head.position.set(0.70, 0.10, 0); g.add(head);
+    var beak = new THREE.Mesh(new THREE.ConeGeometry(0.055, 0.28, 6),
       new THREE.MeshStandardMaterial({ color: 0xe0a63c, roughness: 0.55 }));
-    beak.rotation.z = -Math.PI / 2; beak.position.set(1.06, 0.11, 0); g.add(beak);
-    var tail = new THREE.Mesh(new THREE.ConeGeometry(0.30, 0.62, 5), backMat);
-    tail.rotation.z = Math.PI / 2; tail.position.set(-0.86, 0.03, 0);
-    tail.scale.set(0.34, 1, 1); g.add(tail);
+    beak.rotation.z = -Math.PI / 2; beak.position.set(0.90, 0.08, 0); g.add(beak);
+    var tail = new THREE.Mesh(new THREE.ConeGeometry(0.24, 0.52, 5), backMat);
+    tail.rotation.z = Math.PI / 2; tail.position.set(-0.76, 0.02, 0);
+    tail.scale.set(0.26, 1, 1); g.add(tail);
 
     function wing(sign) {
       // 형상 좌표: x = 날개 길이(앞날개 +, 뒷날개 -), y = 날개 폭(바깥으로)
+      var wingMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.86, side: THREE.DoubleSide });
+      var tipMat2 = new THREE.MeshStandardMaterial({ color: 0x4b5563, roughness: 0.8, side: THREE.DoubleSide });
+      /* 날개에 완만한 아치(캐머)를 준다 — 옆에서 봐도 종이조각처럼 사라지지 않고 새의 날개로 보인다 */
+      function bend(off, geo, keep) {
+        var pos = geo.attributes.position;
+        for (var i = 0; i < pos.count; i++) {
+          var sy = pos.getY(i), sz = pos.getZ(i);
+          pos.setZ(i, (keep ? sz : 0) + off + 0.13 * Math.sin(Math.PI * Math.min(1, sy / 2.1)));
+        }
+        pos.needsUpdate = true;
+        geo.computeVertexNormals();
+        return geo;
+      }
       var s = new THREE.Shape();
-      s.moveTo(0.30, 0);
-      s.quadraticCurveTo(0.44, 0.62, 0.16, 1.24);        // 앞날개
-      s.quadraticCurveTo(0.04, 1.72, -0.42, 1.96);       // 끝으로 부드럽게 휘어짐
-      s.quadraticCurveTo(-0.60, 1.26, -0.44, 0.62);      // 뒷날개
-      s.quadraticCurveTo(-0.36, 0.16, -0.30, 0);         // 겨드랑이
-      s.lineTo(0.30, 0);
-      var m = new THREE.Mesh(new THREE.ShapeGeometry(s, 14), bodyMat);
+      s.moveTo(0.28, 0);
+      s.quadraticCurveTo(0.36, 0.62, 0.18, 1.30);        // 앞날개 — 적게 휘어지고 길게
+      s.quadraticCurveTo(0.10, 1.72, 0.02, 1.96);        // 끝은 뾰족하게
+      s.quadraticCurveTo(-0.34, 1.46, -0.50, 1.28);      // 뒷날개
+      s.quadraticCurveTo(-0.40, 0.66, -0.22, 0);         // 겨드랑이
+      s.lineTo(0.28, 0);
+      var wg = new THREE.ExtrudeGeometry(s, { depth: 0.04, bevelEnabled: false, curveSegments: 20 });
+      wg.translate(0, 0, -0.02);
+      var m = new THREE.Mesh(bend(0, wg, true), wingMat);
       m.rotation.x = -Math.PI / 2;   // 형상 y → 3D 좌우(z), 형상 x → 3D 비행축(x)
-      // 바깥 끝깃(검은 회색)
+      // 바깥 끝깃(검은 회색) — 위·아래 양쪽에 두어 아래에서 올려다봐도 보인다
       var t = new THREE.Shape();
-      t.moveTo(0.09, 1.34);
-      t.quadraticCurveTo(0.04, 1.72, -0.42, 1.96);
-      t.quadraticCurveTo(-0.61, 1.52, -0.62, 1.30);
-      t.lineTo(0.09, 1.34);
-      var mt = new THREE.Mesh(new THREE.ShapeGeometry(t, 10), tipMat);
-      mt.rotation.x = -Math.PI / 2; mt.position.y = 0.006;
+      t.moveTo(0.18, 1.22);
+      t.quadraticCurveTo(0.10, 1.72, 0.02, 1.96);
+      t.quadraticCurveTo(-0.30, 1.55, -0.46, 1.24);
+      t.lineTo(0.18, 1.22);
+      var tg = new THREE.ShapeGeometry(t, 12);
+      var mt = new THREE.Mesh(bend(0.026, tg), tipMat2);
+      mt.rotation.x = -Math.PI / 2;
+      var mb = new THREE.Mesh(bend(-0.026, new THREE.ShapeGeometry(t, 12)), tipMat2);
+      mb.rotation.x = -Math.PI / 2;
       var pivot = new THREE.Group();
-      pivot.add(m); pivot.add(mt);
+      pivot.add(m); pivot.add(mt); pivot.add(mb);
       pivot.scale.z = sign;              // 좌우 날개 거울상
-      pivot.position.set(0.12, 0.03, 0);
+      pivot.position.set(0.10, 0.055, 0);
       pivot.userData.sign = sign;
       pivot.rotation.x = 0;
       return pivot;
@@ -4548,7 +4565,7 @@
         flapOn: 1.4 + Math.random() * 1.2,         // 몇 번 천천히 날갯짓 1.4~2.6초
         glideOn: 3.0 + Math.random() * 2.6,        // 길게 날개 펴고 활공 3.0~5.6초
         rw: 0.42 + Math.random() * 0.12,           // 날갯짓 폭(부드럽게)
-        glide: 0.05 + Math.random() * 0.05,        // 활공 시 살짝 V자
+        glide: 0.16 + Math.random() * 0.08,        // 활공 시 살짝 V자(≈9~14°) — 아래에서도 새로 보인다
         dr: (Math.random() - 0.5) * 1.6,
         roll: 0.12 + Math.random() * 0.04          // 선회 기울임 0.12~0.16rad
       });
@@ -4580,6 +4597,7 @@
       var flapAng = Math.sin(elapsed * b.flap + b.ph) * b.rw;
       var glideAng = b.glide + Math.sin(elapsed * 0.41 + b.ph) * 0.018;
       var ang = glideAng + w * (flapAng - glideAng);
+      b.w = w;                                    // 지금이 활공(0)인지 날갯짓(1)인지 — 검증용
       var wings = b.g.userData.wings;
       wings[0].rotation.x = ang * wings[0].userData.sign;
       wings[1].rotation.x = ang * wings[1].userData.sign;
@@ -13062,7 +13080,8 @@
               return { x: +b.g.position.x.toFixed(1), z: +b.g.position.z.toFixed(1), y: +b.g.position.y.toFixed(2),
                        flap: +b.g.userData.wings[0].rotation.x.toFixed(3),
                        sp: +b.sp.toFixed(4), r: +b.r.toFixed(1),
-                       speed: +(Math.abs(b.sp) * b.r).toFixed(2) };
+                       speed: +(Math.abs(b.sp) * b.r).toFixed(2),
+                       glide: +(b.glide || 0).toFixed(3), w: +(b.w || 0).toFixed(3) };
             });
           },
           fog: function () {
