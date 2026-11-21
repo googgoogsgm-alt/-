@@ -3,14 +3,14 @@
  * ────────────────────────────────────────────────────────────────
  * Supabase Edge Function (Deno) — 단일 파일. 저장소에 함께 보관한다.
  *
- *  · 1순위  : Gemini (GEMINI_API_KEY)   gemini-3.8-flash → gemini-3.6-flash → gemini-2.5-flash
- *  · 백업   : Groq   (GROQ_API_KEY)     openai/gpt-oss-120b → qwen/qwen3.8-27b
+ *  · 1순위  : Groq   (GROQ_API_KEY)     openai/gpt-oss-120b → qwen/qwen3.8-27b   (각 10초 타임아웃)
+ *  · 2순위  : Gemini (GEMINI_API_KEY)   gemini-3.6-flash → gemini-3.8-flash → gemini-4-hydrogen → gemini-3.5-flash-lite (각 14초)
  *  · 둘 다 없으면 { ok:false } 를 돌려주고, 전시관 화면은 내장 안내 모드로 매끄럽게 답한다.
  *
  * 요청 (POST JSON)
  *   { character: 'lua' | 'dohyun', message: '...', history: [{role,text}], context: {...} }
  * 응답 (JSON)
- *   { ok:true, provider:'gemini'|'groq', model:'...', reply:'...', character:'lua', moves:[{zone,ticker,label}] }
+ *   { ok:true, provider:'groq'|'gemini', model:'...', reply:'...', character:'lua', moves:[{zone,ticker,label}] }
  *   실패 시 { ok:false, error:'...', reply:'' } (HTTP 200 — 화면이 폴백으로 넘어가기 쉽게)
  *
  * 사람 목소리(TTS) 요청 — 같은 함수가 함께 처리한다
@@ -25,8 +25,8 @@
  *   2) "Create a new function" → 이름을 정확히 `frontdesk-chat` 으로
  *   3) 코드 편집기에 이 파일 내용을 그대로 붙여 넣고 "Deploy"
  *   4) Project Settings → Edge Functions → Secrets 에서
- *        GEMINI_API_KEY = (Google AI Studio 키)   ← 1순위
- *        GROQ_API_KEY   = (Groq 키)               ← 백업(선택)
+ *        GROQ_API_KEY   = (Groq 키)               ← 1순위
+ *        GEMINI_API_KEY = (Google AI Studio 키)   ← 2순위(보조) · TTS 음성
  *      를 추가하고 함수를 한 번 다시 Deploy
  *
  * ── 배포 방법 B · CLI ─────────────────────────────────────────
@@ -51,16 +51,21 @@ const CORS: Record<string, string> = {
 };
 
 // 2026-11 Gemini REST 기준 — gemini-2.5-flash 는 신규 키에서 404 로 막혀 기본 목록에서 뺐다.
+// 보조(2순위)라 느린 gemini-4-hydrogen 은 뒤로 미루고 빠른 flash 계열을 앞에 둔다.
 const GEMINI_MODELS = [
-  Deno.env.get("GEMINI_MODEL_1") || "gemini-4-hydrogen",
+  Deno.env.get("GEMINI_MODEL_1") || "gemini-3.6-flash",
   Deno.env.get("GEMINI_MODEL_2") || "gemini-3.8-flash",
-  Deno.env.get("GEMINI_MODEL_3") || "gemini-3.6-flash",
+  Deno.env.get("GEMINI_MODEL_3") || "gemini-4-hydrogen",
   Deno.env.get("GEMINI_MODEL_4") || "gemini-3.5-flash-lite",
 ];
 const GROQ_MODELS = [
   Deno.env.get("GROQ_MODEL_1") || "openai/gpt-oss-120b",
   Deno.env.get("GROQ_MODEL_2") || "qwen/qwen3.8-27b",
 ];
+
+// 무한 대기 방지 — 1순위 Groq 는 짧게 끊고, 보조 Gemini 는 조금 더 준다.
+const GROQ_TIMEOUT_MS = 10000;
+const GEMINI_TIMEOUT_MS = 14000;
 
 const ZONE_LABEL: Record<string, string> = {
   hall: "중앙홀",
@@ -342,6 +347,34 @@ async function handleTts(body: Record<string, unknown>): Promise<Response> {
   });
 }
 
+/* ── 공용 fetch — 초 단위 타임아웃 ────────────────────────────
+   모델 서버가 응답(본문 포함)을 끊지 않으면 요청 하나가 영원히 매달리고, 그러면 뒤 순위로도 못 넘어간다.
+   AbortController 로 요청·본문 읽기 전체를 끊고, 실패는 status 번호와 함께 throw 해서
+   상위 루프가 다음 모델로 넘어가게 한다. 성공·실패 모두 본문 문자열을 함께 돌려준다. */
+async function fetchTextWithTimeout(
+  url: string,
+  init: RequestInit,
+  ms: number,
+  label: string,
+): Promise<{ ok: boolean; status: number; raw: string }> {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => { try { ctrl.abort(); } catch (_e) { /* noop */ } }, ms);
+  try {
+    const res = await fetch(url, { ...init, signal: ctrl.signal });
+    const raw = await res.text();
+    return { ok: res.ok, status: res.status, raw };
+  } catch (e) {
+    const err = e as Error & { status?: number; detail?: string };
+    if (ctrl.signal.aborted || err.name === "AbortError") {
+      err.status = 0;
+      err.message = `${label} 시간 초과(${ms}ms)`;
+    }
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /* ── Gemini ──────────────────────────────────────────────── */
 async function askGemini(
   key: string,
@@ -357,7 +390,7 @@ async function askGemini(
   }));
   contents.push({ role: "user", parts: [{ text: message }] });
 
-  const res = await fetch(url, {
+  const res = await fetchTextWithTimeout(url, {
     method: "POST",
     // 키는 URL 이 아니라 헤더로 — Content.role 은 'user'|'model' 만 허용하므로 systemInstruction 에 role 을 넣지 않는다.
     headers: { "Content-Type": "application/json", "x-goog-api-key": key },
@@ -374,9 +407,9 @@ async function askGemini(
         { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_ONLY_HIGH" },
       ],
     }),
-  });
+  }, GEMINI_TIMEOUT_MS, `gemini ${model}`);
 
-  const raw = await res.text();
+  const raw = res.raw;
   if (!res.ok) {
     const err = new Error(`gemini ${model} HTTP ${res.status}`) as Error & { status?: number; detail?: string };
     err.status = res.status;
@@ -411,12 +444,12 @@ async function askGroq(
     ...history.map((h) => ({ role: h.role, content: h.text })),
     { role: "user", content: message },
   ];
-  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+  const res = await fetchTextWithTimeout("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
     body: JSON.stringify({ model, messages, temperature: 0.65, max_tokens: 1024, top_p: 0.95 }),
-  });
-  const raw = await res.text();
+  }, GROQ_TIMEOUT_MS, `groq ${model}`);
+  const raw = res.raw;
   if (!res.ok) {
     const err = new Error(`groq ${model} HTTP ${res.status}`) as Error & { status?: number; detail?: string };
     err.status = res.status;
@@ -470,46 +503,47 @@ ${contextBlock(body.context)}
   const groqKey = Deno.env.get("GROQ_API_KEY") || "";
   const errors: string[] = [];
 
-  // 1순위 Gemini — 모델을 차례로 시도(429·오류면 다음 모델)
-  if (geminiKey) {
-    for (const model of GEMINI_MODELS) {
-      try {
-        const text = await askGemini(geminiKey, model, system, history, message);
-        const { text: reply, moves } = extractMoves(text, message);
-        return json({ ok: true, provider: "gemini", model, reply, character, moves });
-      } catch (e) {
-        const err = e as Error & { status?: number; detail?: string };
-        errors.push(`${err.message}${err.detail ? " · " + err.detail : ""}`);
-        console.warn(`[frontdesk-chat] gemini ${model} 실패: ${err.message}${err.status ? " (HTTP " + err.status + ")" : ""}`);
-        // 400·404(모델 없음) 와 429(한도) 는 다음 모델로, 인증 오류(401·403)는 Gemini 전체를 건너뛴다
-        if (err.status === 401 || err.status === 403) break;
-      }
-    }
-  } else {
-    errors.push("GEMINI_API_KEY 없음");
-  }
-
-  // 2순위 Groq 백업
+  // 1순위 Groq — 빠르고 무료 한도가 넉넉하다. 모델을 차례로 시도(429·오류는 다음 모델).
   if (groqKey) {
     for (const model of GROQ_MODELS) {
       try {
         const text = await askGroq(groqKey, model, system, history, message);
         const { text: reply, moves } = extractMoves(text, message);
-        console.log(`[frontdesk-chat] gemini 실패 → groq ${model} 로 답변 (gemini 오류 ${errors.length}건)`);
-        return json({
-          ok: true, provider: "groq", model, reply, character, moves,
-          // Gemini 단계에서 넘어왔다는 표시(키 값 없음 · 상태코드/모델명 수준만)
-          fallbackFrom: errors.length ? "gemini" : undefined,
-          errors: errors.slice(0, 3).map((e) => e.slice(0, 140)),
-        });
+        return json({ ok: true, provider: "groq", model, reply, character, moves });
       } catch (e) {
         const err = e as Error & { status?: number; detail?: string };
         errors.push(`${err.message}${err.detail ? " · " + err.detail : ""}`);
+        console.warn(`[frontdesk-chat] groq ${model} 실패: ${err.message}${err.status ? " (HTTP " + err.status + ")" : ""}`);
+        // 400·404(모델 없음)·429(한도)·타임아웃은 다음 모델로, 인증 오류(401·403)는 Groq 전체를 건너뛴다
         if (err.status === 401 || err.status === 403) break;
       }
     }
   } else {
     errors.push("GROQ_API_KEY 없음");
+  }
+
+  // 2순위 Gemini(보조) — 모델을 차례로 시도
+  if (geminiKey) {
+    for (const model of GEMINI_MODELS) {
+      try {
+        const text = await askGemini(geminiKey, model, system, history, message);
+        const { text: reply, moves } = extractMoves(text, message);
+        console.log(`[frontdesk-chat] groq 실패 → gemini ${model} 로 답변 (groq 오류 ${errors.length}건)`);
+        return json({
+          ok: true, provider: "gemini", model, reply, character, moves,
+          // Groq 단계에서 넘어왔다는 표시(키 값 없음 · 상태코드/모델명 수준만)
+          fallbackFrom: errors.length ? "groq" : undefined,
+          errors: errors.slice(0, 3).map((e) => e.slice(0, 140)),
+        });
+      } catch (e) {
+        const err = e as Error & { status?: number; detail?: string };
+        errors.push(`${err.message}${err.detail ? " · " + err.detail : ""}`);
+        console.warn(`[frontdesk-chat] gemini ${model} 실패: ${err.message}${err.status ? " (HTTP " + err.status + ")" : ""}`);
+        if (err.status === 401 || err.status === 403) break;
+      }
+    }
+  } else {
+    errors.push("GEMINI_API_KEY 없음");
   }
 
   // 둘 다 실패 — 화면은 내장 안내 모드로 답한다(에러 팝업 없음)
@@ -518,7 +552,7 @@ ${contextBlock(body.context)}
     error: "no-provider",
     detail: errors.join(" | ").slice(0, 600),
     // 어느 단계에서 넘어왔는지(키 값은 절대 담지 않는다 — 상태코드·모델명 수준만)
-    fallbackFrom: errors.length ? "gemini→groq" : "none",
+    fallbackFrom: errors.length ? "groq→gemini" : "none",
     errors: errors.slice(0, 4).map((e) => e.replace(/key=[^\s&]+/gi, "key=***")).map((e) => e.slice(0, 160)),
     reply: "",
     character,
