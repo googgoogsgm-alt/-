@@ -5374,8 +5374,8 @@
     headBoard.mesh.position.set(0, topY + 0.60, zAt(0) + 1.0);
     struct.add(headBoard.mesh);
 
-    var capBoard = makeLabelBoard(26, 1.10, 2048, 116);
-    capBoard.mesh.position.set(0, baseY - 0.60, zAt(0) + 1.0);
+    var capBoard = makeLabelBoard(26, 1.60, 2048, 156);
+    capBoard.mesh.position.set(0, baseY - 0.92, zAt(0) + 1.0);
     struct.add(capBoard.mesh);
 
     function drawBoards(which) {
@@ -5404,11 +5404,16 @@
 
       var c2 = capBoard.ctx, W2 = capBoard.cv.width, H2 = capBoard.cv.height;
       c2.fillStyle = '#0a1624'; c2.fillRect(0, 0, W2, H2);
-      c2.strokeStyle = 'rgba(201,162,39,.45)'; c2.lineWidth = 4;
+      c2.strokeStyle = 'rgba(201,162,39,.55)'; c2.lineWidth = 4;
       c2.strokeRect(3, 3, W2 - 6, H2 - 6);
       c2.textBaseline = 'middle'; c2.textAlign = 'center';
-      c2.fillStyle = '#cfe3f6'; c2.font = '700 46px ' + fontOf();
-      c2.fillText('dokdo.re.kr · 해양수산부 독도종합정보시스템 실시간 CCTV · ' + island + ' 송출 중', W2 / 2, H2 / 2 + 2);
+      // 큰 줄: 지금 보는 것이 '실제 독도 실시간 방송'임을 한눈에
+      c2.fillStyle = '#e03a34';
+      c2.beginPath(); c2.arc(W2 / 2 - 372, 52, 17, 0, Math.PI * 2); c2.fill();
+      c2.fillStyle = '#eaf3ff'; c2.font = '900 52px ' + fontOf();
+      c2.fillText('해양수산부 독도 실시간 방송 · ' + island, W2 / 2 + 18, 54);
+      c2.fillStyle = '#9fc0da'; c2.font = '700 34px ' + fontOf();
+      c2.fillText('dokdo.re.kr · 독도종합정보시스템 실시간 CCTV', W2 / 2, 116);
       capBoard.tex.needsUpdate = true;
 
       DOKDO_LIVE.labelText = '해양수산부 독도 실시간 방송 · ' + island;
