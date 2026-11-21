@@ -11209,7 +11209,7 @@
     var body = { character: who, message: q, history: history, context: ctx };
     if (fromVoice) body.voiceMode = true;      // 짧고 자연스러운 구어체 답변을 요청
     var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
-    var timer = setTimeout(function () { if (ctrl) try { ctrl.abort(); } catch (e) {} }, 14000);
+    var timer = setTimeout(function () { if (ctrl) try { ctrl.abort(); } catch (e) {} }, 25000);
     return fetch(url, {
       method: 'POST',
       headers: {
