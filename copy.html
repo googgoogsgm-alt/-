@@ -80,18 +80,37 @@
   #btn-copy.done {
     background: linear-gradient(180deg, #2fbf72 0%, #128044 100%);
   }
+  #hint {
+    margin: 10px 0 0;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: #ffd98e;
+    background: rgba(233, 196, 106, 0.08);
+    border: 1px dashed rgba(233, 196, 106, 0.45);
+    border-radius: 10px;
+    padding: 8px 10px;
+  }
   #status {
-    display: none;
-    margin-top: 16px;
+    display: block;
+    margin-top: 12px;
     border-radius: 14px;
     padding: 14px;
-    border: 1px solid rgba(233, 196, 106, 0.55);
-    background: #14251c;
+    border: 1px solid #2b3f5e;
+    background: #101a2b;
   }
-  #status.show { display: block; }
+  #status.idle {
+    border-color: #2b3f5e;
+    background: #101a2b;
+  }
+  #status.ok {
+    border-color: #2fbf72;
+    background: #0f2a1c;
+    box-shadow: 0 0 0 2px rgba(47, 191, 114, 0.35), 0 0 18px rgba(47, 191, 114, 0.4);
+  }
   #status.err {
     border-color: #b4453a;
     background: #2a1414;
+    box-shadow: 0 0 0 2px rgba(180, 69, 58, 0.35);
   }
   #status .msg {
     font-size: 16.5px;
@@ -100,7 +119,7 @@
     margin: 0;
   }
   #link-fn {
-    display: flex;
+    display: none;
     align-items: center;
     justify-content: center;
     width: 100%;
@@ -116,7 +135,58 @@
     padding: 12px;
     touch-action: manipulation;
   }
+  #link-fn.show { display: flex; }
   #link-fn:active { background: #24315a; }
+  .manual {
+    margin-top: 14px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 12px;
+  }
+  .manual h2 {
+    font-size: 13.5px;
+    margin: 0 0 8px;
+    color: var(--gold);
+    letter-spacing: 0.2px;
+  }
+  #manual-box {
+    display: block;
+    width: 100%;
+    height: 120px;
+    resize: none;
+    background: #0e1626;
+    color: #cfe3ff;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 10px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Droid Sans Mono", monospace;
+    font-size: 12px;
+    line-height: 1.45;
+    white-space: pre;
+    overflow: auto;
+    -webkit-user-select: text;
+    user-select: text;
+  }
+  #manual-box:focus {
+    outline: 2px solid #4a7fd6;
+    outline-offset: 1px;
+  }
+  #btn-select {
+    display: block;
+    width: 100%;
+    min-height: 52px;
+    margin-top: 10px;
+    border-radius: 12px;
+    border: 2px solid #4a7fd6;
+    background: #16233c;
+    color: #dbe8ff;
+    font-size: 16.5px;
+    font-weight: 800;
+    touch-action: manipulation;
+    cursor: pointer;
+  }
+  #btn-select:active { background: #22355a; }
   .next {
     margin-top: 24px;
     background: var(--panel);
@@ -165,18 +235,23 @@
     line-height: 1.6;
     word-break: break-all;
   }
+  /* 동기 복사용 임시 칸 — 안드로이드 WebView/크롬은 화면 밖·0px·readonly 칸의 선택을 무시한다.
+     그래서 readonly 없이, 화면 안(0,0) 2px·opacity 0.001·font-size 16px 로 둔다. */
   #fallback {
     position: fixed;
-    top: 0;
     left: 0;
-    width: 1px;
-    height: 1px;
+    top: 0;
+    width: 2px;
+    height: 2px;
     padding: 0;
     margin: 0;
     border: 0;
-    opacity: 0.01;
-    z-index: -1;
-    font-size: 1px;
+    opacity: 0.001;
+    font-size: 16px;
+    z-index: 0;
+    overflow: hidden;
+    -webkit-user-select: text;
+    user-select: text;
   }
 </style>
 </head>
@@ -189,11 +264,21 @@
 
 <button id="btn-copy" class="notranslate" translate="no" type="button" aria-live="polite">📋 원본 코드 526줄 복사하기</button>
 
-<div id="status" class="notranslate" translate="no" role="status" aria-live="polite">
-  <p class="msg" id="status-msg">✅ 복사 완료! (526줄 · 29,752자 — 번역 안 된 영문 원본)</p>
+<p id="hint" class="notranslate" translate="no">
+  ⚠️ 카톡·피클 앱 안에서 열려 복사가 안 되면 오른쪽 위 ⋮ → '크롬으로 열기' 후 눌러 주세요.
+</p>
+
+<div id="status" class="idle notranslate" translate="no" role="status" aria-live="polite">
+  <p class="msg" id="status-msg">📋 위 초록 버튼을 누르면 번역 안 된 영문 원본 526줄이 복사됩니다.</p>
   <a id="link-fn" class="notranslate" translate="no"
      href="https://supabase.com/dashboard/project/wdcmucaefwiwrdtpktry/functions"
      target="_blank" rel="noopener">⚡ Supabase Edge Functions 열기</a>
+</div>
+
+<div class="manual notranslate" translate="no">
+  <h2>직접 복사하기 (자동 복사가 막힐 때)</h2>
+  <textarea id="manual-box" class="notranslate" translate="no" readonly spellcheck="false" wrap="off"></textarea>
+  <button id="btn-select" class="notranslate" translate="no" type="button">📋 코드 칸 전체 선택하기</button>
 </div>
 
 <div class="next notranslate" translate="no">
@@ -242,14 +327,19 @@
   var btn = document.getElementById("btn-copy");
   var statusBox = document.getElementById("status");
   var statusMsg = document.getElementById("status-msg");
+  var linkFn = document.getElementById("link-fn");
+  var manualBox = document.getElementById("manual-box");
+  var btnSelect = document.getElementById("btn-select");
   var shaLive = document.getElementById("sha-live");
 
-  function setStatus(text, isError) {
+  // kind: "idle" | "ok" | "err"
+  function setStatus(text, kind) {
     statusMsg.textContent = text;
-    statusBox.className = (isError ? "err " : "") + "show notranslate";
+    statusBox.className = (kind || "idle") + " notranslate";
     statusBox.setAttribute("translate", "no");
   }
 
+  // 클릭 제스처(user activation) 안에서 동기로 실행해야 하는 복사. Promise를 기다리면 제스처가 만료된다.
   function legacyCopy() {
     try {
       var ta = document.getElementById("fallback");
@@ -263,55 +353,80 @@
         var sel = window.getSelection();
         if (sel && sel.removeAllRanges) sel.removeAllRanges();
       }
-      return ok;
+      return !!ok;
     } catch (e) {
       return false;
+    }
+  }
+
+  function selectManual() {
+    if (!manualBox) return;
+    try {
+      manualBox.focus();
+      manualBox.select();
+      manualBox.setSelectionRange(0, manualBox.value.length);
+    } catch (e) {
+      try { manualBox.select(); } catch (e2) {}
     }
   }
 
   function copied() {
     btn.textContent = "✅ 복사됨 — 아래 Supabase 열기";
     btn.classList.add("done");
-    setStatus("✅ 복사 완료! (526줄 · 29,752자 — 번역 안 된 영문 원본)", false);
+    linkFn.classList.add("show");
+    setStatus("✅ 복사 완료! (526줄 영문 원본)", "ok");
     if (navigator.vibrate) { try { navigator.vibrate(30); } catch (e) {} }
+  }
+
+  function failed() {
+    setStatus("⚠️ 자동 복사가 막혔습니다. 아래 코드 칸을 누르면 전체 선택되니, 뜨는 '복사' 말풍선을 눌러 주세요.", "err");
+    try { manualBox.scrollIntoView({ block: "center" }); } catch (e) {
+      try { manualBox.scrollIntoView(); } catch (e2) {}
+    }
+    selectManual();
   }
 
   function copyCode() {
     if (!RAW_CODE) {
-      setStatus("⚠️ 코드를 읽지 못했습니다 (" + DECODE_ERROR + "). 페이지를 새로고침해 주세요.", true);
+      setStatus("⚠️ 코드를 읽지 못했습니다 (" + DECODE_ERROR + "). 페이지를 새로고침해 주세요.", "err");
       return;
     }
-    var done = false;
 
-    // 1) 최신 방식
+    // 1) 비동기를 기다리기 전에 먼저 동기 복사 — 제스처가 살아있을 때 끝낸다.
+    var legacyOk = legacyCopy();
+    if (legacyOk) copied();
+
+    // 2) 최신 Clipboard API 병행 — 되는 환경에서는 이중 보장.
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(RAW_CODE).then(function () {
         copied();
       }).catch(function () {
-        // 2) 폴백
-        if (legacyCopy()) {
-          copied();
-        } else {
-          setStatus("⚠️ 복사가 차단되었습니다. 페이지를 한 번 눌러 다시 시도해 주세요.", true);
-        }
+        if (!legacyOk) failed();
       });
       return;
     }
 
-    // 2) 폴백 (구형 크롬)
-    done = legacyCopy();
-    if (done) {
-      copied();
-    } else {
-      setStatus("⚠️ 복사가 차단되었습니다. 페이지를 한 번 눌러 다시 시도해 주세요.", true);
-    }
+    if (!legacyOk) failed();
   }
 
   btn.addEventListener("click", copyCode);
 
+  // 수동 상자: 한 번 탭하면 전체 선택 (안드로이드 기본 '복사' 말풍선용)
+  if (manualBox) {
+    manualBox.addEventListener("click", selectManual);
+    manualBox.addEventListener("focus", selectManual);
+  }
+  if (btnSelect) {
+    btnSelect.addEventListener("click", function () {
+      selectManual();
+      setStatus("📋 코드 칸 전체 선택됨 — 화면에 뜬 '복사' 말풍선을 누르세요.", "ok");
+    });
+  }
+
   // 미리보기: 디코딩한 원본에서 그대로 채운다
   try {
     if (RAW_CODE) {
+      if (manualBox) manualBox.value = RAW_CODE;
       var lines = RAW_CODE.split("\n");
       document.getElementById("pv-head").textContent = lines.slice(0, 2).join("\n");
       var keyLine = "";
