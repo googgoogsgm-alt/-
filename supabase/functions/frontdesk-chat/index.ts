@@ -182,7 +182,7 @@ function trimHistory(raw: unknown): ChatTurn[] {
   return out;
 }
 
-function contextBlock(ctx: unknown): string {
+function contextBlock(ctx: unknown, limit = 8000): string {
   if (!ctx || typeof ctx !== "object") return "(전시관 실시간 데이터 없음)";
   let s = "";
   try {
@@ -190,10 +190,9 @@ function contextBlock(ctx: unknown): string {
   } catch {
     return "(전시관 실시간 데이터 없음)";
   }
-  // 8,000자 상한 — 브라우저가 5,500자 이하로 보내지만, 다른 경로로 큰 문맥이 와도
-  // Groq 413(Request too large)을 원천 차단한다.
-  const LIMIT = 8000;
-  if (s.length > LIMIT) s = s.slice(0, LIMIT) + " …(이하 생략)";
+  // 상한 — 브라우저가 5,500자 이하로 보내지만, 다른 경로로 큰 문맥이 와도
+  // Groq 413(Request too large)·429(분당 토큰)을 원천 차단한다.
+  if (s.length > limit) s = s.slice(0, limit) + " …(이하 생략)";
   return s;
 }
 
@@ -1046,9 +1045,9 @@ async function fetchExternalLive(message: string): Promise<{ block: string; sour
     if (!parts.length) return { block: "", sources: [] };
 
     const now = kstNow();
-    // Groq 무료 티어(TMP 8,000) 보호 — 외부 블록은 2,000자까지만 싣는다.
+    // Groq 무료 티어(분당 8,000토큰) 보호 — 외부 블록은 1,600자까지만 싣는다(날씨+시세 ≈ 730자, 뉴스 5건 ≈ 600자).
     let body = parts.join("\n");
-    if (body.length > 2000) body = body.slice(0, 2000).replace(/[^\n]*$/, "").replace(/\s+$/, "") + "\n …(이하 생략)";
+    if (body.length > 1600) body = body.slice(0, 1600).replace(/[^\n]*$/, "").replace(/\s+$/, "") + "\n …(이하 생략)";
     const block = [
       `[실시간 외부 검색 결과 · ${now.label} 조회 — 아래 출처·시각·수치만 그대로 근거로 답한다]`,
       body,
@@ -1186,7 +1185,7 @@ ${voiceMode ? "\n" + VOICE_RULES + "\n" : ""}
 [지금 시각] ${now.label} — '오늘·어제·내일·이번 주' 같은 날짜 표현은 이 시각을 기준으로 센다.
 ${live.block ? "\n" + live.block + "\n" : ""}
 [전시관 실시간 데이터 — 이 값만 사실로 인용한다]
-${contextBlock(body.context)}
+${contextBlock(body.context, live.block ? 5000 : 8000)}
 
 [답변 요청]
 방문객 질문: ${message}
