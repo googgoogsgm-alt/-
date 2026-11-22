@@ -8,7 +8,7 @@
       "url": "https://www.youtube.com/@%EC%9E%AC%EB%A1%B1%EB%91%A5%EC%9D%B4-r4y",
       "channel_id": "UCyicBXHBc9G3BFqokbRVUGA"
     },
-    "updated": "2026-11-20",
+    "updated": "2026-11-22",
     "stage": "2단계 · 온라인 실시간 연결 (Supabase)",
     "panels_per_ticker": 5,
     "realtime": {
@@ -17,7 +17,10 @@
       "room": "gallery",
       "note": "2단계: 위 두 값이 채워져 있으면 방문자 간 실시간 채팅·아바타 동기화·음성방 시그널링이 자동으로 켜집니다. 관리자 PIN 은 서버(gallery_config)에 해시로만 저장되며 이 파일에는 없습니다."
     },
-    "disclaimer": "전시된 정보는 계약 스펙·체크 포인트 정리이며, 실시간 시세나 매매 권유가 아닙니다."
+    "disclaimer": "전시된 정보는 계약 스펙·체크 포인트 정리이며, 실시간 시세나 매매 권유가 아닙니다.",
+    "last_sync": "2026-11-21 13:44 KST",
+    "last_slot1_sync": "2026-11-22 15:18 KST",
+    "slot1_auto": true
   },
   "zones": [
     {
@@ -124,7 +127,7 @@
       "auto_slot": {
         "id": "vFeCy1PsEq0",
         "title": "유로화 오늘의 전망",
-        "updated": "2026-11-18",
+        "updated": "2026-11-22",
         "mode": "auto"
       }
     },
@@ -183,7 +186,7 @@
       "auto_slot": {
         "id": "aAcHsixywi8",
         "title": "스위스프랑 오늘의 전망",
-        "updated": "2026-11-18",
+        "updated": "2026-11-22",
         "mode": "auto"
       }
     },
@@ -213,26 +216,26 @@
           "date": ""
         },
         {
-          "id": "itVVFUJGam0",
-          "title": "캐나다달러 오늘의 전망",
+          "id": "ndF5qfAPTx8",
+          "title": "캐나다달러,지금이 최대 분기점",
           "kind": "shorts",
           "date": ""
         },
         {
-          "id": "uoH68g9RlTk",
-          "title": "캐나다달러 오늘의 전망",
+          "id": "fe7bWfftyIw",
+          "title": "캐나다달러 드디어 폭발 하나?",
           "kind": "shorts",
           "date": ""
         },
         {
-          "id": "VNc6VCVxghM",
-          "title": "캐나다달러 오늘에 전망",
+          "id": "XYY6Qpf--w4",
+          "title": "캐나다달러 드디어 방향 나왔다",
           "kind": "shorts",
           "date": ""
         },
         {
-          "id": "IDIRtEvY0io",
-          "title": "캐나다달러 오늘의 전망      캐나다달러 거래로 돈벌기",
+          "id": "Cc9a0G293K8",
+          "title": "캐나다달러 방향 오리무중?",
           "kind": "shorts",
           "date": ""
         }
@@ -240,8 +243,9 @@
       "auto_slot": {
         "id": "_-MaEK-dGMU",
         "title": "캐나다달러 오늘의 전망",
-        "updated": "2026-11-18",
-        "mode": "auto"
+        "updated": "2026-11-22",
+        "mode": "auto",
+        "previous": "1VtKo2UmzUo"
       }
     },
     {
@@ -270,26 +274,26 @@
           "date": ""
         },
         {
+          "id": "F66d2nwC8ls",
+          "title": "호주달라 급락 신호 ??",
+          "kind": "shorts",
+          "date": ""
+        },
+        {
+          "id": "XiUUH7bVoXE",
+          "title": "호주달라 오늘의 전망 ~ 지금 심상치 않다",
+          "kind": "shorts",
+          "date": ""
+        },
+        {
+          "id": "2SHVcsb33SI",
+          "title": "호주달라로 돈벌기",
+          "kind": "shorts",
+          "date": ""
+        },
+        {
           "id": "LckfMDNGgoA",
           "title": "호주달라 손익 테스트",
-          "kind": "shorts",
-          "date": ""
-        },
-        {
-          "id": "pwubQpsXK8k",
-          "title": "호주달라 오늘의 전망",
-          "kind": "shorts",
-          "date": ""
-        },
-        {
-          "id": "1WgisxyD2gs",
-          "title": "호주달라 오늘의 전망 ~ 강 달라 여파...",
-          "kind": "shorts",
-          "date": ""
-        },
-        {
-          "id": "hCTrrsRZNMc",
-          "title": "호주달라 오늘의 전망 ~ 지금 무슨일?",
           "kind": "shorts",
           "date": ""
         }
@@ -297,8 +301,9 @@
       "auto_slot": {
         "id": "uHvjFMkv8mQ",
         "title": "호주달라 손절가 진입가로 올려 원금 보존",
-        "updated": "2026-11-18",
-        "mode": "auto"
+        "updated": "2026-11-22",
+        "mode": "auto",
+        "previous": "2SHVcsb33SI"
       }
     },
     {
@@ -330,7 +335,7 @@
       "auto_slot": {
         "id": "MT6zgFUzyg0",
         "title": "엔화 오늘의 전망 ~ 엔화급등 무슨일이?",
-        "updated": "2026-11-18",
+        "updated": "2026-11-22",
         "mode": "auto"
       }
     },
@@ -380,26 +385,26 @@
           "date": ""
         },
         {
+          "id": "wesNzx3YnGM",
+          "title": "S&P500 오늘의 전망 ~ 폭풍전야!",
+          "kind": "shorts",
+          "date": ""
+        },
+        {
+          "id": "gnPcvH2G2v0",
+          "title": "S&P500 오늘의 전망 ~ 지금 방향이 바뀐다?",
+          "kind": "shorts",
+          "date": ""
+        },
+        {
+          "id": "W3JgCkoHKoU",
+          "title": "S&P500 오늘의 전망, 상승일까? 하락일까?",
+          "kind": "shorts",
+          "date": ""
+        },
+        {
           "id": "fzbB2r3_o4Y",
           "title": "S&P500 오늘의 전망 ~ 방향이 갈린다",
-          "kind": "shorts",
-          "date": ""
-        },
-        {
-          "id": "FgagqrL8cUA",
-          "title": "S&P500 오늘의 전망 ~ 이대로 꺾이나?",
-          "kind": "shorts",
-          "date": ""
-        },
-        {
-          "id": "JQgKGtZmAzk",
-          "title": "S&P500 오늘의 전망 ~ 지금 상승? 하락?",
-          "kind": "shorts",
-          "date": ""
-        },
-        {
-          "id": "FKtSNKqfsNY",
-          "title": "S&P500 오늘의 전망 ~ 급락 신호 터졌나?",
           "kind": "shorts",
           "date": ""
         }
@@ -407,8 +412,9 @@
       "auto_slot": {
         "id": "UEMh2UQhaS8",
         "title": "S&P500 오늘의 전망 ~ 10년물 금리5%대",
-        "updated": "2026-11-18",
-        "mode": "auto"
+        "updated": "2026-11-22",
+        "mode": "auto",
+        "previous": "W3JgCkoHKoU"
       }
     },
     {
@@ -436,7 +442,13 @@
           "kind": "shorts",
           "date": ""
         }
-      ]
+      ],
+      "auto_slot": {
+        "id": "G2qZ3KKZHZA",
+        "title": "나스닥 매도중",
+        "updated": "2026-11-22",
+        "mode": "auto"
+      }
     },
     {
       "id": "ym",
@@ -499,7 +511,7 @@
       "auto_slot": {
         "id": "YRSDkfAemdY",
         "title": "항생지수 오늘의 전망",
-        "updated": "2026-11-18",
+        "updated": "2026-11-22",
         "mode": "auto"
       }
     },
@@ -576,7 +588,7 @@
       "auto_slot": {
         "id": "tGeS_9vj3sI",
         "title": "미국채10년물 오늘의 전망",
-        "updated": "2026-11-18",
+        "updated": "2026-11-04",
         "mode": "auto"
       }
     },
@@ -666,26 +678,26 @@
           "date": ""
         },
         {
-          "id": "7u6mQ_fBIQ0",
-          "title": "골드 오늘의 전망 ~상승 언제까지?",
-          "kind": "shorts",
-          "date": ""
-        },
-        {
-          "id": "QsjR8opJsXc",
-          "title": "골드 오늘의 전망 ~ 골드 다시 폭발 할까?",
-          "kind": "shorts",
-          "date": ""
-        },
-        {
           "id": "vI-hBUcUveo",
           "title": "골드 오늘의 전망",
+          "kind": "video",
+          "date": ""
+        },
+        {
+          "id": "L5hbYXf7eqk",
+          "title": "골드로 돈벌 기회 흔하지 않다",
           "kind": "shorts",
           "date": ""
         },
         {
-          "id": "ySxDDUkCcww",
-          "title": "골드 사랑하는 이에 손가락 보석이 되고 거래시 돈이 벌린다",
+          "id": "d0kac9XsocI",
+          "title": "금값 결국 폭발 할까?",
+          "kind": "shorts",
+          "date": ""
+        },
+        {
+          "id": "3Sd2LgZSTcU",
+          "title": "골드 거래로 돈벌기",
           "kind": "shorts",
           "date": ""
         }
@@ -693,8 +705,9 @@
       "auto_slot": {
         "id": "6RNO0cmUfLc",
         "title": "골드 오늘의 전망 ~ 앞으로 추가 상승 할까?",
-        "updated": "2026-11-18",
-        "mode": "auto"
+        "updated": "2026-11-22",
+        "mode": "auto",
+        "previous": "QsjR8opJsXc"
       }
     },
     {
@@ -790,7 +803,7 @@
       "auto_slot": {
         "id": "XnRR7t_adHA",
         "title": "구리 오늘의 전망",
-        "updated": "2026-11-18",
+        "updated": "2026-11-17",
         "mode": "auto"
       }
     },
@@ -820,26 +833,26 @@
           "date": "2026-11-10"
         },
         {
-          "id": "4JoKISPgKNw",
-          "title": "오일 오늘의 전망",
-          "kind": "shorts",
-          "date": "2026-11-05"
-        },
-        {
-          "id": "GByevgjXUOI",
-          "title": "오일 오늘의 전망",
+          "id": "wnO8RW9uzkA",
+          "title": "오일 거래로 돈벌기          오일 시장 큰손들이 움직인다",
           "kind": "shorts",
           "date": ""
         },
         {
-          "id": "ofFA1XLUkrE",
-          "title": "오일 오늘의 전망",
+          "id": "NRbREMan6xA",
+          "title": "오일 거래로 돈벌기        오일 대폭락 언제 멈출까",
           "kind": "shorts",
           "date": ""
         },
         {
-          "id": "e1I5zusELs8",
-          "title": "오일 오늘의 전망",
+          "id": "Po6-VncmE14",
+          "title": "오일 폭락 언제까지 갈까?",
+          "kind": "shorts",
+          "date": ""
+        },
+        {
+          "id": "q5lOQuJ7wY8",
+          "title": "오일 폭락",
           "kind": "shorts",
           "date": ""
         }
@@ -847,8 +860,9 @@
       "auto_slot": {
         "id": "BaSe8o6IBV4",
         "title": "오일 오늘의 전망",
-        "updated": "2026-11-18",
-        "mode": "auto"
+        "updated": "2026-11-10",
+        "mode": "auto",
+        "previous": "Hjfpv_UyF14"
       }
     },
     {
@@ -900,7 +914,7 @@
       "auto_slot": {
         "id": "ZGN9l5jAnkg",
         "title": "천연가스 매매 수익 테스트",
-        "updated": "2026-11-18",
+        "updated": "2026-11-22",
         "mode": "auto"
       }
     },
@@ -973,7 +987,7 @@
       "auto_slot": {
         "id": "FqooNIPz-PI",
         "title": "밀 오늘의 전망",
-        "updated": "2026-11-18",
+        "updated": "2026-11-22",
         "mode": "auto"
       }
     },
@@ -1003,26 +1017,26 @@
           "date": "2026-11-09"
         },
         {
-          "id": "hR4zYexOnnY",
-          "title": "대두 오늘의 전망",
+          "id": "uGxM_IVxt7c",
+          "title": "대두 거래로 돈벌기 ..   대두  떡상 언제까지",
           "kind": "shorts",
           "date": ""
         },
         {
-          "id": "ODhRTl3vJGE",
-          "title": "대두 오늘의 전망",
+          "id": "ZgONa5GFDlw",
+          "title": "대두시장 큰손이 움직였다",
           "kind": "shorts",
           "date": ""
         },
         {
-          "id": "2Ci-QUP_59o",
-          "title": "대두 오늘의 전망 ~ 급락 경고!",
+          "id": "qIZ70sStJWU",
+          "title": "투자자들 몰리는 대두",
           "kind": "shorts",
           "date": ""
         },
         {
-          "id": "MjGceSGajCk",
-          "title": "대두 오늘의 전망 ~ 급락 주의보!",
+          "id": "1cS_CsKdzqc",
+          "title": "대두 지금이 기회!",
           "kind": "shorts",
           "date": ""
         }
@@ -1030,8 +1044,9 @@
       "auto_slot": {
         "id": "B6jXANCbsAY",
         "title": "대두 오늘의 전망",
-        "updated": "2026-11-18",
-        "mode": "auto"
+        "updated": "2026-11-09",
+        "mode": "auto",
+        "previous": "bQhG9cLsQlo"
       }
     },
     {
@@ -1080,26 +1095,26 @@
           "date": ""
         },
         {
+          "id": "Q_0CwV6Auwk",
+          "title": "옥수수 결국 폭등 신호 떴다",
+          "kind": "shorts",
+          "date": ""
+        },
+        {
+          "id": "BgISqcchrnU",
+          "title": "옥수수 거래로 돈벌기   옥수수 승부처는 언제?",
+          "kind": "shorts",
+          "date": ""
+        },
+        {
+          "id": "mWn_XC-gnNY",
+          "title": "옥수수 거래로 돈벌기",
+          "kind": "shorts",
+          "date": ""
+        },
+        {
           "id": "pUaftbRjnJY",
           "title": "옥수수 오늘의 전망 ~옥수수로 하모니카 불어도 좋지만 싸게 사서 비싸게 팔아 돈벌기",
-          "kind": "shorts",
-          "date": ""
-        },
-        {
-          "id": "f4_6Lthtcbc",
-          "title": "옥수수 오늘의 전망  어디로 가나",
-          "kind": "shorts",
-          "date": ""
-        },
-        {
-          "id": "GdPY3H4qw7A",
-          "title": "옥수수 맛있게 먹기도 하지만~돈도 번다^^",
-          "kind": "shorts",
-          "date": ""
-        },
-        {
-          "id": "GOiGLy3IWM4",
-          "title": "옥수수 거래로 돈벌기 전세계가 주목!",
           "kind": "shorts",
           "date": ""
         }
@@ -1107,8 +1122,9 @@
       "auto_slot": {
         "id": "4M84VL0_tsI",
         "title": "옥수수 오늘의 전망 ~ 가격 폭발 언제까지?",
-        "updated": "2026-11-18",
-        "mode": "auto"
+        "updated": "2026-11-22",
+        "mode": "auto",
+        "previous": "mWn_XC-gnNY"
       }
     },
     {
@@ -1152,7 +1168,7 @@
       "auto_slot": {
         "id": "4mrLrVKzWu8",
         "title": "돈육 매매 손익 테스트",
-        "updated": "2026-11-18",
+        "updated": "2026-11-22",
         "mode": "auto"
       }
     },
@@ -1215,41 +1231,42 @@
       ],
       "videos": [
         {
-          "id": "Vnam4KTru1E",
-          "title": "독도국제무역 홈페이지 오픈 국제 상품 가격 제공",
+          "id": "ffC3604a_ZQ",
+          "title": "독도국제무역.com 회의실 오픈",
           "kind": "shorts",
-          "date": "2026-11-09"
+          "date": "2026-11-21"
         },
         {
-          "id": "tGTUkHtT0I4",
+          "id": "m-5rRiiWKOQ",
+          "title": "독도국제무역.com",
+          "kind": "video",
+          "date": ""
+        },
+        {
+          "id": "TPJCiBVIf1s",
           "title": "독도국제무역.com",
           "kind": "shorts",
           "date": ""
         },
         {
-          "id": "QRmpzSiLACw",
+          "id": "yAMq43lzLwc",
           "title": "독도국제무역.com",
           "kind": "shorts",
           "date": ""
         },
         {
-          "id": "0wjGbkXI9_o",
-          "title": "독도버스",
-          "kind": "shorts",
-          "date": ""
-        },
-        {
-          "id": "VAquf45PCLs",
-          "title": "독도버스",
+          "id": "zWfCizijvOk",
+          "title": "독도국제무역.com",
           "kind": "shorts",
           "date": ""
         }
       ],
       "auto_slot": {
-        "id": "Vnam4KTru1E",
-        "title": "독도국제무역 홈페이지 오픈 국제 상품 가격 제공",
-        "updated": "2026-11-18",
-        "mode": "auto"
+        "id": "ffC3604a_ZQ",
+        "title": "독도국제무역.com 회의실 오픈",
+        "updated": "2026-11-21",
+        "mode": "auto",
+        "previous": "URMP0uyz448"
       }
     },
     {
@@ -1279,7 +1296,7 @@
       "auto_slot": {
         "id": "Vss7wNTxLck",
         "title": "독도버스내 독도국제무역.com에서 인턴사원을 모집합니다",
-        "updated": "2026-11-18",
+        "updated": "2026-11-07",
         "mode": "auto"
       }
     }

@@ -7,13 +7,27 @@
    "url": "https://www.youtube.com/@%EC%9E%AC%EB%A1%B1%EB%91%A5%EC%9D%B4-r4y",
    "channel_id": "UCyicBXHBc9G3BFqokbRVUGA"
   },
-  "generated": "2026-11-18 10:38 KST",
+  "generated": "2026-11-22 15:18 KST",
   "source": "live",
-  "total": 604,
+  "total": 606,
   "excluded_songs": 110,
   "note": "노래 쇼츠는 빼고 모았습니다. 편집 화면의 '전체 영상' 목록으로 쓰입니다."
  },
  "videos": [
+  {
+   "id": "ffC3604a_ZQ",
+   "title": "독도국제무역.com 회의실 오픈",
+   "date": "2026-11-21",
+   "kind": "shorts",
+   "matched_ticker": "dokdo"
+  },
+  {
+   "id": "iMVh5Cjx4Hs",
+   "title": "독도국제무역.com 국제상품 정보 스크롤 판넬 앞~",
+   "date": "2026-11-19",
+   "kind": "shorts",
+   "matched_ticker": "dokdo"
+  },
   {
    "id": "XnRR7t_adHA",
    "title": "구리 오늘의 전망",
@@ -66,7 +80,7 @@
   {
    "id": "FqooNIPz-PI",
    "title": "밀 오늘의 전망",
-   "date": "2026-11-04",
+   "date": "",
    "kind": "shorts",
    "matched_ticker": "wheat"
   },
@@ -719,7 +733,7 @@
    "title": "나스닥 매도중",
    "date": "",
    "kind": "shorts",
-   "matched_ticker": null
+   "matched_ticker": "nq"
   },
   {
    "id": "I9TTL4_GjJg",
@@ -1205,20 +1219,6 @@
    "matched_ticker": null
   },
   {
-   "id": "gU0UwS_veXU",
-   "title": "마이크로소프트 추세",
-   "date": "",
-   "kind": "shorts",
-   "matched_ticker": null
-  },
-  {
-   "id": "979GUBWoTdc",
-   "title": "골드 거래로 돈벌기",
-   "date": "",
-   "kind": "shorts",
-   "matched_ticker": "gold"
-  },
-  {
    "id": "8zel43hJZv0",
    "title": "독도국제무역.com",
    "date": "",
@@ -1632,6 +1632,20 @@
    "matched_ticker": null
   },
   {
+   "id": "gU0UwS_veXU",
+   "title": "마이크로소프트 추세",
+   "date": "",
+   "kind": "shorts",
+   "matched_ticker": null
+  },
+  {
+   "id": "979GUBWoTdc",
+   "title": "골드 거래로 돈벌기",
+   "date": "",
+   "kind": "shorts",
+   "matched_ticker": "gold"
+  },
+  {
    "id": "XDJ3K7rQ6N0",
    "title": "빈잔",
    "date": "",
@@ -1903,20 +1917,6 @@
    "date": "",
    "kind": "shorts",
    "matched_ticker": null
-  },
-  {
-   "id": "bQhG9cLsQlo",
-   "title": "대두 가격 폭등",
-   "date": "",
-   "kind": "shorts",
-   "matched_ticker": "soy"
-  },
-  {
-   "id": "wnO8RW9uzkA",
-   "title": "오일 거래로 돈벌기          오일 시장 큰손들이 움직인다",
-   "date": "",
-   "kind": "shorts",
-   "matched_ticker": "oil"
   },
   {
    "id": "0gFyZGWhmwc",
@@ -2388,6 +2388,20 @@
    "matched_ticker": null
   },
   {
+   "id": "bQhG9cLsQlo",
+   "title": "대두 가격 폭등",
+   "date": "",
+   "kind": "shorts",
+   "matched_ticker": "soy"
+  },
+  {
+   "id": "wnO8RW9uzkA",
+   "title": "오일 거래로 돈벌기          오일 시장 큰손들이 움직인다",
+   "date": "",
+   "kind": "shorts",
+   "matched_ticker": "oil"
+  },
+  {
    "id": "OwyeXXRCFSQ",
    "title": "비트코인 폭발 초읽기!",
    "date": "",
@@ -2585,20 +2599,6 @@
   },
   {
    "id": "jfzGvOM_6EU",
-   "title": "독도국제무역.com",
-   "date": "",
-   "kind": "shorts",
-   "matched_ticker": "dokdo"
-  },
-  {
-   "id": "Ldk8QGrBq_4",
-   "title": "독도국제무역.com",
-   "date": "",
-   "kind": "shorts",
-   "matched_ticker": "dokdo"
-  },
-  {
-   "id": "XVH6knl-enU",
    "title": "독도국제무역.com",
    "date": "",
    "kind": "shorts",
@@ -3060,6 +3060,20 @@
    "matched_ticker": "dokdo"
   },
   {
+   "id": "Ldk8QGrBq_4",
+   "title": "독도국제무역.com",
+   "date": "",
+   "kind": "shorts",
+   "matched_ticker": "dokdo"
+  },
+  {
+   "id": "XVH6knl-enU",
+   "title": "독도국제무역.com",
+   "date": "",
+   "kind": "shorts",
+   "matched_ticker": "dokdo"
+  },
+  {
    "id": "Rr4PnJZhFw8",
    "title": "독도국제무역.com",
    "date": "",
@@ -3319,13 +3333,6 @@
    "matched_ticker": "dokdo"
   },
   {
-   "id": "oNPfPHwqIkE",
-   "title": "독도국제무역.com",
-   "date": "",
-   "kind": "shorts",
-   "matched_ticker": "dokdo"
-  },
-  {
    "id": "vuT71IPi2AM",
    "title": "독도국제무역.com",
    "date": "",
@@ -3355,6 +3362,13 @@
   },
   {
    "id": "qCj5grmSt_E",
+   "title": "독도국제무역.com",
+   "date": "",
+   "kind": "shorts",
+   "matched_ticker": "dokdo"
+  },
+  {
+   "id": "oNPfPHwqIkE",
    "title": "독도국제무역.com",
    "date": "",
    "kind": "shorts",
@@ -3879,20 +3893,6 @@
    "matched_ticker": "dokdo"
   },
   {
-   "id": "Ruex8o9IFBY",
-   "title": "독도국제무역.com",
-   "date": "",
-   "kind": "shorts",
-   "matched_ticker": "dokdo"
-  },
-  {
-   "id": "I1tEkGeIc5k",
-   "title": "독도국제무역.com",
-   "date": "",
-   "kind": "shorts",
-   "matched_ticker": "dokdo"
-  },
-  {
    "id": "c4nY3Iy9rrk",
    "title": "독도국제무역.com",
    "date": "",
@@ -4111,6 +4111,20 @@
   },
   {
    "id": "9wOeX7DdlI8",
+   "title": "독도국제무역.com",
+   "date": "",
+   "kind": "shorts",
+   "matched_ticker": "dokdo"
+  },
+  {
+   "id": "Ruex8o9IFBY",
+   "title": "독도국제무역.com",
+   "date": "",
+   "kind": "shorts",
+   "matched_ticker": "dokdo"
+  },
+  {
+   "id": "I1tEkGeIc5k",
    "title": "독도국제무역.com",
    "date": "",
    "kind": "shorts",
