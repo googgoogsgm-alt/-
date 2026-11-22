@@ -598,7 +598,16 @@
   /* ── 프런트데스크 상담 창 (루아 · 도현) ─────────────
      전시관 톤(남색·골드)을 그대로 쓰되, 두 캐릭터의 색으로 구분한다. */
   #desk-modal{padding:calc(12px + env(safe-area-inset-top)) 10px calc(12px + env(safe-area-inset-bottom))}
-  #desk-modal .sheet.desk-sheet{max-width:680px;padding:16px 16px 12px}
+  /* 상담 창은 머리말과 입력칸(#dm-form)을 위·아래에 고정하고 대화 기록(.dm-log)만 줄고 늘게 한다.
+     폰 글자 크기 확대·좁은 폭·키보드가 올라온 낮은 화면에서도 🎤·보내기가 화면 밖으로 밀리지 않는다. */
+  #desk-modal .sheet.desk-sheet{max-width:680px;padding:16px 16px 12px;display:flex;flex-direction:column;
+    overflow:hidden;min-height:0}
+  @supports (height:100dvh){
+    /* 주소창이 접히고 펴지는 실제 보이는 높이에 맞춘다 */
+    #desk-modal .sheet.desk-sheet{max-height:calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom))}
+  }
+  #desk-modal .head,#desk-modal .dm-guide,#desk-modal .dm-convo-hint,#desk-modal .dm-who,
+  #desk-modal .dm-chips,#desk-modal .dm-form,#desk-modal .dm-foot{flex:0 0 auto}
   #desk-modal .head{padding-right:46px}
   #desk-modal .head h2{font-size:20px}
   #desk-modal .head .sub{margin-bottom:10px}
@@ -617,7 +626,8 @@
     box-shadow:0 4px 14px rgba(29,43,69,.18)}
   .dm-pick[data-who="dohyun"].on .dm-role{color:#4a6187}
 
-  .dm-log{height:min(42vh,320px);overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;
+  .dm-log{flex:1 1 auto;min-height:180px;height:auto;max-height:360px;overflow-y:auto;overscroll-behavior:contain;
+    display:flex;flex-direction:column;
     gap:9px;padding:12px;border-radius:16px;border:1px solid var(--line);
     background:linear-gradient(180deg,#f1f6fc,#e9eef7)}
   .dm-row{display:flex;gap:7px;align-items:flex-end;max-width:100%}
@@ -670,25 +680,49 @@
   @media (max-width:760px){
     #desk-modal{padding:calc(8px + env(safe-area-inset-top)) 8px calc(8px + env(safe-area-inset-bottom))}
     #desk-modal .sheet.desk-sheet{padding:14px 13px 11px;border-radius:20px}
-    #desk-modal .head h2{font-size:16.5px;margin:7px 0 2px}
-    #desk-modal .head .sub{font-size:11.5px;line-height:1.45;margin-bottom:8px}
-    .dm-pick{padding:8px 6px;gap:5px}
+    @supports (height:100dvh){
+      #desk-modal .sheet.desk-sheet{max-height:calc(100dvh - 16px - env(safe-area-inset-top) - env(safe-area-inset-bottom))}
+    }
+    #desk-modal .head{padding-right:40px}
+    #desk-modal .head .chip{font-size:10.5px;padding:3px 8px}
+    #desk-modal .head h2{font-size:16.5px;margin:6px 0 2px;line-height:1.3}
+    #desk-modal .head .sub{font-size:11.5px;line-height:1.4;margin-bottom:7px}
+    /* 🗣️ 연속 대화 · 🔊 목소리 응답 · ⏹ 정지 — 360px 폭에서도 한 줄에 들어가게 */
+    #desk-modal .dm-top{flex-wrap:nowrap;gap:5px;justify-content:space-between;margin-top:1px}
+    #desk-modal .dm-top .dm-voice,#desk-modal .dm-top .dm-convo{flex:0 0 auto;margin-left:0;
+      font-size:10px;padding:4px 8px;gap:3px}
+    .dm-guide{font-size:10.5px;padding:6px 9px;margin:0 0 6px;line-height:1.4}
+    .dm-convo-hint{margin:-2px 0 6px}
+    .dm-who{gap:6px;margin:2px 0 7px}
+    .dm-pick{padding:7px 6px;gap:5px}
     .dm-pick b{font-size:12.5px}
     .dm-pick .dm-role{display:none}
-    .dm-log{height:min(38vh,270px);padding:10px;gap:8px}
+    .dm-log{min-height:96px;max-height:none;padding:10px;gap:8px}
     .dm-bub{font-size:12.5px;padding:8px 11px;max-width:86%}
+    .dm-chips{margin-top:7px}
     .dm-chips button{font-size:11px;padding:6px 10px}
+    .dm-form{margin-top:7px}
     .dm-form input{font-size:16px;padding:9px 11px}   /* iOS 자동 확대 방지 */
     .dm-form .dm-send{font-size:12.5px;padding:10px 13px}
+    .dm-foot{margin-top:7px}
     .dm-foot-note{display:none}
   }
   @media (max-height:560px){
+    #desk-modal{padding:calc(4px + env(safe-area-inset-top)) 8px calc(4px + env(safe-area-inset-bottom))}
     #desk-modal .sheet.desk-sheet{padding:10px 12px 8px}
+    @supports (height:100dvh){
+      #desk-modal .sheet.desk-sheet{max-height:calc(100dvh - 8px - env(safe-area-inset-top) - env(safe-area-inset-bottom))}
+    }
     #desk-modal .head h2{font-size:15px;margin:4px 0 0}
     #desk-modal .head .sub{display:none}
-    .dm-log{height:min(34vh,180px)}
+    .dm-log{min-height:70px;max-height:none}
     .dm-who{margin-bottom:7px}
     .dm-chips{margin-top:6px}
+  }
+  /* 아주 낮은 화면(가로 모드·키보드) — 안내 문단을 접어 입력칸 자리를 먼저 지킨다 */
+  @media (max-height:440px){
+    #desk-modal .dm-guide{display:none}
+    .dm-log{min-height:56px}
   }
 
   /* ══ 첫 방문 대화 안내 · 2층 회의실 · 직원 등급 · 음성 회의 ══ */
@@ -883,8 +917,8 @@
     #first-visit .fv-act{font-size:11px;padding:6px 9px}
     #meeting-voice{top:calc(98px + env(safe-area-inset-top));width:calc(100vw - 20px);padding:7px 10px}
     #meeting-voice .mv-txt span{font-size:10px}
-    #desk-modal .dm-voice{font-size:10.5px;padding:4px 9px}
-    #desk-modal .dm-convo{font-size:10.5px;padding:4px 9px}
+    #desk-modal .dm-top .dm-voice{font-size:10px;padding:4px 8px}
+    #desk-modal .dm-top .dm-convo{font-size:10px;padding:4px 8px}
     .dm-convo-hint{font-size:10px;padding:5px 8px}
     .dm-guide{font-size:10.5px;padding:6px 9px}
     .gate-form label,.st-form label,.st-pin label{flex:0 0 62px;font-size:11px}
