@@ -15,10 +15,10 @@
  *              body.isChairman 이면 말하는 사람을 '회장님'으로 부른다.
  *              body.roomZone (fx·metals·index·rates·energy·ags)이면 그 방을 먼저 본다.
  *
- * 실시간 외부 조회(무키·무료 공개 API · 2.8초 안에 끊고 병렬 처리 · 실패해도 답변은 그대로)
+ * 실시간 외부 조회(무키·무료 공개 API · 3.5초 안에 끊고 병렬 처리 · 실패해도 답변은 그대로)
  *  · 날씨·미세먼지 : Open-Meteo (geocoding + forecast + air-quality)
- *  · 뉴스·웹 검색  : Google News RSS(주요 뉴스 / 검색어) + 한국어 위키백과 요약
- *  · 외부 시세     : Yahoo Finance chart (전시관 34종목 밖 자산 — 비트코인·코스피·삼성전자·엔비디아 등)
+ *  · 웹 검색       : 네이버 모바일 검색(m.search.naver.com 요약) + Google News RSS + 한국어/영어 위키백과 검색 API
+ *  · 외부 시세     : Yahoo Finance chart + 종목 검색 (전시관 34종목 밖 자산 — 비트코인·코스피·삼성전자·현대차·엔비디아 등)
  *  결과는 시스템 프롬프트의 [실시간 외부 검색 결과] 블록으로 들어가고, 모델은 그 출처·수치만 인용한다.
  *
  * 요청 (POST JSON)
@@ -139,9 +139,10 @@ const SHARED_KNOWLEDGE = `[전시관 공통 지식]
   매매 권유·수익 보장은 하지 않는다(정보 제공·전시 안내까지).
 · 답변 원칙 — 일반 대화·상식: 인사, 일상 대화, 거시경제·무역·생활 상식, 용어 설명, 의견 묻기는 전시관 데이터에 갇히지 말고 네 성격과 말투로 자유롭고 자연스럽게 답한다.
   일반 상식·개념 질문을 "전시관 데이터에 없습니다"로 막지 않는다.
-· 답변 원칙 — 실시간 외부 정보: 지금은 밖을 직접 조회할 수 있다. 오늘 날씨·미세먼지, 최신 뉴스·속보, 전시관 34종목 밖의 자산(비트코인·코스피·삼성전자·엔비디아 등) 시세, 인물·개념 같은 외부 사실은 함께 주어지는 [실시간 외부 검색 결과] 블록으로 조회해 답한다.
-  그 블록의 출처와 조회 시각을 자연스럽게 밝히고(예: '지금 조회해 보니', 'Open-Meteo 기준으로'), 블록에 적힌 수치·기사 제목·시각만 그대로 인용한다. 블록에 없는 값은 지어내지 않는다.
-  조회 결과가 비어 있으면 "지금 외부 조회가 값을 못 받아왔습니다"라고 짧게 말하고 확인 경로(뉴스 TV·해당 전시실)를 안내한다. 조회 기능이 없다고 말하지 않는다.
+· 답변 원칙 — 실시간 외부 정보: 루아·도현·희망이 모두 지금은 밖을 직접 웹 검색·조회할 수 있다(네이버 웹 검색, 구글 뉴스, 위키백과, 날씨, 외부 시세).
+  오늘 날씨·미세먼지, 최신 뉴스·속보, 전시관 34종목 밖의 자산(비트코인·코스피·삼성전자·현대차·엔비디아 등) 시세, 장소·요금·인물·개념·일반 웹 검색 질문은 함께 주어지는 [실시간 외부 검색 결과] 블록을 바탕으로 바로 답한다.
+  그 블록의 출처와 조회 시각을 자연스럽게 밝히고(예: '지금 검색해 보니', 'Open-Meteo 기준으로'), 블록에 적힌 수치·사실·시각만 그대로 인용한다. 블록에 없는 수치는 지어내지 않는다.
+  조회 결과가 비어 있으면 "지금 외부 검색이 값을 못 받아왔습니다"라고 짧게 말하고 확인 경로(뉴스 TV·해당 전시실)를 안내한다. "검색 기능이 없다"고 말하지 않는다.
 · 날짜·시각은 함께 주어지는 [지금 시각](한국 시간)을 기준으로 센다. '오늘·어제·내일'을 헷갈리지 않는다.
 · 이동 안내가 필요하면 답변 끝에 <<MOVE:구역ID>> 형식으로 한 번만 붙인다(예: <<MOVE:metals>>, <<MOVE:fxticker:gold>>). 화면이 버튼으로 바꿔 준다.`;
 
@@ -734,13 +735,24 @@ const QUOTE_TABLE: QuoteDef[] = [
   { re: /TSMC|티에스엠씨|\bTSM\b/i, symbol: "TSM", name: "TSMC", kind: "stock" },
   { re: /브로드컴|\bAVGO\b/i, symbol: "AVGO", name: "브로드컴", kind: "stock" },
   { re: /팔란티어|\bPLTR\b/i, symbol: "PLTR", name: "팔란티어", kind: "stock" },
+  { re: /셀트리온/, symbol: "068270.KS", name: "셀트리온", kind: "stock" },
+  { re: /포스코홀딩스|포스코|POSCO/i, symbol: "005490.KS", name: "POSCO홀딩스", kind: "stock" },
+  { re: /KB금융/, symbol: "105560.KS", name: "KB금융", kind: "stock" },
+  { re: /신한지주|신한금융/, symbol: "055550.KS", name: "신한지주", kind: "stock" },
+  { re: /한화에어로스페이스|한화에어로/, symbol: "012450.KS", name: "한화에어로스페이스", kind: "stock" },
+  { re: /HD현대중공업|현대중공업/, symbol: "329180.KS", name: "HD현대중공업", kind: "stock" },
+  { re: /두산에너빌리티|두산중공업/, symbol: "034020.KS", name: "두산에너빌리티", kind: "stock" },
+  { re: /에코프로/, symbol: "086520.KQ", name: "에코프로", kind: "stock" },
+  { re: /하이브|HYBE/i, symbol: "352820.KS", name: "하이브", kind: "stock" },
+  { re: /마이크론|\bMU\b/i, symbol: "MU", name: "마이크론", kind: "stock" },
+  { re: /ASML/i, symbol: "ASML", name: "ASML", kind: "stock" },
   { re: /\bAMD\b|에이엠디/i, symbol: "AMD", name: "AMD", kind: "stock" },
   { re: /인텔|\bINTC\b/i, symbol: "INTC", name: "인텔", kind: "stock" },
   { re: /넷플릭스|\bNFLX\b/i, symbol: "NFLX", name: "넷플릭스", kind: "stock" },
 ];
 
-const QUOTE_INTENT_RE = /주가|시세|가격|얼마|시세|등락|상승|하락|폭락|폭등|올랐|떨어|어때|어떻게|전망|차트|알려|지금|현재|오늘/;
-const QUOTE_STRONG_RE = /비트코인|이더리움|리플|솔라나|도지|코스피|코스닥|원\s*달러|달러\s*원|환율|삼성전자|하이닉스|엔비디아|테슬라|나스닥|다우/i;
+const QUOTE_INTENT_RE = /주가|주식|시세|가격|얼마|등락|상승|하락|폭락|폭등|올랐|떨어|어때|어떻게|전망|차트|알려|지금|현재|오늘/;
+const QUOTE_STRONG_RE = /비트코인|이더리움|리플|솔라나|도지|코스피|코스닥|원\s*달러|달러\s*원|환율|삼성전자|하이닉스|현대차|기아|네이버|카카오|엔비디아|테슬라|애플|구글|마소|아마존|팔란티어|마이크론|에코프로|셀트리온|포스코|나스닥|다우/i;
 
 /** 메시지에 나온 외부 자산 — 의도어가 없어도 '비트코인'처럼 확실한 자산이면 조회한다(메타버스 같은 오인 방지). */
 function quoteMatches(message: string): QuoteDef[] {
@@ -874,7 +886,7 @@ async function liveQuoteBlock(message: string): Promise<string> {
     })());
   }
 
-  // 표에 없는 대문자 티커는 검색으로 심볼을 확인한 뒤 조회한다.
+  // 표에 없는 대문자 티커 또는 '주가/주식' 질문 검색어로 심볼을 찾아 조회한다.
   if (defs.length < 3) {
     for (const tk of latinTickers(message)) {
       if (defs.some((d) => d.symbol.toUpperCase() === tk)) continue;
@@ -883,6 +895,17 @@ async function liveQuoteBlock(message: string): Promise<string> {
         if (!sym) return "";
         const res = await yahooChart(sym);
         return res ? quoteLine(tk, sym, res, "stock") : "";
+      })());
+    }
+  }
+  if (!tasks.length && /주가|주식/.test(message)) {
+    const q = coreQuery(message).replace(/\b(?:주가|주식)\b/g, "").trim();
+    if (q.length >= 2) {
+      tasks.push((async () => {
+        const sym = await yahooSearchSymbol(q);
+        if (!sym) return "";
+        const res = await yahooChart(sym);
+        return res ? quoteLine(q, sym, res, "stock") : "";
       })());
     }
   }
@@ -954,6 +977,8 @@ const INTERNAL_RE = /전시관|전시실|부스|판넬|회의실|방명록|프�
 
 const WIKI_RE = /뭐야|뭐지|뭔가요|무엇인가요|무엇인지|무엇입니까|무슨\s*(?:뜻|의미|건가|거야)|정의|뜻이\s*뭐|설명해\s*(?:줘|주세요)|이란\s*[?？]?|라는\s*(?:게|건)\s*뭐|누구야|누구지|유래|어원/;
 
+const SEARCH_FORCE_RE = /검색|찾아\s*(?:줘|봐|주|보)|알아\s*(?:봐|와|줘)|웹|인터넷|위키|누구|뭐야|뭔가|무엇|언제|어디|얼마|왜|어떻게|입장료|영업시간|전화번호|주소|위치|맛집|추천|후기|가격|요금|비교|뜻|정의|결과|순위|출시|발표|금리|관세|주식|주가/;
+
 /** 질문에서 검색어만 남긴다(요청 동사·의문 어미·군더더기 제거). */
 function coreQuery(message: string): string {
   let q = String(message || "").normalize("NFC");
@@ -1012,53 +1037,134 @@ async function liveNewsBlock(message: string): Promise<string> {
   return `${head} · ${now.label} 조회\n${lines.join("\n")}`;
 }
 
+async function wikiSearchTop(lang: "ko" | "en", query: string): Promise<{ title: string; extract: string } | null> {
+  const sUrl = `https://${lang}.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&srlimit=3&format=json&utf8=1`;
+  const r = await fetchTextWithTimeout(sUrl, {
+    headers: { "User-Agent": "Mozilla/5.0 (compatible; dokdo-frontdesk/1.2)", "Accept-Language": lang },
+  }, LIVE_TIMEOUT_MS, `wiki search ${lang}`);
+  if (!r.ok) return null;
+  const j = JSON.parse(r.raw);
+  const hits: any[] = Array.isArray(j?.query?.search) ? j.query.search : [];
+  if (!hits.length) return null;
+
+  const qTerms = query.toLowerCase().split(/\s+/).filter((w) => w.length >= 2);
+  const hit = hits.find((h) => {
+    const t = String(h?.title || "").toLowerCase();
+    return qTerms.some((w) => t.includes(w));
+  }) || hits[0];
+  const title = String(hit?.title || "").trim();
+  if (!title) return null;
+
+  // 요약문 먼저 조회(없으면 검색 스니펫으로 대체)
+  const sumUrl = `https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title.replace(/\s+/g, "_"))}?redirect=true`;
+  const sr = await fetchTextWithTimeout(sumUrl, {
+    headers: { "User-Agent": "Mozilla/5.0 (compatible; dokdo-frontdesk/1.2)", "Accept-Language": lang },
+  }, LIVE_TIMEOUT_MS, `wiki summary ${lang}`);
+  if (sr.ok) {
+    try {
+      const sj = JSON.parse(sr.raw);
+      if (sj && sj.type !== "disambiguation" && sj.extract) {
+        return { title: String(sj.title || title), extract: String(sj.extract).replace(/\s+/g, " ").slice(0, 340) };
+      }
+    } catch (_e) { /* ignore */ }
+  }
+  const snip = xmlDecode(String(hit?.snippet || ""));
+  return snip ? { title, extract: snip.slice(0, 300) } : null;
+}
+
 async function liveWikiBlock(message: string): Promise<string> {
   const q = coreQuery(message);
-  if (!q) return "";
-  const title = q.split(" ").slice(0, 3).join(" ").trim();
-  if (title.length < 2) return "";
-  const url = `https://ko.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title.replace(/\s+/g, "_"))}?redirect=true`;
+  if (!q || q.length < 2) return "";
   try {
-    const r = await fetchTextWithTimeout(url, {
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; dokdo-frontdesk/1.1)", "Accept-Language": "ko" },
-    }, LIVE_TIMEOUT_MS, "wikipedia");
-    if (!r.ok) return "";
-    const j = JSON.parse(r.raw);
-    if (!j || j.type === "disambiguation" || !j.extract) return "";
-    const norm = (s: unknown) => String(s || "").replace(/\s+/g, "").toLowerCase();
-    const t = norm(j.title);
-    const k = norm(q);
-    if (!t || !k) return "";
-    // 제목이 질문과 실제로 겹칠 때만 쓴다(동음 문서 오인 방지)
-    if (!t.includes(k) && !k.includes(t)) return "";
-    const extract = String(j.extract).replace(/\s+/g, " ").slice(0, 300);
-    return `■ 위키백과 — ${j.title}: ${extract}`;
+    let hit = await wikiSearchTop("ko", q);
+    if (!hit && /[A-Za-z]{2,}/.test(q)) {
+      hit = await wikiSearchTop("en", q);
+    }
+    if (!hit) return "";
+    return `■ 위키백과 — ${hit.title}: ${hit.extract}`;
   } catch (e) {
     console.warn(`[frontdesk-chat] wikipedia 실패: ${String((e as Error)?.message || e).slice(0, 140)}`);
     return "";
   }
 }
 
-type LivePlan = { weather: boolean; quotes: boolean; news: boolean; wiki: boolean };
+const NAVER_NOISE_PREFIXES = [
+  "검색옵션", "정렬", "관련도순", "최신순", "기간", "직접입력", "펼치기", "접기", "도움말", "신고", "저장", "공유",
+  "더보기", "길찾기", "거리뷰", "내비게이션", "네이버뉴스", "네이버페이", "네이버에 로그인", "Keep에서 확인",
+  "클립", "블로그", "카페", "지식iN", "동영상", "쇼핑", "어학사전", "인플루언서", "전체보기", "이전페이지", "새 창 열림",
+  "네이버가 AI를 활용해", "검색 결과", "제안 검색어", "유료 광고", "파워링크", "관련뉴스", "언론사",
+];
 
-const NONE_PLAN: LivePlan = { weather: false, quotes: false, news: false, wiki: false };
+async function liveWebBlock(message: string): Promise<string> {
+  const q = coreQuery(message) || String(message || "").trim().slice(0, 60);
+  if (!q || q.length < 2) return "";
+  const url = `https://m.search.naver.com/search.naver?query=${encodeURIComponent(q)}`;
+  try {
+    const r = await fetchTextWithTimeout(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S731N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0 Mobile Safari/537.36",
+        "Accept-Language": "ko-KR,ko;q=0.9",
+      },
+    }, 3600, "naver web");
+    if (!r.ok || !r.raw) return "";
+    let body = r.raw.replace(/<(script|style|svg|noscript|header|footer|nav)[^>]*>[\s\S]*?<\/\1>/gi, " ");
+    const mpIdx = body.indexOf('id="main_pack"');
+    if (mpIdx >= 0) body = body.slice(mpIdx, mpIdx + 180000);
+    else body = body.slice(0, 180000);
+    const linesRaw = body.replace(/<[^>]+>/g, "\n").split("\n");
+    const lines: string[] = [];
+    const seen = new Set<string>();
+    for (const raw of linesRaw) {
+      const s = xmlDecode(raw);
+      if (s.length < 15 || s.length > 200) continue;
+      if (s.endsWith(": 네이버 검색")) continue;
+      if (NAVER_NOISE_PREFIXES.some((n) => s === n || s.startsWith(n))) continue;
+      if (seen.has(s)) continue;
+      seen.add(s);
+      lines.push(` · ${s.slice(0, 150)}`);
+      if (lines.length >= 6) break;
+    }
+    if (!lines.length) return "";
+    const now = kstNow();
+    return `■ 웹 검색(네이버) — '${q}' · ${now.label} 조회\n${lines.join("\n")}`;
+  } catch (e) {
+    console.warn(`[frontdesk-chat] naver web 실패: ${String((e as Error)?.message || e).slice(0, 140)}`);
+    return "";
+  }
+}
 
-/** 질문을 보고 어떤 외부 조회를 할지 정한다(인사·순수 전시관 안내에는 아무 것도 조회하지 않는다). */
+type LivePlan = { weather: boolean; quotes: boolean; news: boolean; wiki: boolean; web: boolean };
+
+const NONE_PLAN: LivePlan = { weather: false, quotes: false, news: false, wiki: false, web: false };
+
+/** 질문을 보고 어떤 외부 조회를 할지 정한다(인사·순수 전시관 UI 안내만 건너뛰고 모든 일반·검색 질문은 조회한다). */
 function planExternal(message: string): LivePlan {
   const m = String(message || "").trim();
   if (m.length < 2) return NONE_PLAN;
   if (GREET_ONLY_RE.test(m)) return NONE_PLAN;
 
+  const explicitSearch = /검색|찾아\s*(?:줘|봐|주|보)|알아\s*(?:봐|와|줘)|웹|인터넷|위키/.test(m);
   const weather = WEATHER_RE.test(m);
-  const quotes = quoteMatches(m).length > 0;
+  const quotes = quoteMatches(m).length > 0 || /주가|주식/.test(m);
   const internal = INTERNAL_RE.test(m);
 
-  let news = false;
-  if (/뉴스|속보|헤드라인|보도/.test(m) && !/뉴스\s*TV/.test(m)) news = true;
-  else if (NEWS_RE.test(m) && !internal && !weather && !quotes) news = true;
+  // 순수 전시관 사용법·시설 문의만 외부 검색을 생략한다.
+  if (internal && !explicitSearch && !weather && !quotes && !/뉴스|속보|헤드라인|보도/.test(m)) {
+    return NONE_PLAN;
+  }
 
-  const wiki = WIKI_RE.test(m) && !internal && !weather && !quotes;
-  return { weather, quotes, news, wiki };
+  const newsIntent = (/뉴스|속보|헤드라인|보도/.test(m) && !/뉴스\s*TV/.test(m)) ||
+    NEWS_RE.test(m) || explicitSearch || SEARCH_FORCE_RE.test(m);
+  const wiki = (WIKI_RE.test(m) || explicitSearch || /누구|어디|뜻|정의|유래/.test(m)) && !weather;
+  const web = explicitSearch || SEARCH_FORCE_RE.test(m) || (!weather && !quotes && m.length >= 4);
+
+  return {
+    weather,
+    quotes,
+    news: newsIntent && !weather,
+    wiki,
+    web: web && !(weather && !explicitSearch && m.length <= 14),
+  };
 }
 
 /** 실시간 외부 검색 결과 블록. 아무 것도 못 받으면 빈 문자열(답변은 그대로 나간다). */
@@ -1069,6 +1175,7 @@ async function fetchExternalLive(message: string): Promise<{ block: string; sour
     const jobs: Array<{ label: string; promise: Promise<string> }> = [];
     if (plan.weather) jobs.push({ label: "weather", promise: liveWeatherBlock(message) });
     if (plan.quotes) jobs.push({ label: "quotes", promise: liveQuoteBlock(message) });
+    if (plan.web) jobs.push({ label: "web", promise: liveWebBlock(message) });
     if (plan.news) jobs.push({ label: "news", promise: liveNewsBlock(message) });
     if (plan.wiki) jobs.push({ label: "wiki", promise: liveWikiBlock(message) });
     if (!jobs.length) return { block: "", sources };
@@ -1087,9 +1194,9 @@ async function fetchExternalLive(message: string): Promise<{ block: string; sour
     if (!parts.length) return { block: "", sources: [] };
 
     const now = kstNow();
-    // Groq 무료 티어(분당 8,000토큰) 보호 — 외부 블록은 1,600자까지만 싣는다(날씨+시세 ≈ 730자, 뉴스 5건 ≈ 600자).
+    // Groq 무료 티어 보호 — 외부 검색 블록은 1,900자까지 싣는다.
     let body = parts.join("\n");
-    if (body.length > 1600) body = body.slice(0, 1600).replace(/[^\n]*$/, "").replace(/\s+$/, "") + "\n …(이하 생략)";
+    if (body.length > 1900) body = body.slice(0, 1900).replace(/[^\n]*$/, "").replace(/\s+$/, "") + "\n …(이하 생략)";
     const block = [
       `[실시간 외부 검색 결과 · ${now.label} 조회 — 아래 출처·시각·수치만 그대로 근거로 답한다]`,
       body,
@@ -1109,6 +1216,7 @@ async function askGemini(
   system: string,
   history: ChatTurn[],
   message: string,
+  useGoogleSearch = false,
 ): Promise<string> {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
   const contents = history.map((h) => ({
@@ -1117,23 +1225,26 @@ async function askGemini(
   }));
   contents.push({ role: "user", parts: [{ text: message }] });
 
+  const reqPayload: Record<string, unknown> = {
+    systemInstruction: { parts: [{ text: system }] },
+    contents,
+    // Gemini 4 / 3.6+ 에서 temperature·topP 는 deprecated(경고·향후 400)라 보내지 않는다.
+    // thinking 모델이 1024 토큰에서 본문 전에 잘리지 않도록 4096 으로 넉넉히 준다.
+    generationConfig: { maxOutputTokens: 4096 },
+    safetySettings: [
+      { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_ONLY_HIGH" },
+      { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_ONLY_HIGH" },
+      { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_ONLY_HIGH" },
+      { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_ONLY_HIGH" },
+    ],
+  };
+  if (useGoogleSearch) reqPayload.tools = [{ google_search: {} }];
+
   const res = await fetchTextWithTimeout(url, {
     method: "POST",
     // 키는 URL 이 아니라 헤더로 — Content.role 은 'user'|'model' 만 허용하므로 systemInstruction 에 role 을 넣지 않는다.
     headers: { "Content-Type": "application/json", "x-goog-api-key": key },
-    body: JSON.stringify({
-      systemInstruction: { parts: [{ text: system }] },
-      contents,
-      // Gemini 4 / 3.6+ 에서 temperature·topP 는 deprecated(경고·향후 400)라 보내지 않는다.
-      // thinking 모델이 1024 토큰에서 본문 전에 잘리지 않도록 4096 으로 넉넉히 준다.
-      generationConfig: { maxOutputTokens: 4096 },
-      safetySettings: [
-        { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_ONLY_HIGH" },
-        { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_ONLY_HIGH" },
-        { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_ONLY_HIGH" },
-        { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_ONLY_HIGH" },
-      ],
-    }),
+    body: JSON.stringify(reqPayload),
   }, GEMINI_TIMEOUT_MS, `gemini ${model}`);
 
   const raw = res.raw;
@@ -1261,11 +1372,12 @@ ${character === "heemang" ? "회장님 질문" : "방문객 질문"}: ${message}
     errors.push("GROQ_API_KEY 없음");
   }
 
-  // 2순위 Gemini(보조) — 모델을 차례로 시도
+  // 2순위 Gemini(보조) — 모델을 차례로 시도(외부 검색 질문이면 Google Search 그라운딩도 함께 켠다)
   if (geminiKey) {
+    const useGSearch = !GREET_ONLY_RE.test(message);
     for (const model of GEMINI_MODELS) {
       try {
-        const text = await askGemini(geminiKey, model, system, history, message);
+        const text = await askGemini(geminiKey, model, system, history, message, useGSearch);
         const { text: reply, moves } = extractMoves(text, message);
         console.log(`[frontdesk-chat] groq 실패 → gemini ${model} 로 답변 (groq 오류 ${errors.length}건)`);
         return json({

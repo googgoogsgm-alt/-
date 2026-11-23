@@ -11018,12 +11018,16 @@
   }
 
   /* 맞는 질문이면 즉답 객체, 아니면 null */
+  var HEEMANG_SEARCH_EXT_RE = /검색|찾아\s*(?:줘|봐|주|보)|알아\s*(?:봐|와|줘)|웹|인터넷|위키|날씨|기온|미세먼지|주가|주식|환율|코스피|코스닥|비트코인|이더리움|리플|솔라나|삼성전자|하이닉스|현대차|기아|네이버|카카오|엔비디아|테슬라|애플|나스닥|트럼프|연준|한국은행|대통령|맛집|입장료|영업시간|전화번호|무슨\s*뜻|누구|아파팅/i;
+
   function heemangInstant(q) {
     var b = SECRETARY.data;
     var text = String(q || '').trim();
     if (!text) return null;
     var low = text.toLowerCase();
     var addr = heemangAddress();
+    // 외부 검색·시세·날씨·웹 질문은 내장 즉답으로 가로채지 않고 반드시 clever-function 검색으로 넘긴다.
+    if (HEEMANG_SEARCH_EXT_RE.test(text)) return null;
     if (!b) {
       if (/안녕|반가|누구|희망/i.test(text)) {
         return { reply: addr + ', 희망이입니다. 오늘 브리프를 아직 받지 못했습니다. 매일 09:30 동기화되면 7종목 분석으로 바로 답해 드리겠습니다.', moves: null };
@@ -11041,7 +11045,7 @@
     if (text.length <= 30 && /안녕|하이|헬로|hello|\bhi\b|반가|어서|거기|누구(세요|야|니|인가)|이름|뭐해|뭐 하|소개|들리|듣고|마이크/i.test(text)) {
       return {
         reply: addr + ', 희망이입니다. ' + heemangSyncLabel() + ' 동기화된 국제상품 브리프로 바로 답해 드립니다.\n' +
-          '7종목 변곡·롤오버·COT·예측, 전시실 안내, 뉴스 TV 무엇이든 물어보세요.',
+          '7종목 변곡·롤오버·COT·예측, 전시실 안내, 뉴스 TV에 더해 실시간 웹 검색까지 무엇이든 물어보세요.',
         moves: null
       };
     }
@@ -11063,21 +11067,22 @@
       return heemangMethodReply();
     }
 
-    // 5) 뉴스
-    if (/뉴스|헤드라인|시장|거시|동향|속보|오늘\s*어때|분위기/.test(low)) {
+    // 5) 전시관 뉴스 요약 (외부 검색어·최근·외부 주제가 없는 순수 시황 뉴스 요청만 즉답)
+    if (/뉴스|헤드라인|시장|거시|동향|속보|오늘\s*어때|분위기/.test(low) &&
+        !/외부|최근|요즘|이슈|왜|누구|무슨/.test(text) && text.length <= 24) {
       var nr = heemangNewsReply(zone);
       if (nr) return nr;
     }
 
-    // 6) 여기/이 방 — 지금 서 있는 전시실
-    if (/여기|이\s*방|이방|여기서|무엇이\s*있|뭐\s*있|뭐가\s*있|종목\s*(뭐|목록|알려)|어떤\s*종목|전시실|어디|지도|안내/.test(low)) {
+    // 6) 여기/이 방 — 지금 서 있는 전시실 (외부 장소·가격·왜·언제 질문은 제외)
+    if (/여기|이\s*방|이방|여기서|무엇이\s*있|뭐\s*있|뭐가\s*있|종목\s*(뭐|목록|알려)|어떤\s*종목|전시실|지도|안내/.test(low) &&
+        !/왜|언제|어떻게|얼마/.test(text)) {
       if (zone) return heemangZoneReply(zone);
-      if (/전시실|어디|지도|안내|방/.test(low)) return heemangRoomsReply();
       return heemangRoomsReply();
     }
 
-    // 7) 방 안에서 방 주제를 물으면 그 방 요약
-    if (zone && /어때|전망|요약|알려|브리프|방/.test(low)) return heemangZoneReply(zone);
+    // 7) 방 안에서 방 주제를 물으면 그 방 요약 (핵심 종목/전망/요약/브리프 요청만)
+    if (zone && /핵심\s*종목|종목\s*어때|방\s*(요약|브리프|어때)|이\s*방\s*어때/.test(low)) return heemangZoneReply(zone);
 
     return null;
   }
@@ -11728,6 +11733,7 @@
     busy: false,
     mode: 'local',            // 'ai' = 실시간 두뇌 연결 · 'local' = 내장 안내
     provider: '', model: '',
+    live: [],
     lastErr: '',
     convo: false,             // 🗣️ 연속 음성 대화 — 대답이 끝나면 자동으로 다시 듣는다
     listenTimer: 0,           // 자동 재청취 예약
@@ -12037,12 +12043,15 @@
     var el = $('dm-badge');
     if (!el) return;
     var ai = DESK_CHAT.mode === 'ai';
+    var liveMap = { web: '웹', news: '뉴스', wiki: '위키', quotes: '시세', weather: '날씨' };
+    var liveTags = (DESK_CHAT.live || []).map(function (k) { return liveMap[k] || k; });
     el.textContent = ai
-      ? 'AI 실시간 두뇌 연결됨' + (DESK_CHAT.model ? ' · ' + DESK_CHAT.model : '')
+      ? (liveTags.length ? '🔍 실시간 검색(' + liveTags.join('·') + ') 반영' : 'AI 실시간 두뇌 연결됨') +
+        (DESK_CHAT.model ? ' · ' + DESK_CHAT.model : '')
       : '전시관 내장 안내 모드 (AI 키 연결 대기)';
     el.classList.toggle('ai', ai);
     el.title = ai
-      ? 'Gemini/Groq 기반 실시간 답변'
+      ? 'Groq/Gemini 기반 실시간 웹 검색·답변'
       : '뉴스 TV·34개 종목·604편 쇼츠·지표 지식으로 답합니다. Supabase에 AI 키를 넣으면 실시간 두뇌로 바뀝니다.';
   }
 
@@ -12071,7 +12080,7 @@
     });
     if (DESK_CHAT.busy) {
       html += '<div class="dm-row"><span class="dm-av">' + av +
-        '</span><div class="dm-bub dm-typing"><i></i><i></i><i></i> 답변을 준비하고 있어요</div></div>';
+        '</span><div class="dm-bub dm-typing"><i></i><i></i><i></i> 🔍 검색·답변을 준비하고 있어요</div></div>';
     }
     box.innerHTML = html;
     box.scrollTop = box.scrollHeight;
@@ -12299,10 +12308,12 @@
           DESK_CHAT.mode = 'ai';
           DESK_CHAT.provider = res.provider || '';
           DESK_CHAT.model = res.model || '';
+          DESK_CHAT.live = res.live || [];
           reply = res.reply;
           moves = res.moves || null;
         } else {
           DESK_CHAT.mode = 'local';
+          DESK_CHAT.live = [];
           DESK_CHAT.lastErr = (res && res.error) || '';
           var loc = heemangLocalAnswer(q);
           reply = loc.reply;
@@ -12332,6 +12343,7 @@
         DESK_CHAT.mode = 'ai';
         DESK_CHAT.provider = res.provider || '';
         DESK_CHAT.model = res.model || '';
+        DESK_CHAT.live = res.live || [];
         deskPush(who, 'host', res.reply, { moves: res.moves || null, provider: res.provider, model: res.model });
         renderDeskBadge();
         hostSay(who, res.reply);
@@ -12339,6 +12351,7 @@
       } else {
         var local = localDeskAnswer(who, q);
         DESK_CHAT.mode = 'local';
+        DESK_CHAT.live = [];
         DESK_CHAT.lastErr = (res && res.error) || '';
         deskPush(who, 'host', local.reply, { moves: local.moves });
         renderDeskBadge();
@@ -12350,6 +12363,7 @@
       DESK_CHAT.busy = false;
       var local = localDeskAnswer(who, q);
       DESK_CHAT.mode = 'local';
+      DESK_CHAT.live = [];
       deskPush(who, 'host', local.reply, { moves: local.moves });
       renderDeskBadge();
       hostSay(who, local.reply.split('\n')[0]);
@@ -12373,7 +12387,7 @@
     var mv = deskSanitizeMoves(d.moves);
     if (!mv && tokenMoves.length) mv = deskSanitizeMoves(tokenMoves);
     return { ok: true, reply: reply, provider: d.provider || '', model: d.model || '',
-             moves: mv, character: String(d.character || '') };
+             moves: mv, character: String(d.character || ''), live: Array.isArray(d.live) ? d.live : [] };
   }
 
   /* Edge Function 한 번 호출 */
