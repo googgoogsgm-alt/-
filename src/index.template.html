@@ -11844,8 +11844,13 @@
   function openHeemang(zone) {
     DESK_CHAT.roomZone = zone || '';
     DESK_CHAT.who = 'heemang';
-    if (!DESK_CHAT.log.heemang.length) {
-      DESK_CHAT.log.heemang.push({ role: 'host', text: heemangGreeting(DESK_CHAT.roomZone), moves: null });
+    var log = DESK_CHAT.log.heemang;
+    // 방 피클에서 열었고 아직 대화 전이면 — 인사말을 그 방 기준으로 새로 쓴다
+    if (zone && log.length <= 1 && (!log.length || log[0].role === 'host')) {
+      log.length = 0;
+      log.push({ role: 'host', text: heemangGreeting(zone), moves: null });
+    } else if (!log.length) {
+      log.push({ role: 'host', text: heemangGreeting(DESK_CHAT.roomZone), moves: null });
     }
     openDeskModal('heemang');
     if (HEEMANG.fig) {
