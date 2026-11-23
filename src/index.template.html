@@ -13383,6 +13383,7 @@
     SID_KEY: 'dokdo_visit_session_v1',
     VID_KEY: 'dokdo_visitor_id_v1',
     LOG_KEY: 'dokdo_visit_logged_v1',
+    NT_KEY: 'dokdo_notrack_v1',
     pin: '', data: null, logged: false, renameTimer: null,
     rand: function () {
       try { if (window.crypto && crypto.randomUUID) return crypto.randomUUID(); } catch (e) {}
@@ -13411,10 +13412,40 @@
         return r || {};
       });
     },
+    /* 방문자 통계에 넣을 접속인가 — 테스트·자동화·로컬 접속은 세지 않는다.
+       file:// · localhost/127.0.0.1/::1 · Playwright 등 자동 브라우저(navigator.webdriver) ·
+       ?notrack=1 또는 ?test=1 (이 탭 동안 유지, ?notrack=0 으로 해제) */
+    shouldTrack: function () {
+      try {
+        if (location.protocol === 'file:') return false;
+        var host = String(location.hostname || '').toLowerCase();
+        if (host === 'localhost' || host === '127.0.0.1' || host === '0.0.0.0' ||
+            host === '::1' || host === '[::1]') return false;
+        if (navigator.webdriver === true) return false;
+        var flag = null;
+        try {
+          var q = new URLSearchParams(location.search || '');
+          if (q.has('notrack')) flag = q.get('notrack');
+          else if (q.has('test')) flag = q.get('test');
+        } catch (e) {}
+        if (flag !== null) {
+          if (flag === '0' || flag === 'false') {
+            try { sessionStorage.removeItem(VISITS.NT_KEY); } catch (e) {}
+          } else {
+            try { sessionStorage.setItem(VISITS.NT_KEY, '1'); } catch (e) {}
+            return false;
+          }
+        }
+        try { if (sessionStorage.getItem(VISITS.NT_KEY) === '1') return false; } catch (e) {}
+        try { if (localStorage.getItem(VISITS.NT_KEY) === '1') return false; } catch (e) {}
+      } catch (e) {}
+      return true;
+    },
     /* 방문 1회 기록 — 같은 탭에서는 새로고침·방 이동으로 다시 세지 않는다 */
     log: function () {
       if (VISITS.logged) return;
       VISITS.logged = true;
+      if (!VISITS.shouldTrack()) return;   // 테스트·자동화·로컬 접속은 기록도 이름 변경도 보내지 않는다
       try { if (sessionStorage.getItem(VISITS.LOG_KEY) === '1') return; } catch (e) {}
       if (!PANELS.online()) return;
       try { sessionStorage.setItem(VISITS.LOG_KEY, '1'); } catch (e) {}
@@ -13424,10 +13455,11 @@
       }).catch(function () {});      // DB 미적용·오프라인이어도 전시관은 그대로 돈다
     },
     rename: function (name) {
+      if (!VISITS.shouldTrack()) return;
       if (VISITS.renameTimer) clearTimeout(VISITS.renameTimer);
       VISITS.renameTimer = setTimeout(function () {
         VISITS.renameTimer = null;
-        if (!PANELS.online()) return;
+        if (!VISITS.shouldTrack() || !PANELS.online()) return;
         VISITS.rpc('update_gallery_visit_name', { p_session_id: VISITS.sid(), p_name: name || '방문자' })
           .catch(function () {});
       }, 900);
@@ -14072,6 +14104,7 @@
       window.__gallery = {
         state: state,
         data: data,
+        visitsTracked: function () { return VISITS.shouldTrack(); },   // 읽기 전용 — 검증용
         goTicker: goTicker,
         goEntrance: goEntrance,
         goRoom: goRoom,
