@@ -111,6 +111,7 @@
   @keyframes spin{to{transform:rotate(360deg)}}
   .boot-card h1{font-size:17px;margin:0 0 6px;letter-spacing:-.3px}
   .boot-card p{font-size:13px;color:var(--muted);margin:0;line-height:1.5}
+  #boot-msg:empty{display:none}
 
   /* ── 모달 ───────────────────────────────── */
   .overlay{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;
@@ -1187,7 +1188,7 @@
   <div class="boot-card">
     <div class="ring" id="boot-ring"></div>
     <h1>회사 방문을 환영합니다</h1>
-    <p id="boot-msg">3D 엔진과 판넬 데이터를 불러오는 중입니다.</p>
+    <p id="boot-msg"></p>
   </div>
 </div>
 
