@@ -626,6 +626,37 @@
   .dm-pick[data-who="dohyun"].on{border-color:#2b4368;background:#f3f7fd;color:#1d2b45;
     box-shadow:0 4px 14px rgba(29,43,69,.18)}
   .dm-pick[data-who="dohyun"].on .dm-role{color:#4a6187}
+  /* 🩷 희망이 — 분홍 'ㅈ' 피클 비서 */
+  .dm-pick[data-who="heemang"].on{border-color:#f49bb4;background:#fff2f7;color:#a33549;
+    box-shadow:0 4px 14px rgba(244,155,180,.26)}
+  .dm-pick[data-who="heemang"].on .dm-role{color:#c05a75}
+  .dm-pick[data-who="heemang"] .dm-face{filter:saturate(1.1)}
+  /* 👑 회장님 인증 · 수행 모드 — 희망이가 열려 있을 때만 보인다 */
+  #dm-chair{display:none;border:1.4px solid #f0c4d2;background:#fff;cursor:pointer;
+    font-family:inherit;font-size:11px;font-weight:900;color:#a33549;border-radius:999px;padding:5px 10px;
+    align-items:center;gap:4px;white-space:nowrap}
+  #desk-modal.heemang #dm-chair{display:inline-flex}
+  #dm-chair.on{background:#fff2f7;border-color:#f49bb4}
+  #dm-chair-row{display:none;align-items:center;gap:6px;margin:0 0 8px;padding:7px 9px;border-radius:11px;
+    background:#fff4f8;border:1px solid #f6cdd9;flex-wrap:wrap}
+  #dm-chair-row.show{display:flex}
+  #dm-chair-row label{font-size:10.5px;font-weight:900;color:#a33549}
+  #dm-chair-row input{flex:0 0 92px;min-width:0;font-family:inherit;font-size:13px;padding:6px 8px;
+    border:1.4px solid #f0c4d2;border-radius:9px;background:#fff;outline:none}
+  #dm-chair-row button{border:0;cursor:pointer;font-family:inherit;font-size:11px;font-weight:900;
+    color:#fff;background:#e8607a;border-radius:9px;padding:7px 11px}
+  #dm-chair-row .dm-chair-msg{flex:1 1 120px;min-width:0;font-size:10.5px;font-weight:800;color:#a33549;line-height:1.35}
+  /* 희망이 수행 모드 토글 — 관리자 인증 뒤에만 보이는 작은 알약 */
+  #heemang-follow{position:fixed;left:calc(10px + env(safe-area-inset-left));top:46%;z-index:12;display:none;
+    align-items:center;gap:5px;border:1.4px solid #f0c4d2;cursor:pointer;font-family:inherit;font-size:11.5px;
+    font-weight:900;color:#a33549;background:rgba(255,255,255,.94);backdrop-filter:blur(10px);border-radius:999px;
+    padding:7px 11px;box-shadow:0 4px 14px rgba(9,15,28,.16);white-space:nowrap;
+    transform:translateY(-50%)}
+  #heemang-follow.show{display:inline-flex}
+  #heemang-follow.off{color:#6b7688;border-color:#cfd8e6;background:rgba(255,255,255,.9)}
+  body.touch #heemang-follow{font-size:11px;padding:6px 10px;top:42%}
+  #desk-modal.heemang .dm-top{flex-wrap:wrap;gap:5px;justify-content:flex-start}
+  #desk-modal.heemang .dm-top #dm-chair{margin-left:auto}
 
   .dm-log{flex:1 1 auto;min-height:180px;height:auto;max-height:360px;overflow-y:auto;overscroll-behavior:contain;
     display:flex;flex-direction:column;
@@ -961,6 +992,9 @@
 
 <div id="near" role="button" tabindex="0"><span class="k">E</span><span id="near-text">판넬 열기</span></div>
 
+<!-- 🩷 희망이 수행 모드 토글 — 관리자 인증(회장님) 뒤에만 보인다 -->
+<button type="button" id="heemang-follow" title="희망이 수행 모드를 켜거나 잠시 멈춥니다">🩷 희망이 수행 중</button>
+
 <!-- 첫 방문자 대화 시작 안내 — 상단 구역 바 아래, 버튼·캐릭터를 가리지 않는 자리 -->
 <div id="first-visit" role="status" aria-live="polite">
   <span class="fv-ico">👋</span>
@@ -974,6 +1008,7 @@
 <div id="meeting-voice" role="status">
   <span class="mv-ico">🎙️</span>
   <div class="mv-txt"><b>2층 회의실 · 음성 회의</b><span id="mv-msg">마이크를 켜면 이 회의실 사람들과 목소리로 대화합니다.</span></div>
+  <button type="button" id="mv-heemang" title="국제상품·종목·변곡·전망 무엇이든 희망이에게">🩷 희망이 비서</button>
   <button type="button" id="mv-join">마이크 켜기</button>
 </div>
 <!-- 2층 회의실 창밖 — 독도 실시간(동도/서도) · 3D 뷰 · 창밖 소리 전환 (2층에서만 보인다) -->
@@ -1043,9 +1078,16 @@
       <p class="sub" id="dm-sub">독도국제무역 프런트데스크 — 뉴스 TV·전시실·종목·쇼츠·지표까지 바로 안내합니다</p>
       <div class="dm-top">
         <button type="button" class="dm-convo" id="dm-convo" aria-pressed="false" title="켜면 대답이 끝난 뒤 자동으로 다시 듣습니다. 말로 끊고 바로 물어도 됩니다">🗣️ 연속 대화</button>
-        <button type="button" class="dm-voice on" id="dm-voice" aria-pressed="true" title="루아·도현의 목소리 답변을 켜거나 끕니다">🔊 목소리 응답 ON</button>
+        <button type="button" class="dm-voice on" id="dm-voice" aria-pressed="true" title="희망이·루아·도현의 목소리 답변을 켜거나 끕니다">🔊 목소리 응답 ON</button>
         <button type="button" class="dm-voice" id="dm-stop" title="지금 나오는 목소리를 멈춥니다">⏹ 정지</button>
+        <button type="button" id="dm-chair" title="관리자 PIN으로 회장님 인증 · 희망이 수행 모드">👑 회장님 인증</button>
       </div>
+    </div>
+    <div id="dm-chair-row">
+      <label for="dm-chair-pin">관리자 PIN</label>
+      <input id="dm-chair-pin" type="password" inputmode="numeric" autocomplete="off" maxlength="16" placeholder="PIN">
+      <button type="button" id="dm-chair-ok">확인</button>
+      <span class="dm-chair-msg" id="dm-chair-msg">한 번 인증하면 이 브라우저에서 희망이가 회장님을 알아봅니다.</span>
     </div>
     <p class="dm-guide" id="dm-guide">아래 질문 버튼을 누르거나 글을 입력하고 · 🎤 마이크로 말을 걸어 보세요. 목소리로도 답해 드려요.</p>
     <p class="dm-convo-hint" id="dm-convo-hint">대답이 끝나면 자동으로 다시 들어요 · 말 끊고 바로 물으셔도 돼요 · 끝낼 때는 '이제 그만'이라고 말하거나 이 단추를 한 번 더 누르세요</p>
@@ -1055,6 +1097,9 @@
       </button>
       <button type="button" class="dm-pick" id="dm-dohyun" data-who="dohyun" role="tab" aria-selected="false">
         <span class="dm-face">🧑</span><b>도현</b><span class="dm-role">정중·세련</span>
+      </button>
+      <button type="button" class="dm-pick" id="dm-heemang" data-who="heemang" role="tab" aria-selected="false" title="독도국제무역 대표님 전담 AI 비서 · 국제상품 분석">
+        <span class="dm-face">🩷</span><b>희망이</b><span class="dm-role">AI 비서</span>
       </button>
     </div>
     <div class="dm-log" id="dm-log" role="log" aria-live="polite"></div>
@@ -1335,6 +1380,7 @@
 <script>window.__EXHIBITS_FALLBACK__ = {"meta":{"title":"재롱둥이 머니 쇼츠 · 국제상품 3D 전시관","subtitle":"6개 전시실에 종목별 쇼츠 5판넬을 걸어 다니며 보는 1단계 시제품","channel":{"name":"재롱둥이 머니 쇼츠","handle":"@재롱둥이-r4y","url":"https://www.youtube.com/@%EC%9E%AC%EB%A1%B1%EB%91%A5%EC%9D%B4-r4y","channel_id":"UCyicBXHBc9G3BFqokbRVUGA"},"updated":"2026-11-22","stage":"2단계 · 온라인 실시간 연결 (Supabase)","panels_per_ticker":5,"realtime":{"supabaseUrl":"https://wdcmucaefwiwrdtpktry.supabase.co","supabaseAnonKey":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkY211Y2FlZndpd3JkdHBrdHJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMzMTMxODgsImV4cCI6MjEwODg4OTE4OH0.i1C4zYhI4yEmsycqMBixkSbN1L_bVEBDhdyUU-wYtJc","room":"gallery","note":"2단계: 위 두 값이 채워져 있으면 방문자 간 실시간 채팅·아바타 동기화·음성방 시그널링이 자동으로 켜집니다. 관리자 PIN 은 서버(gallery_config)에 해시로만 저장되며 이 파일에는 없습니다."},"disclaimer":"전시된 정보는 계약 스펙·체크 포인트 정리이며, 실시간 시세나 매매 권유가 아닙니다.","last_sync":"2026-11-21 13:44 KST","last_slot1_sync":"2026-11-22 15:18 KST","slot1_auto":true},"zones":[{"id":"fx","name":"통화","en":"CURRENCY","color":"#2f7fd6","desc":"주요 통화 선물(6E·6B·6S·6C·6A·6J·6N)"},{"id":"index","name":"지수","en":"INDEX","color":"#7b4bd6","desc":"S&P500(ES)·나스닥100(NQ)·다우(YM)·러셀2000(RTY)·항셍(HSI)"},{"id":"rates","name":"금리","en":"RATES","color":"#c0455f","desc":"미국채 30년(ZB)·10년(ZN)·5년(ZF)·2년(ZT)물 선물"},{"id":"metals","name":"금속","en":"METALS","color":"#c9963f","desc":"골드(GC)·은(SI)·백금(PL)·구리(HG)"},{"id":"energy","name":"에너지","en":"ENERGY","color":"#e0642e","desc":"WTI(CL)·브렌트(BZ)·가솔린(RB)·난방유(HO)·천연가스(NG)"},{"id":"ags","name":"농축산물","en":"AGRI & LIVESTOCK","color":"#3f9b5f","desc":"소맥(ZW)·대두(ZS)·대두유(ZL)·옥수수(ZC)·생우(LE)·돈육(HE)·원당(SB)"},{"id":"desk","name":"안내데스크","en":"INFORMATION DESK","color":"#2b3a55","desc":"독도국제무역 소개와 인턴사원 모집 안내"}],"tickers":[{"id":"eur","zone":"fx","name":"유로화","code":"6E","market":"CME","unit":"USD/EUR","one_liner":"달러지수의 절반을 차지하는 최대 통화 선물.","specs":["계약 단위 125,000 EUR","최소 변동 0.00005 = 6.25달러","소수점 5자리 표기"],"checks":["ECB 금리 결정·정책 발언","미·유로 금리차","유로존 경기 지표"],"videos":[{"id":"vFeCy1PsEq0","title":"유로화 오늘의 전망","kind":"shorts","date":""},{"id":"ha-hZrui2j4","title":"유로화 오늘의 전망 ~유로화 폭등 언제까지","kind":"shorts","date":""},{"id":"gR2f1Bc4Lys","title":"유로화로 돈벌기","kind":"shorts","date":""},{"id":"DW19aKenyL4","title":"유로화 지금이 승부처!","kind":"shorts","date":""},{"id":"CNX6YmNN48U","title":"유로화 오늘 방향이 바뀌었다","kind":"shorts","date":""}],"auto_slot":{"id":"vFeCy1PsEq0","title":"유로화 오늘의 전망","updated":"2026-11-22","mode":"auto"}},{"id":"gbp","zone":"fx","name":"영국 파운드","code":"6B","market":"CME","unit":"USD/GBP","one_liner":"달러지수에서 세 번째 비중. 영란은행(BoE) 금리와 영국 물가가 방향을 가른다.","specs":["계약 단위 62,500 GBP","최소 변동 0.0001 = 6.25달러","소수점 5자리 표기"],"checks":["BoE 금리 결정·영국 CPI","미·영 금리차와 달러지수","영국 소매판매·고용 지표"],"videos":[]},{"id":"chf","zone":"fx","name":"스위스프랑","code":"6S","market":"CME","unit":"USD/CHF","one_liner":"대표적 안전자산 통화. SNB 개입이 변수.","specs":["계약 단위 125,000 CHF","최소 변동 0.00005 = 6.25달러","소수점 5자리 표기"],"checks":["SNB 금리 결정·외환시장 개입","유럽 리스크 시 안전자산 수요","미·스위스 금리차"],"videos":[{"id":"aAcHsixywi8","title":"스위스프랑 오늘의 전망","kind":"shorts","date":""},{"id":"S8-xAUdEPC4","title":"스위스프랑 오늘의 전망","kind":"shorts","date":""}],"auto_slot":{"id":"aAcHsixywi8","title":"스위스프랑 오늘의 전망","updated":"2026-11-22","mode":"auto"}},{"id":"cad","zone":"fx","name":"캐나다달러","code":"6C","market":"CME","unit":"USD/CAD","one_liner":"유가와 미국 경기에 함께 묶인 통화.","specs":["계약 단위 100,000 CAD","최소 변동 0.00005 = 5달러","소수점 5자리 표기"],"checks":["WTI 유가 방향","BoC 금리 결정·미·캐 금리차","캐나다 고용·주택 지표"],"videos":[{"id":"_-MaEK-dGMU","title":"캐나다달러 오늘의 전망","kind":"shorts","date":""},{"id":"ndF5qfAPTx8","title":"캐나다달러,지금이 최대 분기점","kind":"shorts","date":""},{"id":"fe7bWfftyIw","title":"캐나다달러 드디어 폭발 하나?","kind":"shorts","date":""},{"id":"XYY6Qpf--w4","title":"캐나다달러 드디어 방향 나왔다","kind":"shorts","date":""},{"id":"Cc9a0G293K8","title":"캐나다달러 방향 오리무중?","kind":"shorts","date":""}],"auto_slot":{"id":"_-MaEK-dGMU","title":"캐나다달러 오늘의 전망","updated":"2026-11-22","mode":"auto","previous":"1VtKo2UmzUo"}},{"id":"aud","zone":"fx","name":"호주달러","code":"6A","market":"CME","unit":"USD/AUD","one_liner":"중국 경기와 원자재 가격에 민감한 통화.","specs":["계약 단위 100,000 AUD","최소 변동 0.00005 = 5달러","소수점 5자리 표기"],"checks":["중국 경기·철광석 가격","RBA 금리 결정","위험자산 선호(리스크온/오프)"],"videos":[{"id":"uHvjFMkv8mQ","title":"호주달라 손절가 진입가로 올려 원금 보존","kind":"shorts","date":""},{"id":"F66d2nwC8ls","title":"호주달라 급락 신호 ??","kind":"shorts","date":""},{"id":"XiUUH7bVoXE","title":"호주달라 오늘의 전망 ~ 지금 심상치 않다","kind":"shorts","date":""},{"id":"2SHVcsb33SI","title":"호주달라로 돈벌기","kind":"shorts","date":""},{"id":"LckfMDNGgoA","title":"호주달라 손익 테스트","kind":"shorts","date":""}],"auto_slot":{"id":"uHvjFMkv8mQ","title":"호주달라 손절가 진입가로 올려 원금 보존","updated":"2026-11-22","mode":"auto","previous":"2SHVcsb33SI"}},{"id":"jpy","zone":"fx","name":"엔화","code":"6J","market":"CME","unit":"USD/JPY","one_liner":"세계에서 가장 유동성 큰 통화쌍. 금리차와 안전자산 수요가 방향을 가른다.","specs":["계약 단위 12,500,000 JPY","최소 변동 0.0000005 = 6.25달러","소수점 6자리 표기"],"checks":["BoJ 금리 결정·구두 개입","미·일 장기금리차","위험회피 국면의 엔화 강세"],"videos":[{"id":"MT6zgFUzyg0","title":"엔화 오늘의 전망 ~ 엔화급등 무슨일이?","kind":"shorts","date":""}],"auto_slot":{"id":"MT6zgFUzyg0","title":"엔화 오늘의 전망 ~ 엔화급등 무슨일이?","updated":"2026-11-22","mode":"auto"}},{"id":"nzd","zone":"fx","name":"뉴질랜드달러","code":"6N","market":"CME","unit":"USD/NZD","one_liner":"유제품·중국 경기에 민감한 소형 통화. RBNZ 결정이 변수.","specs":["계약 단위 100,000 NZD","최소 변동 0.0001 = 10달러","소수점 5자리 표기"],"checks":["RBNZ 금리 결정·GDT 유제품 경매","호주달러·중국 경기 동조","위험자산 선호(리스크온/오프)"],"videos":[]},{"id":"es","zone":"index","name":"S&P500","code":"ES","market":"CME","unit":"포인트","one_liner":"미국 대표 지수 선물. 글로벌 위험자산의 기준선.","specs":["계약 단위 50달러 × 지수","최소 변동 0.25포인트 = 12.50달러","분기물(3·6·9·12월) 만기"],"checks":["FOMC·CPI 등 매크로 일정","빅테크 실적·AI 투자 사이클","야간 시간대(글로벌) 변동성"],"videos":[{"id":"UEMh2UQhaS8","title":"S&P500 오늘의 전망 ~ 10년물 금리5%대","kind":"shorts","date":""},{"id":"wesNzx3YnGM","title":"S&P500 오늘의 전망 ~ 폭풍전야!","kind":"shorts","date":""},{"id":"gnPcvH2G2v0","title":"S&P500 오늘의 전망 ~ 지금 방향이 바뀐다?","kind":"shorts","date":""},{"id":"W3JgCkoHKoU","title":"S&P500 오늘의 전망, 상승일까? 하락일까?","kind":"shorts","date":""},{"id":"fzbB2r3_o4Y","title":"S&P500 오늘의 전망 ~ 방향이 갈린다","kind":"shorts","date":""}],"auto_slot":{"id":"UEMh2UQhaS8","title":"S&P500 오늘의 전망 ~ 10년물 금리5%대","updated":"2026-11-22","mode":"auto","previous":"W3JgCkoHKoU"}},{"id":"nq","zone":"index","name":"나스닥100","code":"NQ","market":"CME","unit":"포인트","one_liner":"AI·빅테크 비중이 큰 성장주 지수. 지수 선물 가운데 변동성이 가장 크다.","specs":["계약 단위 20달러 × 지수","최소 변동 0.25포인트 = 5달러","분기물(3·6·9·12월) 만기"],"checks":["빅테크 실적·AI 설비투자","FOMC·금리 경로","야간 시간대 변동성과 갭"],"videos":[{"id":"G2qZ3KKZHZA","title":"나스닥 매도중","kind":"shorts","date":""}],"auto_slot":{"id":"G2qZ3KKZHZA","title":"나스닥 매도중","updated":"2026-11-22","mode":"auto"}},{"id":"ym","zone":"index","name":"다우존스","code":"YM","market":"CBOT","unit":"포인트","one_liner":"미국 대형 우량주 30개. 산업재·금융 비중이 높아 경기 흐름을 반영한다.","specs":["계약 단위 5달러 × 지수","최소 변동 1포인트 = 5달러","분기물(3·6·9·12월) 만기"],"checks":["다우 편입 종목 실적·주가","제조업·서비스 PMI","S&P500 대비 상대 강도"],"videos":[]},{"id":"hsi","zone":"index","name":"항셍지수","code":"HSI","market":"HKFE","unit":"포인트","one_liner":"홍콩 항셍(Hang Seng) 지수 선물. 중국 정책에 민감.","specs":["계약승수 HK$50 / 포인트","최소 변동 1포인트 = HK$50","영상 제목은 '항생지수'로도 표기"],"checks":["중국 경기부양책·규제 뉴스","홍콩 유동성·남향 자금","야간 거래 시간대 변동성"],"videos":[{"id":"YRSDkfAemdY","title":"항생지수 오늘의 전망","kind":"shorts","date":""},{"id":"99lz1pCmji4","title":"항셍지수 오늘의 전망","kind":"shorts","date":""},{"id":"71P2hvTBSq4","title":"항생지수 오늘의 전망 ~ 방향바뀌나?알리바바가 움직인다","kind":"shorts","date":""}],"auto_slot":{"id":"YRSDkfAemdY","title":"항생지수 오늘의 전망","updated":"2026-11-22","mode":"auto"}},{"id":"rty","zone":"index","name":"러셀2000","code":"RTY","market":"CME","unit":"포인트","one_liner":"미국 중소형주 2000개. 내수 경기와 자금조달 금리에 민감하다.","specs":["계약 단위 50달러 × 지수","최소 변동 0.1포인트 = 5달러","분기물(3·6·9·12월) 만기"],"checks":["미국 소형주 자금 흐름","신용 스프레드·금리","경기 침체 신호(실업수당 등)"],"videos":[]},{"id":"zn","zone":"rates","name":"미국채 10년물","code":"ZN","market":"CBOT","unit":"32분의 1 표기","one_liner":"금리의 기준선. 32분의 1 단위로 움직인다.","specs":["액면 100,000달러","1/32 단위(1/64 = 15.625달러)","표기 예: 105'16 = 105+16/32"],"checks":["미 CPI·고용·FOMC 일정","10년물 금리와의 역방향 관계","분기 만기 롤오버(ZN→ZNH 등)"],"videos":[{"id":"tGeS_9vj3sI","title":"미국채10년물 오늘의 전망","kind":"shorts","date":"2026-11-04"},{"id":"fHJMTRVqJIY","title":"미국채10년물 오늘의 전망","kind":"shorts","date":""},{"id":"Cs8XJc9x4yM","title":"미국채10년물 오늘의 전망 ~ 이틀 경과","kind":"shorts","date":""},{"id":"mLpspoNa7Xk","title":"미국채10년물 오늘의 전망 ~ 국채금리 5.3%안밖의 높은 금리!","kind":"shorts","date":""},{"id":"ecDnwI_eaZI","title":"미국채10년물 오늘의 전망 ~ 가격 상승 가능 할까?","kind":"shorts","date":""}],"auto_slot":{"id":"tGeS_9vj3sI","title":"미국채10년물 오늘의 전망","updated":"2026-11-04","mode":"auto"}},{"id":"zb","zone":"rates","name":"미국채 30년물","code":"ZB","market":"CBOT","unit":"32분의 1 표기","one_liner":"장기 금리의 끝. 재정 적자와 기대 인플레이션에 가장 민감하다.","specs":["액면 100,000달러","1/32 단위(1/64 = 15.625달러)","표기 예: 106'06 = 106+06/32"],"checks":["미 재정적자·국채 입찰 수요","기대 인플레이션(유가)","30년 금리와 장단기 스프레드"],"videos":[]},{"id":"zf","zone":"rates","name":"미국채 5년물","code":"ZF","market":"CBOT","unit":"32분의 1 표기","one_liner":"중기 금리 벤치마크. 연준 정책 경로를 가장 직접 반영한다.","specs":["액면 100,000달러","1/32의 1/4 단위(7.8125달러)","표기 예: 104'09.75"],"checks":["FOMC 금리 경로·점도표","5년물 입찰 수요","2·10년 스프레드"],"videos":[]},{"id":"zt","zone":"rates","name":"미국채 2년물","code":"ZT","market":"CBOT","unit":"32분의 1 표기","one_liner":"연준 기준금리에 가장 민감한 단기물. 인상·인하 기대를 즉시 반영한다.","specs":["액면 200,000달러","1/32의 1/8 단위(7.8125달러)","표기 예: 101'30.375"],"checks":["연준 기준금리 기대(페드워치)","2년물 입찰·수급","단기물 변동과 커브"],"videos":[]},{"id":"gold","zone":"metals","name":"골드","code":"GC","market":"COMEX","unit":"USD/트로이온스","one_liner":"안전자산 대표주자. 실질금리와 달러가 방향을 가른다.","specs":["계약 단위 100 트로이온스","최소 변동 0.10달러 = 10달러","결제 통화 USD"],"checks":["미국 실질금리·달러지수(DX) 방향","중앙은행 매수·ETF 자금 흐름","만기 임박 시 차근월물(GCG 등) 롤오버 확인"],"videos":[{"id":"6RNO0cmUfLc","title":"골드 오늘의 전망 ~ 앞으로 추가 상승 할까?","kind":"shorts","date":""},{"id":"vI-hBUcUveo","title":"골드 오늘의 전망","kind":"video","date":""},{"id":"L5hbYXf7eqk","title":"골드로 돈벌 기회 흔하지 않다","kind":"shorts","date":""},{"id":"d0kac9XsocI","title":"금값 결국 폭발 할까?","kind":"shorts","date":""},{"id":"3Sd2LgZSTcU","title":"골드 거래로 돈벌기","kind":"shorts","date":""}],"auto_slot":{"id":"6RNO0cmUfLc","title":"골드 오늘의 전망 ~ 앞으로 추가 상승 할까?","updated":"2026-11-22","mode":"auto","previous":"QsjR8opJsXc"}},{"id":"silver","zone":"metals","name":"은","code":"SI","market":"COMEX","unit":"USD/트로이온스","one_liner":"금보다 변동성이 큰 귀금속이자 산업금속. 금/은 비율이 핵심 지표.","specs":["계약 단위 5,000 트로이온스","최소 변동 0.005달러 = 25달러","결제 통화 USD"],"checks":["금/은 비율(Gold-Silver Ratio)","태양광·전자 산업 수요","COMEX 재고·증거금 변경"],"videos":[]},{"id":"platinum","zone":"metals","name":"백금","code":"PL","market":"NYMEX","unit":"USD/트로이온스","one_liner":"자동차 촉매 수요가 큰 귀금속. 공급이 남아프리카에 집중돼 있다.","specs":["계약 단위 50 트로이온스","최소 변동 0.10달러 = 5달러","결제 통화 USD"],"checks":["남아공 광산 공급·전력난","자동차·수소 수요","금·팔라듐과의 스프레드"],"videos":[]},{"id":"copper","zone":"metals","name":"구리","code":"HG","market":"COMEX","unit":"USD/파운드","one_liner":"경기 선행지표로 불리는 산업금속. 중국 수요가 핵심.","specs":["계약 단위 25,000 파운드","최소 변동 0.0005달러 = 12.50달러","결제 통화 USD"],"checks":["중국 제조업 지표·재고(LME·SHFE)","광산 공급 차질·관세 뉴스","달러 강세 여부"],"videos":[{"id":"XnRR7t_adHA","title":"구리 오늘의 전망","kind":"shorts","date":"2026-11-17"},{"id":"-NtEkZsNrs0","title":"구리 오늘의 전망 ~ 초고가 질주! 핵심 변수는","kind":"shorts","date":""},{"id":"N3omDdBmGos","title":"구리 오늘의 전망              구리 조정 끝?","kind":"shorts","date":""},{"id":"rZqp-LR4Llg","title":"구리 추세 향방?","kind":"shorts","date":""},{"id":"vdEi8WR0yNk","title":"구리 앞으로 방향은?","kind":"shorts","date":""}],"auto_slot":{"id":"XnRR7t_adHA","title":"구리 오늘의 전망","updated":"2026-11-17","mode":"auto"}},{"id":"oil","zone":"energy","name":"오일 (WTI)","code":"CL","market":"NYMEX","unit":"USD/배럴","one_liner":"OPEC+ 감산과 재고, 지정학이 만드는 에너지 대표 종목.","specs":["계약 단위 1,000 배럴","최소 변동 0.01달러 = 10달러","결제 통화 USD"],"checks":["EIA 주간 재고(수요일 밤)","OPEC+ 감산·증산 결정","중동·러시아 지정학 리스크"],"videos":[{"id":"BaSe8o6IBV4","title":"오일 오늘의 전망","kind":"shorts","date":"2026-11-10"},{"id":"wnO8RW9uzkA","title":"오일 거래로 돈벌기          오일 시장 큰손들이 움직인다","kind":"shorts","date":""},{"id":"NRbREMan6xA","title":"오일 거래로 돈벌기        오일 대폭락 언제 멈출까","kind":"shorts","date":""},{"id":"Po6-VncmE14","title":"오일 폭락 언제까지 갈까?","kind":"shorts","date":""},{"id":"q5lOQuJ7wY8","title":"오일 폭락","kind":"shorts","date":""}],"auto_slot":{"id":"BaSe8o6IBV4","title":"오일 오늘의 전망","updated":"2026-11-10","mode":"auto","previous":"Hjfpv_UyF14"}},{"id":"bz","zone":"energy","name":"브렌트유","code":"BZ","market":"NYMEX","unit":"USD/배럴","one_liner":"세계 원유 가격의 기준. OPEC+와 중동 뉴스에 가장 민감하다.","specs":["계약 단위 1,000 배럴","최소 변동 0.01달러 = 10달러","결제 통화 USD"],"checks":["OPEC+ 감산·증산 결정","호르무즈·중동 지정학","WTI와의 스프레드"],"videos":[]},{"id":"gas","zone":"energy","name":"천연가스","code":"NG","market":"NYMEX","unit":"USD/MMBtu","one_liner":"겨울 수요와 재고가 만드는 변동성 큰 종목.","specs":["계약 단위 10,000 MMBtu","최소 변동 0.001달러 = 10달러","결제 통화 USD"],"checks":["EIA 가스 재고(목요일 밤)·난방 수요","월물 간 백워데이션 구조","허리케인·수출 터미널"],"videos":[{"id":"ZGN9l5jAnkg","title":"천연가스 매매 수익 테스트","kind":"shorts","date":""}],"auto_slot":{"id":"ZGN9l5jAnkg","title":"천연가스 매매 수익 테스트","updated":"2026-11-22","mode":"auto"}},{"id":"rb","zone":"energy","name":"가솔린 RBOB","code":"RB","market":"NYMEX","unit":"USD/갤런","one_liner":"휘발유 도매가. 정제마진(크랙)과 여름 수요를 그대로 반영한다.","specs":["계약 단위 42,000 갤런","최소 변동 0.0001 = 4.20달러","결제 통화 USD"],"checks":["미 휘발유 재고·정제가동률","크랙 스프레드(RBOB-WTI)","드라이빙 시즌 수요"],"videos":[]},{"id":"ho","zone":"energy","name":"난방유","code":"HO","market":"NYMEX","unit":"USD/갤런","one_liner":"겨울 난방 수요와 디젤 정제마진의 바로미터.","specs":["계약 단위 42,000 갤런","최소 변동 0.0001 = 4.20달러","결제 통화 USD"],"checks":["미 동부 난방 수요·기온","디젤 재고·수출","천연가스와의 대체 수요"],"videos":[]},{"id":"wheat","zone":"ags","name":"밀","code":"ZW","market":"CBOT","unit":"센트/부셸","one_liner":"흑해 공급과 WASDE 보고서가 만드는 대표 곡물.","specs":["계약 단위 5,000 부셸","최소 변동 1/4센트 = 12.50달러","32분의 1 계열 표기"],"checks":["USDA WASDE 보고서","흑해·러시아 수출 뉴스","미국 겨울밀 작황"],"videos":[{"id":"FqooNIPz-PI","title":"밀 오늘의 전망","kind":"shorts","date":"2026-11-04"}],"auto_slot":{"id":"FqooNIPz-PI","title":"밀 오늘의 전망","updated":"2026-11-22","mode":"auto"}},{"id":"soy","zone":"ags","name":"대두","code":"ZS","market":"CBOT","unit":"센트/부셸","one_liner":"남미 작황과 중국 수입이 가격을 흔든다.","specs":["계약 단위 5,000 부셸","최소 변동 1/4센트 = 12.50달러","32분의 1 계열 표기"],"checks":["브라질·아르헨티나 작황","중국 수입 물량·무역 협상","대두유·대두박 동조 여부"],"videos":[{"id":"B6jXANCbsAY","title":"대두 오늘의 전망","kind":"shorts","date":"2026-11-09"},{"id":"uGxM_IVxt7c","title":"대두 거래로 돈벌기 ..   대두  떡상 언제까지","kind":"shorts","date":""},{"id":"ZgONa5GFDlw","title":"대두시장 큰손이 움직였다","kind":"shorts","date":""},{"id":"qIZ70sStJWU","title":"투자자들 몰리는 대두","kind":"shorts","date":""},{"id":"1cS_CsKdzqc","title":"대두 지금이 기회!","kind":"shorts","date":""}],"auto_slot":{"id":"B6jXANCbsAY","title":"대두 오늘의 전망","updated":"2026-11-09","mode":"auto","previous":"bQhG9cLsQlo"}},{"id":"soyoil","zone":"ags","name":"대두유","code":"ZL","market":"CBOT","unit":"센트/파운드","one_liner":"바이오디젤 수요와 남미 작황이 가격을 흔든다.","specs":["계약 단위 60,000 파운드","최소 변동 0.01센트 = 6달러","결제 통화 USD"],"checks":["미 바이오디젤 의무량·정책","대두 압착 마진","팜유와의 스프레드"],"videos":[]},{"id":"corn","zone":"ags","name":"옥수수","code":"ZC","market":"CBOT","unit":"센트/부셸","one_liner":"사료·에탄올 수요와 남미 작황이 가격을 흔든다.","specs":["계약 단위 5,000 부셸","최소 변동 1/4센트 = 12.50달러","32분의 1 계열 표기"],"checks":["USDA WASDE·재고 보고서","브라질 2기작 옥수수 작황","에탄올 마진·중국 수입"],"videos":[{"id":"4M84VL0_tsI","title":"옥수수 오늘의 전망 ~ 가격 폭발 언제까지?","kind":"shorts","date":""},{"id":"Q_0CwV6Auwk","title":"옥수수 결국 폭등 신호 떴다","kind":"shorts","date":""},{"id":"BgISqcchrnU","title":"옥수수 거래로 돈벌기   옥수수 승부처는 언제?","kind":"shorts","date":""},{"id":"mWn_XC-gnNY","title":"옥수수 거래로 돈벌기","kind":"shorts","date":""},{"id":"pUaftbRjnJY","title":"옥수수 오늘의 전망 ~옥수수로 하모니카 불어도 좋지만 싸게 사서 비싸게 팔아 돈벌기","kind":"shorts","date":""}],"auto_slot":{"id":"4M84VL0_tsI","title":"옥수수 오늘의 전망 ~ 가격 폭발 언제까지?","updated":"2026-11-22","mode":"auto","previous":"mWn_XC-gnNY"}},{"id":"hogs","zone":"ags","name":"돈육","code":"HE","market":"CME","unit":"센트/파운드","one_liner":"도축량과 수출이 가격을 결정하는 축산 선물.","specs":["계약 단위 40,000 파운드","최소 변동 0.025센트 = 10달러","결제 통화 USD"],"checks":["주간 도축량·육류 재고","미국 수출 주문·멕시코·중국 수요","사료값(옥수수·대두박)"],"videos":[{"id":"4mrLrVKzWu8","title":"돈육 매매 손익 테스트","kind":"shorts","date":""},{"id":"xQ1iMia38sY","title":"돈육 오늘의 전망 ~ 가격 급등 신호","kind":"shorts","date":""},{"id":"-WOk4jpti_s","title":"돈육 추세 오늘의 전망","kind":"shorts","date":""}],"auto_slot":{"id":"4mrLrVKzWu8","title":"돈육 매매 손익 테스트","updated":"2026-11-22","mode":"auto"}},{"id":"cattle","zone":"ags","name":"생우","code":"LE","market":"CME","unit":"센트/파운드","one_liner":"도축량·사료값·수출이 가격을 결정하는 축산 선물.","specs":["계약 단위 40,000 파운드","최소 변동 0.025센트 = 10달러","결제 통화 USD"],"checks":["주간 도축량·Cattle on Feed","사료값(옥수수·대두박)","소 사육 두수 주기"],"videos":[]},{"id":"sugar","zone":"ags","name":"원당","code":"SB","market":"ICE","unit":"센트/파운드","one_liner":"브라질·인도 작황과 에탄올 배분이 가격을 가른다.","specs":["계약 단위 112,000 파운드","최소 변동 0.01센트 = 11.20달러","결제 통화 USD"],"checks":["브라질 사탕수수·에탄올 배분","인도 수출 정책·작황","원유·에탄올 가격 연동"],"videos":[]},{"id":"dokdo","zone":"desk","name":"독도국제무역","code":"DOKDO TRADE","market":"안내","unit":"국제 상품 가격","one_liner":"독도국제무역.com — 국제 상품 가격을 제공하는 안내 창구.","specs":["홈페이지: 독도국제무역.com","국제 상품 가격 정보 제공","쇼츠로 사업 소식 공유"],"checks":["신규 소식은 채널 쇼츠로 먼저 공개","문의는 홈페이지 안내 참고"],"videos":[{"id":"ffC3604a_ZQ","title":"독도국제무역.com 회의실 오픈","kind":"shorts","date":"2026-11-21"},{"id":"m-5rRiiWKOQ","title":"독도국제무역.com","kind":"video","date":""},{"id":"TPJCiBVIf1s","title":"독도국제무역.com","kind":"shorts","date":""},{"id":"yAMq43lzLwc","title":"독도국제무역.com","kind":"shorts","date":""},{"id":"zWfCizijvOk","title":"독도국제무역.com","kind":"shorts","date":""}],"auto_slot":{"id":"ffC3604a_ZQ","title":"독도국제무역.com 회의실 오픈","updated":"2026-11-21","mode":"auto","previous":"URMP0uyz448"}},{"id":"recruit","zone":"desk","name":"인턴사원 모집","code":"RECRUIT","market":"독도버스","unit":"채용 안내","one_liner":"독도버스 안 독도국제무역.com에서 인턴사원을 모집합니다.","specs":["모집: 인턴사원","채널: 독도버스 내 독도국제무역.com","상세 조건은 영상 설명 참고"],"checks":["모집 조건·기간은 영상에서 확인"],"videos":[{"id":"Vss7wNTxLck","title":"독도버스내 독도국제무역.com에서 인턴사원을 모집합니다","kind":"shorts","date":"2026-11-07"}],"auto_slot":{"id":"Vss7wNTxLck","title":"독도버스내 독도국제무역.com에서 인턴사원을 모집합니다","updated":"2026-11-07","mode":"auto"}}]};</script>
 <script>window.__CATALOG_FALLBACK__ = {"meta":{"title":"재롱둥이 머니 쇼츠 · 전체 영화 아카이브","channel":{"name":"재롱둥이 머니 쇼츠","handle":"@재롱둥이-r4y","url":"https://www.youtube.com/@%EC%9E%AC%EB%A1%B1%EB%91%A5%EC%9D%B4-r4y","channel_id":"UCyicBXHBc9G3BFqokbRVUGA"},"generated":"2026-11-23 09:36 KST","source":"live","total":606,"excluded_songs":110,"note":"노래 쇼츠는 빼고 모았습니다. 편집 화면의 '전체 영상' 목록으로 쓰입니다."},"videos":[{"id":"ffC3604a_ZQ","title":"독도국제무역.com 회의실 오픈","date":"2026-11-21","kind":"shorts","matched_ticker":"dokdo"},{"id":"iMVh5Cjx4Hs","title":"독도국제무역.com 국제상품 정보 스크롤 판넬 앞~","date":"2026-11-19","kind":"shorts","matched_ticker":"dokdo"},{"id":"XnRR7t_adHA","title":"구리 오늘의 전망","date":"2026-11-17","kind":"shorts","matched_ticker":"copper"},{"id":"BaSe8o6IBV4","title":"오일 오늘의 전망","date":"2026-11-10","kind":"shorts","matched_ticker":"oil"},{"id":"B6jXANCbsAY","title":"대두 오늘의 전망","date":"2026-11-09","kind":"shorts","matched_ticker":"soy"},{"id":"Vnam4KTru1E","title":"독도국제무역 홈페이지 오픈 국제 상품 가격 제공","date":"2026-11-09","kind":"shorts","matched_ticker":"dokdo"},{"id":"Vss7wNTxLck","title":"독도버스내 독도국제무역.com에서 인턴사원을 모집합니다","date":"2026-11-07","kind":"shorts","matched_ticker":"recruit"},{"id":"4JoKISPgKNw","title":"오일 오늘의 전망","date":"2026-11-05","kind":"shorts","matched_ticker":"oil"},{"id":"tGeS_9vj3sI","title":"미국채10년물 오늘의 전망","date":"2026-11-04","kind":"shorts","matched_ticker":"zn"},{"id":"FqooNIPz-PI","title":"밀 오늘의 전망","date":"","kind":"shorts","matched_ticker":"wheat"},{"id":"GByevgjXUOI","title":"오일 오늘의 전망","date":"","kind":"shorts","matched_ticker":"oil"},{"id":"aAcHsixywi8","title":"스위스프랑 오늘의 전망","date":"","kind":"shorts","matched_ticker":"chf"},{"id":"S8-xAUdEPC4","title":"스위스프랑 오늘의 전망","date":"","kind":"shorts","matched_ticker":"chf"},{"id":"_-MaEK-dGMU","title":"캐나다달러 오늘의 전망","date":"","kind":"shorts","matched_ticker":"cad"},{"id":"hR4zYexOnnY","title":"대두 오늘의 전망","date":"","kind":"shorts","matched_ticker":"soy"},{"id":"YRSDkfAemdY","title":"항생지수 오늘의 전망","date":"","kind":"shorts","matched_ticker":"hsi"},{"id":"ofFA1XLUkrE","title":"오일 오늘의 전망","date":"","kind":"shorts","matched_ticker":"oil"},{"id":"itVVFUJGam0","title":"캐나다달러 오늘의 전망","date":"","kind":"shorts","matched_ticker":"cad"},{"id":"ZGN9l5jAnkg","title":"천연가스 매매 수익 테스트","date":"","kind":"shorts","matched_ticker":"gas"},{"id":"uHvjFMkv8mQ","title":"호주달라 손절가 진입가로 올려 원금 보존","date":"","kind":"shorts","matched_ticker":"aud"},{"id":"4mrLrVKzWu8","title":"돈육 매매 손익 테스트","date":"","kind":"shorts","matched_ticker":"hogs"},{"id":"LckfMDNGgoA","title":"호주달라 손익 테스트","date":"","kind":"shorts","matched_ticker":"aud"},{"id":"ODhRTl3vJGE","title":"대두 오늘의 전망","date":"","kind":"shorts","matched_ticker":"soy"},{"id":"e1I5zusELs8","title":"오일 오늘의 전망","date":"","kind":"shorts","matched_ticker":"oil"},{"id":"uoH68g9RlTk","title":"캐나다달러 오늘의 전망","date":"","kind":"shorts","matched_ticker":"cad"},{"id":"fHJMTRVqJIY","title":"미국채10년물 오늘의 전망","date":"","kind":"shorts","matched_ticker":"zn"},{"id":"vFeCy1PsEq0","title":"유로화 오늘의 전망","date":"","kind":"shorts","matched_ticker":"eur"},{"id":"VNc6VCVxghM","title":"캐나다달러 오늘에 전망","date":"","kind":"shorts","matched_ticker":"cad"},{"id":"Cs8XJc9x4yM","title":"미국채10년물 오늘의 전망 ~ 이틀 경과","date":"","kind":"shorts","matched_ticker":"zn"},{"id":"mLpspoNa7Xk","title":"미국채10년물 오늘의 전망 ~ 국채금리 5.3%안밖의 높은 금리!","date":"","kind":"shorts","matched_ticker":"zn"},{"id":"2Ci-QUP_59o","title":"대두 오늘의 전망 ~ 급락 경고!","date":"","kind":"shorts","matched_ticker":"soy"},{"id":"pwubQpsXK8k","title":"호주달라 오늘의 전망","date":"","kind":"shorts","matched_ticker":"aud"},{"id":"MjGceSGajCk","title":"대두 오늘의 전망 ~ 급락 주의보!","date":"","kind":"shorts","matched_ticker":"soy"},{"id":"99lz1pCmji4","title":"항셍지수 오늘의 전망","date":"","kind":"shorts","matched_ticker":"hsi"},{"id":"FwH_Ssy4VuM","title":"마이크로소프트 오늘의 전망","date":"","kind":"shorts","matched_ticker":null},{"id":"1WgisxyD2gs","title":"호주달라 오늘의 전망 ~ 강 달라 여파...","date":"","kind":"shorts","matched_ticker":"aud"},{"id":"UEMh2UQhaS8","title":"S&P500 오늘의 전망 ~ 10년물 금리5%대","date":"","kind":"shorts","matched_ticker":"es"},{"id":"L93wX2hEGCk","title":"대두 오늘의 전망 ~ 급락 신호?","date":"","kind":"shorts","matched_ticker":"soy"},{"id":"PA6oGW3QJko","title":"대두 오늘의 전망 ~ 변곡?","date":"","kind":"shorts","matched_ticker":"soy"},{"id":"aMGisp0lQi0","title":"비트코인 오늘의 전망 ~ 전고점 돌파중!","date":"","kind":"shorts","matched_ticker":null},{"id":"rJ9S2CExWUo","title":"비트코인 오늘의 전망 ~ 전고점 돌파?","date":"","kind":"shorts","matched_ticker":null},{"id":"hK0ho1JMLFY","title":"비트코인 오늘의 전망 ~ 전고점 돌파?","date":"","kind":"shorts","matched_ticker":null},{"id":"fzbB2r3_o4Y","title":"S&P500 오늘의 전망 ~ 방향이 갈린다","date":"","kind":"shorts","matched_ticker":"es"},{"id":"hCTrrsRZNMc","title":"호주달라 오늘의 전망 ~ 지금 무슨일?","date":"","kind":"shorts","matched_ticker":"aud"},{"id":"8Brx6ip8x70","title":"비트코인 오늘의 전망 ~ 전고점 돌파 난항?","date":"","kind":"shorts","matched_ticker":null},{"id":"-NtEkZsNrs0","title":"구리 오늘의 전망 ~ 초고가 질주! 핵심 변수는","date":"","kind":"shorts","matched_ticker":"copper"},{"id":"FgagqrL8cUA","title":"S&P500 오늘의 전망 ~ 이대로 꺾이나?","date":"","kind":"shorts","matched_ticker":"es"},{"id":"71P2hvTBSq4","title":"항생지수 오늘의 전망 ~ 방향바뀌나?알리바바가 움직인다","date":"","kind":"shorts","matched_ticker":"hsi"},{"id":"JQgKGtZmAzk","title":"S&P500 오늘의 전망 ~ 지금 상승? 하락?","date":"","kind":"shorts","matched_ticker":"es"},{"id":"MT6zgFUzyg0","title":"엔화 오늘의 전망 ~ 엔화급등 무슨일이?","date":"","kind":"shorts","matched_ticker":"jpy"},{"id":"XiUUH7bVoXE","title":"호주달라 오늘의 전망 ~ 지금 심상치 않다","date":"","kind":"shorts","matched_ticker":"aud"},{"id":"FKtSNKqfsNY","title":"S&P500 오늘의 전망 ~ 급락 신호 터졌나?","date":"","kind":"shorts","matched_ticker":"es"},{"id":"a6z6whE286Q","title":"비트코인 오늘의 전망 ~ 전고점 돌파가 될까?","date":"","kind":"shorts","matched_ticker":null},{"id":"vGkcjPima1E","title":"스트래티지 오늘의 전망 ~ 전고점 돌파?","date":"","kind":"shorts","matched_ticker":null},{"id":"z8qcPxCjOYk","title":"오일 오늘의 전망 ~ 국제유가 100달러 다시가나?","date":"","kind":"shorts","matched_ticker":"oil"},{"id":"gnPcvH2G2v0","title":"S&P500 오늘의 전망 ~ 지금 방향이 바뀐다?","date":"","kind":"shorts","matched_ticker":"es"},{"id":"4M84VL0_tsI","title":"옥수수 오늘의 전망 ~ 가격 폭발 언제까지?","date":"","kind":"shorts","matched_ticker":"corn"},{"id":"xQ1iMia38sY","title":"돈육 오늘의 전망 ~ 가격 급등 신호","date":"","kind":"shorts","matched_ticker":"hogs"},{"id":"GgXaKhZGvZw","title":"2025년 9월 17일","date":"","kind":"shorts","matched_ticker":null},{"id":"qTVxSxswgAQ","title":"2025년 7월 7일","date":"","kind":"shorts","matched_ticker":null},{"id":"FwTpJXlGNaw","title":"2025년 6월 27일","date":"","kind":"shorts","matched_ticker":null},{"id":"GsS5AMl6APA","title":"재테크 ( 경제적 자유에 꿈 : 쌀때 사서 비쌀때 판다)","date":"","kind":"shorts","matched_ticker":null},{"id":"8i6MVnyOYw4","title":"2025년 7월 5일","date":"","kind":"shorts","matched_ticker":null},{"id":"RsoauuNQjE4","title":"2025년 5월 9일","date":"","kind":"shorts","matched_ticker":null},{"id":"_-oOjDlFw9M","title":"2025년 8월 1일","date":"","kind":"shorts","matched_ticker":null},{"id":"TjBi_YXMyQo","title":"2025년 7월 15일","date":"","kind":"shorts","matched_ticker":null},{"id":"cGD3ex0pLRI","title":"2025년 7월 30일","date":"","kind":"shorts","matched_ticker":null},{"id":"9TBztw6jAMg","title":"2025년 6월 13일","date":"","kind":"shorts","matched_ticker":null},{"id":"yYDHBOLf1-U","title":"2025년 6월 10일","date":"","kind":"shorts","matched_ticker":null},{"id":"F66d2nwC8ls","title":"호주달라 급락 신호 ??","date":"","kind":"shorts","matched_ticker":"aud"},{"id":"2p3c5TdBEvU","title":"2025년 7월 9일","date":"","kind":"shorts","matched_ticker":null},{"id":"aP0UuKQtewQ","title":"2025년 6월 23일","date":"","kind":"shorts","matched_ticker":null},{"id":"Id9-l1ctM3k","title":"2025년 8월 1일","date":"","kind":"shorts","matched_ticker":null},{"id":"1FIG3UnS4VA","title":"2025년 6월 20일","date":"","kind":"shorts","matched_ticker":null},{"id":"t2Yi31lvqLE","title":"2025년 6월 2일","date":"","kind":"shorts","matched_ticker":null},{"id":"Qzhh_xFM-es","title":"2025년 8월 6일","date":"","kind":"shorts","matched_ticker":null},{"id":"f9o3za3un08","title":"2025년 7월 24일","date":"","kind":"shorts","matched_ticker":null},{"id":"_ZMc4KtTDzk","title":"2025년 7월 21일","date":"","kind":"shorts","matched_ticker":null},{"id":"xQ-Ed6ec7ek","title":"2025년 7월 25일","date":"","kind":"shorts","matched_ticker":null},{"id":"tGTUkHtT0I4","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"YDbqAnxhX4Q","title":"2025년 7월 16일","date":"","kind":"shorts","matched_ticker":null},{"id":"zLpsSitsPCo","title":"오일 떡락","date":"","kind":"shorts","matched_ticker":"oil"},{"id":"q5lOQuJ7wY8","title":"오일 폭락","date":"","kind":"shorts","matched_ticker":"oil"},{"id":"ooYZPvYtgVk","title":"2025년 5월 28일","date":"","kind":"shorts","matched_ticker":null},{"id":"QRmpzSiLACw","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"O-BZcRD5un8","title":"2025년 6월 25일","date":"","kind":"shorts","matched_ticker":null},{"id":"oGLdE3nBMGA","title":"2025년 7월 11일","date":"","kind":"shorts","matched_ticker":null},{"id":"0wjGbkXI9_o","title":"독도버스","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"0ASqtTFLAlk","title":"2025년 10월 22일","date":"","kind":"shorts","matched_ticker":null},{"id":"VAquf45PCLs","title":"독도버스","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"cFgy0qYYdQE","title":"파초에꿈","date":"","kind":"shorts","matched_ticker":null},{"id":"bXlyuo6ezyE","title":"2025년 8월 12일","date":"","kind":"shorts","matched_ticker":null},{"id":"pPomMdkgC6k","title":"2025년 7월 19일","date":"","kind":"shorts","matched_ticker":null},{"id":"Hz17kyoXLwg","title":"독도버스","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"n_xU9jQHrVQ","title":"2025년 10월 4일","date":"","kind":"shorts","matched_ticker":null},{"id":"nm30H43dGy0","title":"2025년 10월 10일","date":"","kind":"shorts","matched_ticker":null},{"id":"YQQ8ajwFI-0","title":"부에 성장을 함께하는 공간","date":"","kind":"shorts","matched_ticker":null},{"id":"fl3IaIkWLOY","title":"2025년 8월 2일","date":"","kind":"shorts","matched_ticker":null},{"id":"L_1t586bzpw","title":"2025년 7월 29일","date":"","kind":"shorts","matched_ticker":null},{"id":"L4YFU6k6LDM","title":"독도버스","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"Ug9YbDV2g3E","title":"2021년 4월 10일","date":"","kind":"shorts","matched_ticker":null},{"id":"b84zrQDDGxA","title":"2021년 4월 10일","date":"","kind":"shorts","matched_ticker":null},{"id":"G2qZ3KKZHZA","title":"나스닥 매도중","date":"","kind":"shorts","matched_ticker":"nq"},{"id":"I9TTL4_GjJg","title":"#독도버스 #낚시대회 #낚시 #메타버스 #메타강치","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"thIS6NcqaWc","title":"# foreign futures trading # metaverse # Ai","date":"","kind":"shorts","matched_ticker":null},{"id":"ZF9vm1qPIAg","title":"독도버스","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"lDmQhPrv-0U","title":"독도버스","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"GENUoRLjkvI","title":"2025년 5월 31일","date":"","kind":"shorts","matched_ticker":null},{"id":"3ELb7PjSdQk","title":"2025년 6월 3일","date":"","kind":"shorts","matched_ticker":null},{"id":"AwXedpsrzwk","title":"2025년 6월 5일","date":"","kind":"shorts","matched_ticker":null},{"id":"HxlvpgibWek","title":"독도버스","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"9Za4tODhbG0","title":"2025년 6월 6일","date":"","kind":"shorts","matched_ticker":null},{"id":"-jNUPJoqbR4","title":"2025년 6월 8일","date":"","kind":"shorts","matched_ticker":null},{"id":"RVPkwBPXanA","title":"2025년 6월 9일","date":"","kind":"shorts","matched_ticker":null},{"id":"RB1H80AMPgE","title":"독도버스","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"fQ0GXuyUF9E","title":"독도버스","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"KTLyeSGNLFE","title":"2025년 6월 12일","date":"","kind":"shorts","matched_ticker":null},{"id":"axJbBWfdEfU","title":"2025년 6월 12일","date":"","kind":"shorts","matched_ticker":null},{"id":"8sK8awH6QRE","title":"독도버스","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"Avkh6mUfpgE","title":"2025년 6월 14일","date":"","kind":"shorts","matched_ticker":null},{"id":"vP-HnwEKduY","title":"2025년 6월 15일","date":"","kind":"shorts","matched_ticker":null},{"id":"TeySxXOit_c","title":"독도버스","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"GtO8CDQ7Blw","title":"2025년 6월 16일","date":"","kind":"shorts","matched_ticker":null},{"id":"X0HaMqyvJtM","title":"2025년 6월 17일","date":"","kind":"shorts","matched_ticker":null},{"id":"GAgckokf-j4","title":"2025년 6월 19일","date":"","kind":"shorts","matched_ticker":null},{"id":"h9zTLP0RtaU","title":"2025년 6월 19일","date":"","kind":"shorts","matched_ticker":null},{"id":"Emt6YWnaCDQ","title":"2025년 6월 22일","date":"","kind":"shorts","matched_ticker":null},{"id":"_ShNxu0okkM","title":"2025년 6월 23일","date":"","kind":"shorts","matched_ticker":null},{"id":"zR08cQWbGTE","title":"2025년 6월 28일","date":"","kind":"shorts","matched_ticker":null},{"id":"X2BgvjOxPF0","title":"재테크 (쌀때 사서 비쌀때 판다)","date":"","kind":"shorts","matched_ticker":null},{"id":"dCHzJeSE44U","title":"재테크 (경제적 자유 : 쌀때 사서 비쌀때 판다)","date":"","kind":"shorts","matched_ticker":null},{"id":"pC-ljJMhojQ","title":"재테크 (쌀때 사서 비쌀때 판다)","date":"","kind":"shorts","matched_ticker":null},{"id":"Ia0g0BqTJIw","title":"#재테크","date":"","kind":"shorts","matched_ticker":null},{"id":"ecDnwI_eaZI","title":"미국채10년물 오늘의 전망 ~ 가격 상승 가능 할까?","date":"","kind":"shorts","matched_ticker":"zn"},{"id":"QYldP6JrJiw","title":"마음이고와야지","date":"","kind":"shorts","matched_ticker":null},{"id":"wesNzx3YnGM","title":"S&P500 오늘의 전망 ~ 폭풍전야!","date":"","kind":"shorts","matched_ticker":"es"},{"id":"W3JgCkoHKoU","title":"S&P500 오늘의 전망, 상승일까? 하락일까?","date":"","kind":"shorts","matched_ticker":"es"},{"id":"pyqzKRdniZE","title":"추풍령고개","date":"","kind":"shorts","matched_ticker":null},{"id":"V4qIlwVZiS4","title":"비트코인 오늘의 전망 ~  전고점 돌파할까?","date":"","kind":"shorts","matched_ticker":null},{"id":"6RNO0cmUfLc","title":"골드 오늘의 전망 ~ 앞으로 추가 상승 할까?","date":"","kind":"shorts","matched_ticker":"gold"},{"id":"7u6mQ_fBIQ0","title":"골드 오늘의 전망 ~상승 언제까지?","date":"","kind":"shorts","matched_ticker":"gold"},{"id":"cdERjHUnZb4","title":"빨간선인장","date":"","kind":"shorts","matched_ticker":null},{"id":"gpvbhftB4x0","title":"스트래티지 오늘의 전망","date":"","kind":"shorts","matched_ticker":null},{"id":"Cht8FgOj6Yk","title":"비트코인 8만 달러 돌파 할까?","date":"","kind":"shorts","matched_ticker":null},{"id":"e731BlUHPcc","title":"비트코인 오늘의 전망 ~ 비트코인 폭발 언제까지?","date":"","kind":"shorts","matched_ticker":null},{"id":"zUBhWL8hfPY","title":"조약돌","date":"","kind":"shorts","matched_ticker":null},{"id":"ha-hZrui2j4","title":"유로화 오늘의 전망 ~유로화 폭등 언제까지","date":"","kind":"shorts","matched_ticker":"eur"},{"id":"pUaftbRjnJY","title":"옥수수 오늘의 전망 ~옥수수로 하모니카 불어도 좋지만 싸게 사서 비싸게 팔아 돈벌기","date":"","kind":"shorts","matched_ticker":"corn"},{"id":"IDIRtEvY0io","title":"캐나다달러 오늘의 전망      캐나다달러 거래로 돈벌기","date":"","kind":"shorts","matched_ticker":"cad"},{"id":"yxA8ZSJwL_s","title":"가슴아프게","date":"","kind":"shorts","matched_ticker":null},{"id":"QsjR8opJsXc","title":"골드 오늘의 전망 ~ 골드 다시 폭발 할까?","date":"","kind":"shorts","matched_ticker":"gold"},{"id":"jzux2wDBIfE","title":"사랑이야","date":"","kind":"shorts","matched_ticker":null},{"id":"k2GQsAQgvUs","title":"비트코인 오늘에 전망 ~상승 바람 타나?","date":"","kind":"shorts","matched_ticker":null},{"id":"N3omDdBmGos","title":"구리 오늘의 전망              구리 조정 끝?","date":"","kind":"shorts","matched_ticker":"copper"},{"id":"ORPPNiQhsn8","title":"파초의꿈","date":"","kind":"shorts","matched_ticker":null},{"id":"smw28NnVI_s","title":"목포에눈물","date":"","kind":"shorts","matched_ticker":null},{"id":"f4_6Lthtcbc","title":"옥수수 오늘의 전망  어디로 가나","date":"","kind":"shorts","matched_ticker":"corn"},{"id":"r46BUxyQzlo","title":"내사랑내곁에","date":"","kind":"shorts","matched_ticker":null},{"id":"1VtKo2UmzUo","title":"캐나다달러 오늘에 전망  캐나다달러 지금 강해지는 이유","date":"","kind":"shorts","matched_ticker":"cad"},{"id":"ZZpcnuPDk_E","title":"삼성전자 오늘의 전망 HBM이 핵심 변수","date":"","kind":"shorts","matched_ticker":null},{"id":"gp9__IjK370","title":"귀거래사","date":"","kind":"shorts","matched_ticker":null},{"id":"y0VcsibpxHQ","title":"대두 오늘의 전망","date":"","kind":"shorts","matched_ticker":"soy"},{"id":"MvuS9cJ3tsM","title":"갈대에순정","date":"","kind":"shorts","matched_ticker":null},{"id":"vI-hBUcUveo","title":"골드 오늘의 전망","date":"","kind":"shorts","matched_ticker":"gold"},{"id":"ZqM02g7i0UE","title":"골목길","date":"","kind":"shorts","matched_ticker":null},{"id":"GJlWzYePUlw","title":"Good Goodbye","date":"","kind":"shorts","matched_ticker":null},{"id":"-WOk4jpti_s","title":"돈육 추세 오늘의 전망","date":"","kind":"shorts","matched_ticker":"hogs"},{"id":"W39GEpdwlDI","title":"비트코인 오늘 전망","date":"","kind":"shorts","matched_ticker":null},{"id":"ySxDDUkCcww","title":"골드 사랑하는 이에 손가락 보석이 되고 거래시 돈이 벌린다","date":"","kind":"shorts","matched_ticker":"gold"},{"id":"hy_H3T5jViw","title":"부르지마","date":"","kind":"shorts","matched_ticker":null},{"id":"YyfniXWUHqw","title":"캐나다달러 거래로 돈벌기","date":"","kind":"shorts","matched_ticker":"cad"},{"id":"eHoEkP9vkCA","title":"하늘만보면","date":"","kind":"shorts","matched_ticker":null},{"id":"8zel43hJZv0","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"gmt2QsduaqA","title":"2025년 10월 7일","date":"","kind":"shorts","matched_ticker":null},{"id":"tPEDV6dnTCs","title":"2025년 7월 27일","date":"","kind":"shorts","matched_ticker":null},{"id":"O5toG79_qSs","title":"2025년 7월 11일","date":"","kind":"shorts","matched_ticker":null},{"id":"gUc1ZyT7TNo","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"V2OgDkTkY0Q","title":"2025년 7월 22일","date":"","kind":"shorts","matched_ticker":null},{"id":"8VqZv7Jhw6A","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"2SHVcsb33SI","title":"호주달라로 돈벌기","date":"","kind":"shorts","matched_ticker":"aud"},{"id":"0mxDEa11iHg","title":"2025년 11월 4일","date":"","kind":"shorts","matched_ticker":null},{"id":"Po6-VncmE14","title":"오일 폭락 언제까지 갈까?","date":"","kind":"shorts","matched_ticker":"oil"},{"id":"V3jMHJMFs_M","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"lQx9LUONp9E","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"Fekh04QNzmQ","title":"비트코인 역대급 변곡점 시작!","date":"","kind":"shorts","matched_ticker":null},{"id":"mzcyj01sD8o","title":"2025년 8월 9일","date":"","kind":"shorts","matched_ticker":null},{"id":"_ym_pi8ephI","title":"2025년 7월 15일","date":"","kind":"shorts","matched_ticker":null},{"id":"AwuFe5C53MM","title":"사랑이여","date":"","kind":"shorts","matched_ticker":null},{"id":"zGB68UagBa8","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"Dbg4O6WU5pY","title":"2025년 10월 20일","date":"","kind":"shorts","matched_ticker":null},{"id":"mjNgILVI3fk","title":"2025년 7월 26일","date":"","kind":"shorts","matched_ticker":null},{"id":"k_0hyXSLuZ8","title":"2025년 10월 13일","date":"","kind":"shorts","matched_ticker":null},{"id":"G7omY7lKQ90","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"btCo1Vz0wcA","title":"2025년 10월 12일","date":"","kind":"shorts","matched_ticker":null},{"id":"TklTQc0F1Sw","title":"상처","date":"","kind":"shorts","matched_ticker":null},{"id":"0Z40qgJxD5Q","title":"2025년 9월 12일","date":"","kind":"shorts","matched_ticker":null},{"id":"3qpw9BvkhGs","title":"2025년 10월 17일","date":"","kind":"shorts","matched_ticker":null},{"id":"ehTHJp_FMiM","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"YbjXQGf9lbY","title":"2025년 7월 13일","date":"","kind":"shorts","matched_ticker":null},{"id":"NRbREMan6xA","title":"오일 거래로 돈벌기        오일 대폭락 언제 멈출까","date":"","kind":"shorts","matched_ticker":"oil"},{"id":"aFGJzSZwsbU","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"A-jtUhMsIDI","title":"2025년 10월 14일","date":"","kind":"shorts","matched_ticker":null},{"id":"BhbLZ_VK618","title":"2025년 8월 3일","date":"","kind":"shorts","matched_ticker":null},{"id":"T0YkZf1ueYo","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"K50hATWaZbQ","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"fCa0_oXcl8I","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"vJw5QC0yB9A","title":"2025년 7월 20일","date":"","kind":"shorts","matched_ticker":null},{"id":"ftNhTH4tg1w","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"YI8jJf9nbDU","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"DB09F8qq7r8","title":"2025년 7월 2일","date":"","kind":"shorts","matched_ticker":null},{"id":"7mZ0krvxkeg","title":"2025년 7월 2일","date":"","kind":"shorts","matched_ticker":null},{"id":"PXS_FAvN1ww","title":"2025년 7월 3일","date":"","kind":"shorts","matched_ticker":null},{"id":"XWaglTKmybw","title":"2025년 7월 6일","date":"","kind":"shorts","matched_ticker":null},{"id":"thhYERENLkA","title":"2025년 7월 8일","date":"","kind":"shorts","matched_ticker":null},{"id":"XezLUtt4lQA","title":"2025년 7월 10일","date":"","kind":"shorts","matched_ticker":null},{"id":"DMr-EB2l9ds","title":"2025년 7월 12일","date":"","kind":"shorts","matched_ticker":null},{"id":"YGXWGNEuZHY","title":"2025년 7월 17일","date":"","kind":"shorts","matched_ticker":null},{"id":"_qMUjjlmu6I","title":"2025년 7월 18일","date":"","kind":"shorts","matched_ticker":null},{"id":"RPSlAhUgDZ4","title":"2025년 7월 20일","date":"","kind":"shorts","matched_ticker":null},{"id":"spGdrkYdQdA","title":"2025년 7월 27일","date":"","kind":"shorts","matched_ticker":null},{"id":"oQrTS8CK8yM","title":"2025년 8월 4일","date":"","kind":"shorts","matched_ticker":null},{"id":"MsytnKB5p4k","title":"2025년 8월 5일","date":"","kind":"shorts","matched_ticker":null},{"id":"Nzpo9M_8oDs","title":"2025년 8월 7일","date":"","kind":"shorts","matched_ticker":null},{"id":"UqhyMjWVN8g","title":"2025년 8월 10일","date":"","kind":"shorts","matched_ticker":null},{"id":"hfiRF35nzoI","title":"2025년 8월 11일","date":"","kind":"shorts","matched_ticker":null},{"id":"nP8ZMYSANec","title":"2025년 8월 13일","date":"","kind":"shorts","matched_ticker":null},{"id":"IDTQLflVBM4","title":"2025년 8월 13일","date":"","kind":"shorts","matched_ticker":null},{"id":"P9o1BYBL4Tw","title":"2025년 8월 14일","date":"","kind":"shorts","matched_ticker":null},{"id":"FDNp--qL4nc","title":"2025년 8월 16일","date":"","kind":"shorts","matched_ticker":null},{"id":"n1fHdLPZWYg","title":"2025년 8월 17일","date":"","kind":"shorts","matched_ticker":null},{"id":"Ixw_80jz_5Q","title":"2025년 8월 20일","date":"","kind":"shorts","matched_ticker":null},{"id":"gU0UwS_veXU","title":"마이크로소프트 추세","date":"","kind":"shorts","matched_ticker":null},{"id":"979GUBWoTdc","title":"골드 거래로 돈벌기","date":"","kind":"shorts","matched_ticker":"gold"},{"id":"XDJ3K7rQ6N0","title":"빈잔","date":"","kind":"shorts","matched_ticker":null},{"id":"OuCZY_doLto","title":"비트코인 출발점은!","date":"","kind":"shorts","matched_ticker":null},{"id":"rZqp-LR4Llg","title":"구리 추세 향방?","date":"","kind":"shorts","matched_ticker":"copper"},{"id":"vdEi8WR0yNk","title":"구리 앞으로 방향은?","date":"","kind":"shorts","matched_ticker":"copper"},{"id":"gR2f1Bc4Lys","title":"유로화로 돈벌기","date":"","kind":"shorts","matched_ticker":"eur"},{"id":"Cc9a0G293K8","title":"캐나다달러 방향 오리무중?","date":"","kind":"shorts","matched_ticker":"cad"},{"id":"e8H2LLLQZr8","title":"오늘에 스트래티지","date":"","kind":"shorts","matched_ticker":null},{"id":"16bxO-WU7Jc","title":"모란동백","date":"","kind":"shorts","matched_ticker":null},{"id":"DW19aKenyL4","title":"유로화 지금이 승부처!","date":"","kind":"shorts","matched_ticker":"eur"},{"id":"CNX6YmNN48U","title":"유로화 오늘 방향이 바뀌었다","date":"","kind":"shorts","matched_ticker":"eur"},{"id":"YXMLg8lNLwM","title":"항생 추세","date":"","kind":"shorts","matched_ticker":null},{"id":"84H-eb-mYfA","title":"삼성전자 추세","date":"","kind":"shorts","matched_ticker":null},{"id":"GdPY3H4qw7A","title":"옥수수 맛있게 먹기도 하지만~돈도 번다^^","date":"","kind":"shorts","matched_ticker":"corn"},{"id":"6m1lb9Lug54","title":"안개속으로가버린사랑","date":"","kind":"shorts","matched_ticker":null},{"id":"yMb_zrB6d_s","title":"그런사람또없읍니다","date":"","kind":"shorts","matched_ticker":null},{"id":"ddoSYI-CZdQ","title":"테슬라 폭락","date":"","kind":"shorts","matched_ticker":null},{"id":"GOiGLy3IWM4","title":"옥수수 거래로 돈벌기 전세계가 주목!","date":"","kind":"shorts","matched_ticker":"corn"},{"id":"82eU4xPjiec","title":"이대로돌이되어","date":"","kind":"shorts","matched_ticker":null},{"id":"3Sd2LgZSTcU","title":"골드 거래로 돈벌기","date":"","kind":"shorts","matched_ticker":"gold"},{"id":"jJ7zTzD3sYQ","title":"떠나는님아","date":"","kind":"shorts","matched_ticker":null},{"id":"B9WnSRLWZME","title":"꽃길","date":"","kind":"shorts","matched_ticker":null},{"id":"92LkR4ZpTUM","title":"비트코인 대반전 시작!","date":"","kind":"shorts","matched_ticker":null},{"id":"BgISqcchrnU","title":"옥수수 거래로 돈벌기   옥수수 승부처는 언제?","date":"","kind":"shorts","matched_ticker":"corn"},{"id":"d0kac9XsocI","title":"금값 결국 폭발 할까?","date":"","kind":"shorts","matched_ticker":"gold"},{"id":"L5hbYXf7eqk","title":"골드로 돈벌 기회 흔하지 않다","date":"","kind":"shorts","matched_ticker":"gold"},{"id":"1cS_CsKdzqc","title":"대두 지금이 기회!","date":"","kind":"shorts","matched_ticker":"soy"},{"id":"qIZ70sStJWU","title":"투자자들 몰리는 대두","date":"","kind":"shorts","matched_ticker":"soy"},{"id":"XYY6Qpf--w4","title":"캐나다달러 드디어 방향 나왔다","date":"","kind":"shorts","matched_ticker":"cad"},{"id":"-exoVf32bo0","title":"울고넘는박달재","date":"","kind":"shorts","matched_ticker":null},{"id":"91MHktlC2vc","title":"비트코인,지금이 승부처","date":"","kind":"shorts","matched_ticker":null},{"id":"ZgONa5GFDlw","title":"대두시장 큰손이 움직였다","date":"","kind":"shorts","matched_ticker":"soy"},{"id":"OXb4bauh4q4","title":"수덕사에여승","date":"","kind":"shorts","matched_ticker":null},{"id":"D2V7ANZHOvg","title":"암연","date":"","kind":"shorts","matched_ticker":null},{"id":"xJY5Gbmet5Y","title":"수박 먹으러 놀러오세요","date":"","kind":"shorts","matched_ticker":null},{"id":"fe7bWfftyIw","title":"캐나다달러 드디어 폭발 하나?","date":"","kind":"shorts","matched_ticker":"cad"},{"id":"VRpl4XBzuug","title":"비트코인,판이 바뀐다","date":"","kind":"shorts","matched_ticker":null},{"id":"uGxM_IVxt7c","title":"대두 거래로 돈벌기 ..   대두  떡상 언제까지","date":"","kind":"shorts","matched_ticker":"soy"},{"id":"Q_0CwV6Auwk","title":"옥수수 결국 폭등 신호 떴다","date":"","kind":"shorts","matched_ticker":"corn"},{"id":"wdLfhaLvEdI","title":"바다에누워","date":"","kind":"shorts","matched_ticker":null},{"id":"0gFyZGWhmwc","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"sZ8eA1Zw0NE","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"VzhKiyQmzyU","title":"2025년 8월 22일","date":"","kind":"shorts","matched_ticker":null},{"id":"a8L71owZOP4","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"MxBK22XZrjc","title":"2025년 11월 6일","date":"","kind":"shorts","matched_ticker":null},{"id":"JG5pCkh1tmo","title":"2025년 10월 2일","date":"","kind":"shorts","matched_ticker":null},{"id":"0-1_ye3hBKA","title":"2026년 2월 19일","date":"","kind":"shorts","matched_ticker":null},{"id":"om_JHA7q8hQ","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"1rWp7B9E_rU","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"ycqWKq9VUJ4","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"hS8n9Bz7mdI","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"WjZOgmAjzGM","title":"2025년 11월 6일","date":"","kind":"shorts","matched_ticker":null},{"id":"apmtSErr3iY","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"6TqSZsss1C8","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"o1XRPR_2PII","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"BTRjF0Vz5mY","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"4GRRqBVUhWo","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"Hjfpv_UyF14","title":"오일 떡락은 언제까지?   가격은 ?","date":"","kind":"shorts","matched_ticker":"oil"},{"id":"SFhJleHLvJs","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"ALeVWH9I9NE","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"SkG6Um5VdGk","title":"#독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"GZcbKQM1v4o","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"iCogQ-ewA48","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"_diG8y2JJ78","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"1ZI7xuJIhDw","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"p7IKiQxWcQY","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"VkmHY17eBK8","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"ILcEnpr5t50","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"bwDYJIcEVmQ","title":"2025년 8월 27일","date":"","kind":"shorts","matched_ticker":null},{"id":"qfthjcN83Mw","title":"2025년 11월 2일","date":"","kind":"shorts","matched_ticker":null},{"id":"e2ymbyFA2HI","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"cYe9QsyR1Qg","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"zWfCizijvOk","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"yAMq43lzLwc","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"bvIBAoMVA50","title":"2025년 9월 29일","date":"","kind":"shorts","matched_ticker":null},{"id":"TPJCiBVIf1s","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"ndF5qfAPTx8","title":"캐나다달러,지금이 최대 분기점","date":"","kind":"shorts","matched_ticker":"cad"},{"id":"TZ3V0whQJHs","title":"2025년 11월 8일","date":"","kind":"shorts","matched_ticker":null},{"id":"mWn_XC-gnNY","title":"옥수수 거래로 돈벌기","date":"","kind":"shorts","matched_ticker":"corn"},{"id":"OqRyzNROXOw","title":"2025년 8월 21일","date":"","kind":"shorts","matched_ticker":null},{"id":"mH_D_rcm68c","title":"2025년 8월 24일","date":"","kind":"shorts","matched_ticker":null},{"id":"_bO-Cbh0BR4","title":"2025년 8월 25일","date":"","kind":"shorts","matched_ticker":null},{"id":"_gpZOsGeRHM","title":"2025년 9월 8일","date":"","kind":"shorts","matched_ticker":null},{"id":"dl6ZlJrhA1Q","title":"2025년 9월 11일","date":"","kind":"shorts","matched_ticker":null},{"id":"NWzGFzZt9oU","title":"2025년 9월 11일","date":"","kind":"shorts","matched_ticker":null},{"id":"aoPlZsPkcqg","title":"2025년 9월 21일","date":"","kind":"shorts","matched_ticker":null},{"id":"d1frDhJSbts","title":"2025년 9월 22일","date":"","kind":"shorts","matched_ticker":null},{"id":"qDKiZIp7KN0","title":"2025년 9월 22일","date":"","kind":"shorts","matched_ticker":null},{"id":"4O8ULnOQ4Xk","title":"2025년 10월 1일","date":"","kind":"shorts","matched_ticker":null},{"id":"EoUtDtIGtig","title":"2025년 10월 9일","date":"","kind":"shorts","matched_ticker":null},{"id":"5uYAqJnH1rg","title":"2025년 10월 11일","date":"","kind":"shorts","matched_ticker":null},{"id":"4AMLwDuBkWI","title":"2025년 10월 12일","date":"","kind":"shorts","matched_ticker":null},{"id":"ssUNK9TzTU4","title":"2025년 10월 15일","date":"","kind":"shorts","matched_ticker":null},{"id":"ihEpK3Fsbdg","title":"2025년 10월 16일","date":"","kind":"shorts","matched_ticker":null},{"id":"2tKElZAFhz8","title":"2025년 10월 17일","date":"","kind":"shorts","matched_ticker":null},{"id":"hJTuPQ6JmhA","title":"2025년 10월 18일","date":"","kind":"shorts","matched_ticker":null},{"id":"G4txM_G-sII","title":"2025년 10월 19일","date":"","kind":"shorts","matched_ticker":null},{"id":"egJ0Au6kzsU","title":"2025년 10월 23일","date":"","kind":"shorts","matched_ticker":null},{"id":"6xDjNpJRPio","title":"2025년 10월 24일","date":"","kind":"shorts","matched_ticker":null},{"id":"Bt7tqSmMR3Y","title":"2025년 10월 27일","date":"","kind":"shorts","matched_ticker":null},{"id":"FPwoK0807IE","title":"2025년 10월 29일","date":"","kind":"shorts","matched_ticker":null},{"id":"qyr_xXCaRiw","title":"2025년 10월 30일","date":"","kind":"shorts","matched_ticker":null},{"id":"GiPXJHP8RFg","title":"2025년 10월 31일","date":"","kind":"shorts","matched_ticker":null},{"id":"_Bz4GM8g834","title":"2025년 11월 1일","date":"","kind":"shorts","matched_ticker":null},{"id":"VMk__YdFfAc","title":"2025년 11월 3일","date":"","kind":"shorts","matched_ticker":null},{"id":"SlSdS3-0O3I","title":"2025년 11월 4일","date":"","kind":"shorts","matched_ticker":null},{"id":"YIDTub3qFsc","title":"2025년 11월 9일","date":"","kind":"shorts","matched_ticker":null},{"id":"bQhG9cLsQlo","title":"대두 가격 폭등","date":"","kind":"shorts","matched_ticker":"soy"},{"id":"wnO8RW9uzkA","title":"오일 거래로 돈벌기          오일 시장 큰손들이 움직인다","date":"","kind":"shorts","matched_ticker":"oil"},{"id":"OwyeXXRCFSQ","title":"비트코인 폭발 초읽기!","date":"","kind":"shorts","matched_ticker":null},{"id":"e5raf4S-itI","title":"대두 거래로 돈좀 벌어 볼까!","date":"","kind":"shorts","matched_ticker":"soy"},{"id":"tPHej6Wu_1w","title":"그사람","date":"","kind":"shorts","matched_ticker":null},{"id":"tDjloHm7j0U","title":"비트코인 대폭발 임박!","date":"","kind":"shorts","matched_ticker":null},{"id":"830cKlChalk","title":"캐나다달러 지금 놓치면 후회","date":"","kind":"shorts","matched_ticker":"cad"},{"id":"nYXT7lw2FJg","title":"올 한해 대두 작황은?     2월 하락 배팅 결과!","date":"","kind":"shorts","matched_ticker":"soy"},{"id":"livr8-L6DU4","title":"누구없소","date":"","kind":"shorts","matched_ticker":null},{"id":"FMwv3OPNn4k","title":"유로화의 미래,시장이 말한다","date":"","kind":"shorts","matched_ticker":"eur"},{"id":"sAh5zjeLZJ4","title":"호주달라 드디어 폭락!","date":"","kind":"shorts","matched_ticker":"aud"},{"id":"UmdOSdCCk1M","title":"사랑을잃어버린나","date":"","kind":"shorts","matched_ticker":null},{"id":"1bssnzKyO_Y","title":"님","date":"","kind":"shorts","matched_ticker":null},{"id":"QVDWgAX0iwI","title":"옥수수 공급이 늘어나는중 가격은 어떻게?","date":"","kind":"shorts","matched_ticker":"corn"},{"id":"LX8aKlZG6sA","title":"오일 거래로 돈벌기    호르무즈 해협 빠르게 정상화","date":"","kind":"shorts","matched_ticker":"oil"},{"id":"-qu9AjIfQSY","title":"님떠난후","date":"","kind":"shorts","matched_ticker":null},{"id":"QpGz2-6TroA","title":"여름이닷!","date":"","kind":"shorts","matched_ticker":null},{"id":"aeDB_ZKFR2I","title":"독도버스","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"Fbhuu69wdpQ","title":"달라인덱스 와 유로화 상관 관계","date":"","kind":"shorts","matched_ticker":"eur"},{"id":"SBvfcoo3FSE","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"zEKsGHgS5cw","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"lutl7tDO7yY","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"_80mxtv6ClM","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"F0IYuysaIFg","title":"독도버스","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"on1b-qTJKuQ","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"1fZ7OspUNU0","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"ThxpWDajnvs","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"VuET1P8OKQQ","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"syoxRIPFInk","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"v7oY6z3Wq40","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"jfzGvOM_6EU","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"lKiOlhdzBHo","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"jkeyGDqO8Mg","title":"2025년 11월 15일","date":"","kind":"shorts","matched_ticker":null},{"id":"fdp7-jZbHWY","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"cDDvCD4jCUQ","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"avhrlO15PS4","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"z8oAlF9y7yg","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"nTPBsg144Fs","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"5jSgb3tNhn4","title":"2025년 11월 12일","date":"","kind":"shorts","matched_ticker":null},{"id":"aBbiJdUA9S0","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"P1ZgvsUcCPc","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"-1ZrfbbIO0I","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"yzSqi44sP68","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"R2QfeJ0yl5g","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"81xc-ErS9L4","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"BCYTC1BwqPI","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"-sq_5r2jG4k","title":"2025년 11월 10일","date":"","kind":"shorts","matched_ticker":null},{"id":"VbPGCXfpU14","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"PnjmpRwmSEM","title":"2025년 11월 14일","date":"","kind":"shorts","matched_ticker":null},{"id":"J4QR0V9sRpo","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"0SiqBDxNezs","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"dvBDdIObSHo","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"3KQ0Jjcl38o","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"n3j-2l9q4-k","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"Xyw8L-nSDGE","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"NseDklfQXd8","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"BgVMKvZz8V4","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"pgUaF8te-CQ","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"Hz_uE9HGEqo","title":"2025년 11월 10일","date":"","kind":"shorts","matched_ticker":null},{"id":"pyVsdp0uT_s","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"duHiQGqxdZU","title":"2025년 11월 9일","date":"","kind":"shorts","matched_ticker":null},{"id":"d4vNxTeTA5Q","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"sJ1QAIprY24","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"DTsFqYBRSJU","title":"2025년 11월 11일","date":"","kind":"shorts","matched_ticker":null},{"id":"rj4V1DgkYhA","title":"2025년 11월 12일","date":"","kind":"shorts","matched_ticker":null},{"id":"1odJhG5XlTc","title":"2025년 11월 16일","date":"","kind":"shorts","matched_ticker":null},{"id":"FAycOO5EDWI","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"D-cEW8rLeOY","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"pd2AUjBmeVo","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"OGLXDnY1fT0","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"J5DVTfIiFE4","title":"2025년 11월 21일","date":"","kind":"shorts","matched_ticker":null},{"id":"u6tH_cHyMA4","title":"2025년 11월 22일","date":"","kind":"shorts","matched_ticker":null},{"id":"gPBvC-tNS7E","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"HEMMihMenbY","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"m-5rRiiWKOQ","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"GmqjrblMEw8","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"Az0cmHzcwCU","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"iBF0okGrDEs","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"fCbGbjOx8jk","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"i1sA782zhic","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"QLKUw1HV1GM","title":"2025년 11월 30일","date":"","kind":"shorts","matched_ticker":null},{"id":"yJZdecytOEk","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"jKKZ6kQJFTY","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"kOalpYh0YWM","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"_fw1Sxxl06I","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"eXHazpnvV3c","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"Sk81XCPu_ag","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"2Y-t5KYQ4O4","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"kqEdgaYC2BI","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"9ovF-J3lUTU","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"0drARemzvKE","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"d0UDbuubq9I","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"upExKITuBIA","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"5GrrMlezSQ8","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"lu-9ETfdmmw","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"uanpXctfW-M","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"Ldk8QGrBq_4","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"XVH6knl-enU","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"Rr4PnJZhFw8","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"g0g9VG4vrHA","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"bRiWB88DA4I","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"7OrdI2LLN9Y","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"ydJ4mGbGrlw","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"THyUPZ3VPa0","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"gcFGpxnKq64","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"cvxVvpkZf6U","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"XZJApmB7LJM","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"5I5xkzJYhSc","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"YXPicTnpXNo","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"grOzl1-6rgY","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"fiPdrpPoIgU","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"PvBdJ9QzbSs","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"X9jn7Pp9-uY","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"wuqErtaH2ZE","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"qtCkiOjpmWQ","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"-IvfiPTyAIE","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"6bziW3GVA3Q","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"Y4yLVbYYLeg","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"ro7cstXYjpc","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"kYty_nRXPGI","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"m507mVoegxg","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"0eRgf5rdS0A","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"nZKgWftLaTw","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"YJsarsmkTQw","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"G3oZT-d52r0","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"9ZUrIeaVUs0","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"AOsGphRlO5Q","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"k8PPl_DBF4s","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"IF_jP6-UIO4","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"YIU5cqa_OG4","title":"라일락이질때","date":"","kind":"shorts","matched_ticker":null},{"id":"dbkOaq88MaY","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"Xuh4sCTBTCI","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"9VQXJ0zfpCw","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"01upNOiFqCU","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"7K58BRDXtMw","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"vuT71IPi2AM","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"KGMcDA6Ddrc","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"cjFIhc1PgQQ","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"T2p_S85WeRA","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"qCj5grmSt_E","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"oNPfPHwqIkE","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"9OkGLyFJp3A","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"QDOB-AW7uD0","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"qt0GH66pppM","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"1J9r7Shmqfo","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"cZ4O0bdUHN0","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"SYqON74AnBU","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"KSWKjughxtw","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"9d7w2pSXVLw","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"Pb2044-qo5Y","title":"2026년 3월 4일","date":"","kind":"shorts","matched_ticker":null},{"id":"kUhBPV2Hhzo","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"oKNgPZwIlkg","title":"2026년 1월 30일","date":"","kind":"shorts","matched_ticker":null},{"id":"hRAuUHOSA3A","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"QwTt8oLe2xA","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"ffzHhMTgoLs","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"ZIHJ_m4sWqk","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"GLMbibioCXM","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"KGmZWB6jSTo","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"l6iFkeLxyNk","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"FnuiQCKMW6c","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"MgvG6CIK8-g","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"W1ghKLBjLvk","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"fjdwARZeMnw","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"xjjAox-qMSQ","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"Jl5FUjW1hAc","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"EmS5wpsUuCE","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"UiXmjMocCyQ","title":"2026년 1월 14일","date":"","kind":"shorts","matched_ticker":null},{"id":"plTISLDnTaA","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"k1HjK5S1bjg","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"r-RMkki9SqY","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"l1qpUvcvOGA","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"5uuk3vKzI_s","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"H-h9FKs_xWA","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"kaDPwb9GZKI","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"AAVxZ_0DYOw","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"a3SPjEElqUY","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"To0ttEFIyT8","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"P8wKZ6oN90Y","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"Zov3Q_tLqqc","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"xJ06pbWu0zM","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"JxNDQ0ihZwM","title":"2026년 2월 3일","date":"","kind":"shorts","matched_ticker":null},{"id":"VsnQle6UvUE","title":"독도국제무역 .com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"j_4CHCyStxc","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"cGRC23PF3co","title":"독도버스","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"ZpMxh7-6MUc","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"uk4fd-mBsvg","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"ZRSd_Fyky8k","title":"2026년 4월 29일","date":"","kind":"shorts","matched_ticker":null},{"id":"fYj5hGbA8BU","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"g6g30svTxQs","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"Iv4iMigFn60","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"70JJqjiposs","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"wPqE-F2oLes","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"MOyqYs73AJU","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"WDYlhryW_84","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"mcTL6Abah74","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"8PNpIBfdrJ8","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"Fylxjt6HdJY","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"LqmAfZ7D20A","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"GPOwa1UM_Xo","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"qQn8zosNsYw","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"SuhT6Zu2DKM","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"ZpTgR5Z-eMc","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"w5c79_j3UbE","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"HQ8uu2iz9jY","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"EkDVzwUh23E","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"Td8HURmEJ_U","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"wm8vn2or8_A","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"6diTl-AGc8Q","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"TZwF2tVv0kQ","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"Sc28D7fnnR0","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"vtkBWKgYYro","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"6H6VmGpMGT0","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"wottpzjBOyU","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"-XwDmrM9UiE","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"bKzmUQTUrvc","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"c4nY3Iy9rrk","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"U6yy-bSxThY","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"KEMs2GaO7aM","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"_O2L_EqY7v4","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"EuiG2UwoQMY","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"0cAihSxvoJA","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"e-l9C45UJUE","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"URMP0uyz448","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"PEF_MdlFgNw","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"OEqhae1wHDU","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"5urqWm1okK4","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"r_mdOqC82hs","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"-9kmDGP7LhE","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"uGz-45chncI","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"Cur2939UBX8","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"O-QwB6Pqcgc","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"ovV0TcL90nw","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"o83UZRn5UL4","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"qGf0cIlyFF8","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"pViBzQuULSY","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"uEpRoTYZDBk","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"y-p2Uzm7kQ0","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"kRaoflGsdfg","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"sTQohx_CcKo","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"ban5K62cgSE","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"1NK9UXn_ed8","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"OIKXySXuKk0","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"rdGLN_Dncw4","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"cmT9xTkVOmo","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"tOI4FOL6hwc","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"VNCu-OP47is","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"9wOeX7DdlI8","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"Ruex8o9IFBY","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"I1tEkGeIc5k","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"z4FhPErsXUc","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"rQKbQnZB30U","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"xu6i2QnaR7k","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"BbhjIlsxVAc","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"iLcQkwe1Z20","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"mrK9wfebhOA","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"wtZj2EpSw2Y","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"cQmGnplEbwo","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"H1pkz4O3ja8","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"q-AYZ77l5V8","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"Rjub4aukhSA","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"a25JlaxZ77A","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"KCa8G07A7rY","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"pu5493K1J-s","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"KaVzKLS5xdE","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"O9gWrj0_AS0","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"fH6DpAYRLEs","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"},{"id":"XnJA7oHgjMQ","title":"독도국제무역.com","date":"","kind":"shorts","matched_ticker":"dokdo"}]};</script>
 <script>window.__NEWS_FALLBACK__ = {"meta":{"title":"국제상품 주요 뉴스","subtitle":"국제상품 종목 관련 · 재롱둥이 머니 쇼츠","updated":"2026-11-23 09:30 KST","updated_label":"2026.11.23 (월) 09:30","cadence":"매일 09:30 갱신","scroll_px_per_sec":24,"source":"2026-11-23 09:30 KST · 11/20 미국장 마감 + 11/23 아시아장 초반 호가 · CME Daily Bulletin #225(11/20) · CFTC COT(11/17) · EIA · USDA · Reuters/CNBC/Newsquawk/FXEmpire 정리"},"items":[{"tag":"정책 · 연준","code":"FOMC","headline":"12월 인상 88.6% — 50bp 위험은 소멸","price":"인상 88.6%","change":"12/8~9 회의","tone":"warn","lines":["금요일 96%서 후퇴 · 동결 11.4% · 50bp 0%","한 주 전 11.5%였던 50bp 기대가 완전 소멸","윌리엄스 11/24 06:00 KST · PCE 11/25"]},{"tag":"위험회피 · 증시","code":"SPX · NDX","headline":"AI 매도 진정 — 선물 반등, 현물 조정권","price":"6,910.39","change":"선물 +1.5%","tone":"up","lines":["금요일 S&P -3.70% · 나스닥 -5.28%","월요일 선물 다우 +0.9%·S&P +1.5%·NDX +2%","오라클 'AI 자금 확보' · 아시아 지원책 대기"]},{"tag":"변동성 · 금리","code":"VIX · US10Y","headline":"VIX 35.89 · 10년 4.912% — 진정 여부가 관건","price":"VIX 35.89","change":"10Y 4.912%","tone":"warn","lines":["VIX +26.2% · 주간 +86% — 3월 이후 최고","10년 -14bp · 2년 4.622% — 대피처는 채권","11/20 옵션 만기가 매도 가속을 키웠다"]},{"tag":"달러","code":"DXY","headline":"달러 103.80 — 19개월 고점서 첫 숨고르기","price":"103.80","change":"-0.04%","tone":"flat","lines":["4주 연속 상승 뒤 정체 · 20일 +1.85%","유로 1.0974 · 엔 158.63 · 호주 0.6629","인상 베팅 축소가 달러 상단을 눌렀다"]},{"tag":"지정학 · 물류","code":"HORMUZ","headline":"이란 협상 난항 — 호르무즈 봉쇄 지속","price":"호르무즈","change":"이란 협상","tone":"warn","lines":["트럼프 \"연초 이후 타격 재개 선호\"","카타르 중재 대표단 테헤란 방문 · 진전 없음","후티 라비그 정유·홍해 모카 공격 계속"]},{"tag":"만기 · 롤오버","code":"ROLL","headline":"골드 3월물 OI 추월 — 12월물 막바지","price":"FND 11/30","change":"12월→3월","tone":"warn","lines":["3월물 OI: 골드 51.7%·소맥 80.5%·ZN 28.1%","통화 3월물 6S 15.4% · 6C 15.9%","골드 12월 옵션 만기 11/25 전후 — 주의"]},{"tag":"일정 · 휴장","code":"CAL","headline":"11/25 PCE → 11/26 휴장 → 11/27 조기","price":"11/25 22:30","change":"11/26 휴장","tone":"warn","lines":["11/25 22:30 PCE(10월)·GDP 2차·내구재","베이지북 11/26 04:00 · 실업수당 하루 앞당김","일본 11/23 휴장 · 얇은 호가 갭 주의"]}],"rooms":{"fx":{"title":"통화 전시실 뉴스","subtitle":"달러·유로·파운드·엔·프랑·호주·뉴질랜드·캐나다달러","updated":"2026-11-23 09:30 KST","updated_label":"2026.11.23 (월) 09:30","cadence":"매일 09:30 갱신","scroll_px_per_sec":24,"source":"CME Bulletin #225 통화선물 OI(11/20) · CFTC COT(11/17) · Reuters 아시아장(11/23) · BoC/SNB 일정","items":[{"tag":"달러지수","code":"DXY","headline":"달러 103.80 — 고점서 숨고르기","price":"103.80","change":"-0.04%","tone":"flat","lines":["유로 1.0974(+0.1%) · 엔 158.63(+0.2%)","12월 25bp 88.6% · 동결 11.4%","스탠다드차타드 \"달러 아웃퍼폼 유지\""]},{"tag":"스위스프랑","code":"6SZ26","headline":"프랑 1.19285 — 1.20 아래 약세 지속","price":"1.19285","change":"-0.21%","tone":"down","lines":["3월물 1.20615 · 프리미엄 1.11%","COT 순매도 -8,281(52주 100%) — 천장 부담","WILLCO 스토캐스틱 0.0 · SNB 12/10"]},{"tag":"캐나다달러","code":"6CZ26","headline":"캐나다달러 0.6982 — 기준선 회복 실패","price":"0.6982","change":"-0.04%","tone":"down","lines":["기준선 0.70336 아래 · RSI 29.2 과매도","12월물 OI 318,619(-17,594)","3월물 60,625(+19,542) = 15.9%"]},{"tag":"엔 · 유로","code":"6J · 6E","headline":"엔 158.63엔 · 유로 1.0974 — 대피 진정","price":"158.63엔","change":"유로 1.0974","tone":"flat","lines":["위험회피 완화로 엔 강세 되돌림","일본 11/23 휴장(노동감사절) · BoJ 다무라 11/26","160엔 개입 경계 · ECB 나겔 11/27"]},{"tag":"통화 OI","code":"#225","headline":"3월물 이동 가속 — 6S 15.4% · 6C 15.9%","price":"6S 137,709","change":"6C 380,710","tone":"flat","lines":["CME #225(11/20) PRELIMINARY · 확정 전","12월물 6S -2,900 · 6C -17,594 청산","3월물 +4,970 · +19,542 유입"]},{"tag":"일정","code":"CAL","headline":"BoC 12/9 · SNB 12/10 · 한은 11/26","price":"12/9 BoC","change":"12/10 SNB","tone":"warn","lines":["캐나다 맥클렘 연설 11/24","미 PCE 11/25가 달러·금리 방향타","한은 11/26 — 원화·역외 변동성"]}]},"index":{"title":"지수 전시실 뉴스","subtitle":"S&P500·나스닥100·다우·러셀2000","updated":"2026-11-23 09:30 KST","updated_label":"2026.11.23 (월) 09:30","cadence":"매일 09:30 갱신","scroll_px_per_sec":24,"source":"지수 종가(11/20) · 선물(11/23 아시아장) · VIX · Reuters/CNBC/Newsquawk 보도 · BEA 일정","items":[{"tag":"S&P500","code":"ESZ26","headline":"S&P500 6,910.39 — 조정권, 선물은 반등","price":"6,910.39","change":"-3.70%","tone":"down","lines":["월요일 선물 +1.0~1.5% · NDX 선물 +2%","10/6 고점 대비 -11.6% · 200일선 아래","11/20 옵션 만기 겹쳐 매도 가속"]},{"tag":"나스닥","code":"NQZ26","headline":"나스닥 22,617.73 — 주간 -10.0%","price":"22,617.73","change":"-5.28%","tone":"down","lines":["나스닥100 고점 대비 -19.8% — 약세장 경계","엔비디아 -13.8%(SEC 회계조사)","브로드컴 -12.2% · 앤트로픽 -8.8%"]},{"tag":"다우","code":"YMZ26","headline":"다우 48,147.33 — 949p 급락, 주간 -8%","price":"48,147.33","change":"-1.93%","tone":"down","lines":["선물 +0.9% 반등 · 방어주만 선방","주간 -8.0% — 2020년 이후 최악 수준","장중 47,998.86까지 밀렸다"]},{"tag":"러셀2000","code":"RTYZ26","headline":"러셀 2,581.79 — 중소형주 -2.76%","price":"2,581.79","change":"-2.76%","tone":"down","lines":["주간 -7.5% · 자금조달 부담 확대","신용 스프레드 확대 여부 주시","금리 민감 업종 낙폭이 컸다"]},{"tag":"변동성","code":"VIX","headline":"VIX 35.89 — 3월 이후 최고, 진정은 아직","price":"35.89","change":"+26.2%","tone":"warn","lines":["장중 40.03 터치 · 주간 +86%","휴장 주간 얇은 유동성 — 갭 위험","변동성 타깃 매도 트리거 근접"]},{"tag":"일정","code":"CAL","headline":"11/25 PCE·11/27 조기 · 실적 HPE·델","price":"11/25 22:30","change":"11/27 조기","tone":"warn","lines":["플래시 PMI 11/23 23:45 KST(제조 54.5)","HPE 11/24·델 11/25 AI서버 수주가 시험대","11/27 13:15 ET(한국 11/28 02:15) 조기"]}]},"rates":{"title":"금리 전시실 뉴스","subtitle":"미국채 10년·30년·5년·2년물 선물과 금리","updated":"2026-11-23 09:30 KST","updated_label":"2026.11.23 (월) 09:30","cadence":"매일 09:30 갱신","scroll_px_per_sec":24,"source":"CME Bulletin #225 국채선물 OI(11/20) · CFTC COT(11/17) · FOMC·연준 발언 · BEA 일정","items":[{"tag":"FOMC","code":"FOMC","headline":"12월 인상 88.6% — 50bp 기대 소멸","price":"3.75~4.00%","change":"인상 88.6%","tone":"warn","lines":["금요일 96% → 88.6% · 동결 11.4%","월러 50bp 카드 잔존 · 윌리엄스 신중론","결과 12/10 04:00 KST"]},{"tag":"10년물","code":"ZNZ26","headline":"10년물 106'19.0 — 금요일 급등 뒤 숨고르기","price":"106'19.0","change":"-0.23%","tone":"flat","lines":["금요일 +0.91%(106'27.0) · 60일선 위","매수 1.5점 · 역효과 차단으로 관망(43.8%)","3월물 106'14.5 — 스프레드 -0'04.5"]},{"tag":"국채 OI","code":"#225","headline":"10년물 OI 672만 — 3월물 28.1%로 급증","price":"6,719,804","change":"3월 28.1%","tone":"warn","lines":["12월물 -749,703 · 3월물 +994,970","12월물 FND 11/30 — ZNH27 기준으로 볼 때","PRELIMINARY(11/20) — 확정치 추후 게시"]},{"tag":"수급","code":"ZN","headline":"10년물 순매도 -1,048,899 — 52주 최대","price":"-1,048,899","change":"COT 0.0%","tone":"warn","lines":["주간 -64,983 추가 · 투기 매도 극단","숏커버 여지는 크나 바닥 매수 적중률 43.8%","되돌림은 확인 후 대응"]},{"tag":"금리","code":"2Y · 10Y","headline":"10년 4.912% · 2년 4.622% — 불 스티프닝","price":"10Y 4.912%","change":"-13.8bp","tone":"flat","lines":["5년 4.703%(-16bp) · 안전자산 수요 주도","PCE 3.8% 예상 — 상회 시 금리 재상승","MOVE는 10월 고점 아래"]},{"tag":"일정","code":"CAL","headline":"11/25 PCE → 11/26 휴장 → 11/27 조기","price":"11/25 PCE","change":"11/26 휴장","tone":"warn","lines":["11/25 22:30 KST PCE·GDP 2차","베이지북 11/26 04:00 · 윌리엄스 06:00","11/27 국채 13:15 ET 조기마감"]}]},"metals":{"title":"금속 전시실 뉴스","subtitle":"골드·은·백금·구리","updated":"2026-11-23 09:30 KST","updated_label":"2026.11.23 (월) 09:30","cadence":"매일 09:30 갱신","scroll_px_per_sec":24,"source":"금속선물 시세(FXEmpire 11/23 호가) · OI(11/20→11/23) · CFTC COT(11/17) · Reuters/FXBus 보도","items":[{"tag":"골드","code":"GCZ26","headline":"골드 3,573.4 — 14개월 최저서 +1.65% 반등","price":"3,573.4","change":"+1.65%","tone":"up","lines":["현물 3,577~3,588 · 금요일 저점 3,502.9","인상 베팅 축소 + 협상 기대 + 저가 매수","20일선 3,918.9 · 무효화 3,805는 이탈 상태"]},{"tag":"골드 OI","code":"GC","headline":"3월물 OI 51.7% — 12월물 추월","price":"312,953","change":"3월 51.7%","tone":"warn","lines":["12월물 150,028(-21,805, -12.7%)","3월물 160,553(+9,220) — 롤오버 본격화","가격 상승 + OI 감소 = 숏커버링"]},{"tag":"골드 COT","code":"GC","headline":"골드 순매수 102,942 — 52주 24.0%","price":"102,942","change":"-9,399","tone":"flat","lines":["52주 상단 144,747에서 후퇴한 순매수","중앙은행 매수(월 85톤 추정)는 구조적 지지","ETF·실물 수요는 유지"]},{"tag":"은 · 구리","code":"SI · HG","headline":"은 41.95(+2.1%) · 구리 12,160(-2.9%)","price":"은 41.95","change":"구리 -2.9%","tone":"up","lines":["은 주간 -15.5% 뒤 반등 · RSI 25","구리 LME 금요일 -2.9% — 경기 우려","백금·팔라듐도 약세 지속"]},{"tag":"레벨","code":"LEVEL","headline":"3,500 분수령 — 3월물은 3,602","price":"3,500","change":"3월물 3,602","tone":"warn","lines":["3,500 이탈 시 추가 하락 경고","3월물 프리미엄 28.6(0.8%) — 롤 비용","RSI 27.0 · CCI -224.6 과매도"]},{"tag":"롤오버","code":"GCG27","headline":"12월물 막바지 — 3월물로 갈아타기","price":"3,602.0","change":"FND 11/30","tone":"flat","lines":["골드 12월 옵션 만기 11/25 전후 대형 미결제","키움 실물 인도 불가 — 11/30 전 정리·이월","주력 월물 GCG27 확인"]}]},"energy":{"title":"에너지 전시실 뉴스","subtitle":"WTI·브렌트·가솔린·난방유·천연가스","updated":"2026-11-23 09:30 KST","updated_label":"2026.11.23 (월) 09:30","cadence":"매일 09:30 갱신","scroll_px_per_sec":24,"source":"에너지선물 시세(11/23 아시아장) · FXEmpire OI(11/20) · EIA 주간재고(11/19) · CFTC COT · Reuters 보도","items":[{"tag":"WTI","code":"CLF27","headline":"WTI 27.01월물 82.82 — 지지 82.39 공방","price":"82.82","change":"-1.38%","tone":"down","lines":["브렌트 92.28(-0.3%) · 12월물은 11/20 만기","20일선 90.63 아래 · 12주 저점 81.55","무효화 80.00 · 3-2-1 크랙 40.11"]},{"tag":"호르무즈","code":"HORMUZ","headline":"봉쇄 지속 — 협상은 난항","price":"호르무즈","change":"이란","tone":"warn","lines":["트럼프: 연초 이후 타격 재개 선호","후티 라비그 정유·홍해 모카 공격","호르무즈 수출은 전쟁 전 수준 회복"]},{"tag":"OPEC+","code":"OPEC+","headline":"OPEC+ 11/29 회의 — 2027 생산정책","price":"11/29","change":"2027 쿼터","tone":"warn","lines":["각료회의·JMMC·8개국 회의 동시 개최","감산 유지 vs 증산 — 회의 전 발언 민감","IEA 2027 공급 +660만 bpd 잉여 전망"]},{"tag":"원유재고","code":"EIA","headline":"원유 2주 연속 증가(+340만 배럴)","price":"+3.4M bbl","change":"417.8M","tone":"down","lines":["EIA 11/25(수) 발표 — 휴장으로 하루 앞당김","가솔린·정제유 동반 증가 — 수요 우려","중동 생산 23.1 mb/d(10월)"]},{"tag":"천연가스","code":"NGF27","headline":"가스 3.629 — 3.621 기준선 턱걸이","price":"3.629","change":"-3.18%","tone":"down","lines":["60일선 3.727 이탈(매도 +1.0)","COT 6.1% 바닥(매수 +1.5) — 방향 혼조","추위 11/24~26 정점 · 이후 모델 엇갈림"]},{"tag":"가스 COT · 저장","code":"NG","headline":"저장 3,882 Bcf(+20) · 순매도 -211,545","price":"3,882 Bcf","change":"COT 6.1%","tone":"flat","lines":["5년 평균 +2.1% · 주간 숏 +12,918 축소","2월물 3.19 — 백워데이션 0.439(12.1%)","12월물 11/25 만기 · EIA 가스 11/25"]}]},"ags":{"title":"농축산물 전시실 뉴스","subtitle":"소맥·대두·대두유·옥수수·생우·원당","updated":"2026-11-23 09:30 KST","updated_label":"2026.11.23 (월) 09:30","cadence":"매일 09:30 갱신","scroll_px_per_sec":24,"source":"CBOT 종가(11/20) · FXEmpire OI(11/20) · USDA 주간수출 · CFTC COT(11/17) · Reuters/Newsquawk 보도","items":[{"tag":"소맥","code":"ZWZ26","headline":"소맥 12월물 574.25 — 만기 12/14","price":"574.25","change":"-0.69%","tone":"down","lines":["12월물 -40,872(-38.9%) 청산 · 3월물로 이동","FND 11/30 · 20일선 595.4 아래","3월물 OI 80.5% — 주력 월물은 ZWH27"]},{"tag":"3월물","code":"ZWH27","headline":"3월물 592.0 — 월요일 +0.8% 반등","price":"592.0","change":"+0.8%","tone":"up","lines":["주말 러·우 상호 공격 — 흑해 수출 기대 후퇴","변곡 매수 2.5점 · 582 회복(LEVEL_RECLAIM)","651.5~662.5 주봉 매물대까지 여유"]},{"tag":"흑해","code":"BLACK SEA","headline":"흑해 긴장 재점화 — 수출 5년·12년 최저","price":"흑해","change":"수출 차질","tone":"warn","lines":["주말 상호 공격 · 케르치 다리 피해 지속","SovEcon 러 36(USDA 39) · 우크라 11.5","물류비·보험료 상승이 가격 지지"]},{"tag":"수출","code":"USDA","headline":"미 소맥 수출 344,800톤(+89%)","price":"344,800톤","change":"+89%","tone":"up","lines":["멕시코 9.36만·일본 9.13만 톤 · 한국 10만","4주 평균은 -24% — 반등 지속 여부 관건","이집트·이라크 입찰 소화 주시"]},{"tag":"옥수수 · 대두","code":"ZC · ZS","headline":"옥수수 434.5¢ 최저 · 대두 1,220.75¢","price":"434.5¢","change":"대두 +13¼¢","tone":"flat","lines":["옥수수 4개월 최저 · 주간 -11¢","대두 4일 하락 뒤 반등 · 대두박 3주 최고","WASDE 이후 수출 경쟁이 변수"]},{"tag":"수급","code":"COT","headline":"소맥 순매도 -84,836 — 52주 22.4%","price":"-84,836","change":"COT 22.4%","tone":"flat","lines":["주간 -3,786 확대 · 투기 매도 극단","헤드라인 한 건에 숏커버 급반등 가능","옥수수·대두도 투기 포지션 가벼움"]}]}}};</script>
+<script>window.__SECRETARY_BRIEF_FALLBACK__ = {"meta":{"title":"희망이 비서 브리프 — 독도국제무역.com 국제상품","generated_at":"2026-11-23 10:35 KST","generated_label":"2026.11.23 10:35 KST","sync":"매일 09:30 동기화","owner":"회장님","assistant":"희망이","sources":["trading/watchlist.json","trading/forecast_latest.json","trading/oi_history.json","trading/inflection_filter.py v2.1","metaverse-gallery/news.json"],"inflection_source":"cache","inflection_at":"2026-11-23 10:35 KST","news_updated":"2026-11-23 09:30 KST"},"methodology":{"horizon":"1~6개월 스윙 (단기 시세 알림 없음)","indicators":{"macd":"MACD 12·130·9 — 단기 12·장기 130 EMA, 9일 신호선. 0선 돌파·다이버전스를 변곡 신호로 본다","cci":"CCI 90 · ±100 — 90기간으로 노이즈를 줄이고 ±100 이탈·재이탈을 추세 전환 체크포인트로 쓴다","rsi":"RSI 14 — 30/70 과매수·과매도, 30 탈출을 매수 신호로 본다","ma":"이동평균 20/60/120/200일선 — 배열과 이격(disp%)으로 추세 위치를 판단","sweep":"일봉 20·60일 / 주봉 12·26주 스윕 — 고점·저점 털기 뒤 종가 안착 여부","cot":"CFTC COT 52주 — 투기 순매수와 0~100 지수(15 미만 극단 저·85 초과 극단 고)","dxy":"DXY 20일 역상관 확인 +1점 — 다이버전스가 달러 20일 추세와 엇박자일 때만 가산"},"structure":"v2.1 2단 구조 — 3.0점 이상이면 일반 변곡, 그중 조건을 모두 갖춘 ★ 고순도 변곡을 따로 표시","anti_effect":"역효과 차단 — 검증에서 역효과였던 방향은 점수에서 막는다 (GC=F 매도 34.3% · ZN=F 매수 43.8%)","specialized":"4종 특화 필터 — ZW/ZC(곡물), 3-2-1 크랙(정유), NG/HO(가스·난방유), 6S WILLCO(스위스프랑)","guards":"야후 롤오버 거래량 가드 · OI·만기 롤오버·FND/LTD 규칙 — 만기 직전 저거래량 아티팩트를 걸러 낸다","walk_forward":"Walk-Forward 적중률 55% 미만 구간은 관망 — 억지 신호를 만들지 않는다","disclaimer":"정보 제공용 분석이다. 매매 권유·수익 보장이 아니며, 확인된 값만 수치로 말한다."},"macro":{"dxy":{"name":"달러인덱스","symbol":"DX-Y.NYB","available":true,"date":"2026-11-23","close":103.752,"chg_1d_pct":-0.06,"chg_5d_pct":0.2,"sma20":102.657,"trend_20":"20일선 위(상승)","close_20d_ago":101.96,"ret_20d_pct":1.76},"us10y":{"name":"미국 10년물 국채금리","symbol":"^TNX","available":true,"date":"2026-11-20","close":4.912,"chg_1d_pct":-2.77,"chg_5d_pct":-4.7,"sma20":4.987,"trend_20":"20일선 아래(하락)","close_20d_ago":4.988,"ret_20d_pct":-1.52},"oil":{"name":"WTI 원유","symbol":"CL=F","available":true,"date":"2026-11-23","close":83.07,"chg_1d_pct":-1.08,"chg_5d_pct":-3.09,"sma20":90.64,"trend_20":"20일선 아래(하락)","close_20d_ago":101.76,"ret_20d_pct":-18.37},"vix":{"name":"VIX 변동성지수","symbol":"^VIX","available":true,"date":"2026-11-20","close":35.89,"chg_1d_pct":26.2,"chg_5d_pct":85.96,"sma20":21.699,"trend_20":"20일선 위(상승)","close_20d_ago":19.45,"ret_20d_pct":84.52},"shocks":["미10년물 금리 일간 -14.0bp 급변 (4.912%)","VIX 경계 (35.89, +26.2%)"]},"symbols":[{"code":"GC=F","name":"골드 (COMEX Gold)","zone":"metals","active_contract":"GCZ26.CMX","next_contract":"GCG27.CMX","kiwoom_code":"GCZ26","levels":[{"name":"support","value":3850},{"name":"neckline","value":4030.2}],"stops":{"long_invalidation":3805},"note":"26.12월물(GCZ26) 잔존거래일 11/13 기준 16일. 4030.2 주황선 하향 이탈 상태.","price":3611.9,"price_date":"2026-11-23","change_pct":2.75,"score":{"buy":1,"sell":0,"threshold":3,"grade":"중립","high_purity":false,"high_purity_sides":[]},"indicators":{"macd_bias":"시그널 아래(약세)","macd_hist":-89.3,"cci90":-215.7,"cci_zone":"침체(-100↓)","rsi14":30.2},"oi_rollover":{"as_of":"2026-11-23","total_oi":312953,"total_oi_change_pct":-3.8,"active_contract":"GCZ26","active_oi":150028,"next_contract":"GCG27","next_oi":160553,"next_oi_share_pct":51.7,"regime":"가격 상승 + OI 감소 (숏커버링 반등 · 추세 전환 확인 필요)"},"cot":{"report_date":"2026-11-17","net":102942,"weekly_change":-9399,"index_pct":24,"range_52w":[89752,144747]},"rollover":{"active":"GCZ26.CMX","next":"GCG27.CMX","remaining_trading_days":10,"spread_pct":0.8},"signals":["RSI_EXIT_OVERSOLD (+1.0 매수: 과매도 30 탈출)","ROLLOVER_SOON (만기 잔존 10거래일 — 롤오버 준비)","ROLLOVER_OI_CROSSOVER (차근월물 OI 비중 51.7% — 보유 월물 추월)"],"risks":["ROLLOVER_SOON (만기 잔존 10거래일 — 롤오버 준비)","ROLLOVER_OI_CROSSOVER (차근월물 OI 비중 51.7% — 보유 월물 추월)","MACRO_SHOCK (미10년물 금리 일간 -14.0bp 급변 (4.912%))","MACRO_SHOCK (VIX 경계 (35.89, +26.2%))"],"calc_stops":{"long":3451.86,"short":4208.74,"atr14":102.09,"atr_pct":2.83},"forecast":{"base_price":3539,"base_time":"2026-11-21 06:59:57 KST","anchor_date":"2026-11-20","forecast":{"1주":{"P10":3364.4,"P50":3555.76,"P90":3650.13,"up_pct":62.8},"1개월":{"P10":3250.68,"P50":3622.61,"P90":3873.73,"up_pct":73.2},"3개월":{"P10":3210.09,"P50":3741.51,"P90":4354.64,"up_pct":64.5},"6개월":{"P10":3039.25,"P50":3808.92,"P90":4874.63,"up_pct":70.2}},"backtest":{"1개월":{"dir_pct":54.2,"cover_pct":85,"mape_pct":3.91,"n":214},"3개월":{"dir_pct":67.3,"cover_pct":79.9,"mape_pct":7.77,"n":214},"6개월":{"dir_pct":70.6,"cover_pct":72.4,"mape_pct":12.52,"n":214}},"indicators":{"rsi14":22.2,"cci90":-235.1,"macd_hist":-84.37,"sma20":3943.33,"sma60":4168.69}},"oi_history_latest":{"date":"2026-11-23","total_oi":312953,"active_contract":"GCZ26","active_oi":150028,"next_contract":"GCG27","next_oi":160553,"next_oi_share_pct":51.7}},{"code":"6S=F","name":"스위스프랑 (CME Swiss Franc)","zone":"fx","active_contract":"6SZ26.CME","next_contract":"6SH27.CME","kiwoom_code":"6SZ26","levels":[{"name":"round_120","value":1.2},{"name":"vprofile_low","value":1.21735}],"stops":{},"note":"26.12월물(6SZ26) 잔존거래일 11/13 기준 30일. 주봉 매물대(1.21735~1.22870) 하단 이탈. 12/10 SNB 회의 주시.","price":1.1937,"price_date":"2026-11-23","change_pct":-0.14,"score":{"buy":0,"sell":1.5,"threshold":3,"grade":"중립","high_purity":false,"high_purity_sides":[]},"indicators":{"macd_bias":"시그널 아래(약세)","macd_hist":-0.0,"cci90":-175.3,"cci_zone":"침체(-100↓)","rsi14":36.5},"cot":{"report_date":"2026-11-17","net":-8281,"weekly_change":872,"index_pct":100,"range_52w":[-44198,-8281]},"rollover":{"active":"6SZ26.CME","next":"6SH27.CME","remaining_trading_days":24,"spread_pct":1.08},"signals":["COT_EXTREME_HIGH (+1.5 매도: 52주 수급 백분위 100.0% 천장 과열)"],"risks":["MACRO_SHOCK (미10년물 금리 일간 -14.0bp 급변 (4.912%))","MACRO_SHOCK (VIX 경계 (35.89, +26.2%))"],"calc_stops":{"long":1.18355,"short":1.24005,"atr14":0.008,"atr_pct":0.65},"forecast":{"base_price":1.19455,"base_time":"2026-11-17 12:02:46 KST","anchor_date":"2026-11-17","forecast":{"1주":{"P10":1.18,"P50":1.19,"P90":1.21,"up_pct":47.6},"1개월":{"P10":1.17,"P50":1.19,"P90":1.23,"up_pct":48.3},"3개월":{"P10":1.15,"P50":1.19,"P90":1.28,"up_pct":45},"6개월":{"P10":1.15,"P50":1.23,"P90":1.35,"up_pct":72.9}},"backtest":{"1개월":{"dir_pct":49.3,"cover_pct":81.9,"mape_pct":1.96,"n":215},"3개월":{"dir_pct":43.3,"cover_pct":78.1,"mape_pct":3.45,"n":215},"6개월":{"dir_pct":40.5,"cover_pct":83.3,"mape_pct":4.36,"n":215}},"indicators":{"rsi14":32.3,"cci90":-197.6,"macd_hist":-0.01,"sma20":1.22,"sma60":1.22}},"oi_history_latest":{"date":"2026-11-20","total_oi":137709,"active_contract":"6SZ26","active_oi":116423,"next_contract":"6SH27","next_oi":21178,"next_oi_share_pct":15.4}},{"code":"6C=F","name":"캐나다달러 (CME Canadian Dollar)","zone":"fx","active_contract":"6CZ26.CME","next_contract":"6CH27.CME","kiwoom_code":"6CZ26","levels":[{"name":"기준선","value":0.70336},{"name":"매물대하단","value":0.7069},{"name":"매물대상단","value":0.71013}],"stops":{},"note":"26.12월물(6CZ26) 잔존거래일 11/17 기준 29일. 0.70336 사용자 수평선 이탈 후 0.69980 테스트, 위 0.70690~0.71013 주봉 매물대 28.2%. 12/09 BoC 회의 주시.","price":0.69855,"price_date":"2026-11-23","change_pct":0.01,"score":{"buy":1,"sell":0,"threshold":3,"grade":"중립","high_purity":false,"high_purity_sides":[]},"indicators":{"macd_bias":"시그널 아래(약세)","macd_hist":-0.0,"cci90":-144.4,"cci_zone":"침체(-100↓)","rsi14":29.9},"cot":{"report_date":"2026-11-17","net":-45048,"weekly_change":-12456,"index_pct":62.3,"range_52w":[-179095,36159]},"rollover":{"active":"6CZ26.CME","next":"6CH27.CME","remaining_trading_days":25,"spread_pct":0.39},"signals":["BULLISH_DIVERGENCE_RSI (+1.0 매수: RSI14 저점 상승 반전)"],"risks":["MACRO_SHOCK (미10년물 금리 일간 -14.0bp 급변 (4.912%))","MACRO_SHOCK (VIX 경계 (35.89, +26.2%))"],"calc_stops":{"long":0.69595,"short":0.71945,"atr14":0.003,"atr_pct":0.37},"forecast":{"base_price":0.6999,"base_time":"2026-11-17 12:02:34 KST","anchor_date":"2026-11-17","forecast":{"1주":{"P10":0.69,"P50":0.7,"P90":0.71,"up_pct":39.5},"1개월":{"P10":0.68,"P50":0.7,"P90":0.71,"up_pct":52.1},"3개월":{"P10":0.68,"P50":0.7,"P90":0.72,"up_pct":38.6},"6개월":{"P10":0.67,"P50":0.7,"P90":0.73,"up_pct":47.8}},"backtest":{"1개월":{"dir_pct":49.1,"cover_pct":82.2,"mape_pct":1.37,"n":214},"3개월":{"dir_pct":51.9,"cover_pct":84.1,"mape_pct":2.08,"n":214},"6개월":{"dir_pct":62.6,"cover_pct":86,"mape_pct":2.39,"n":214}},"indicators":{"rsi14":31.5,"cci90":-149.3,"macd_hist":-0.0,"sma20":0.71,"sma60":0.71}},"oi_history_latest":{"date":"2026-11-20","total_oi":380710,"active_contract":"6CZ26","active_oi":318619,"next_contract":"6CH27","next_oi":60625,"next_oi_share_pct":15.9}},{"code":"ZN=F","name":"미국 10년물 국채선물 (CBOT 10Y T-Note)","zone":"rates","active_contract":"ZNZ26.CBT","next_contract":"ZNH27.CBT","kiwoom_code":"ZNH27","levels":[{"name":"support_104_04","value":104.125},{"name":"vprofile_low_105_001","value":105.00312}],"stops":{},"note":"사용자는 차근월물 27.03월물(ZNH27, 잔존 104일) 기준. 105'00.1 주봉 매물대 하단 턱 걸침, 104'04.0 사용자 수평선.","price":106.57812,"price_date":"2026-11-23","change_pct":-0.25,"score":{"buy":1.5,"sell":0,"threshold":3,"grade":"중립","high_purity":false,"high_purity_sides":[]},"indicators":{"macd_bias":"시그널 위(강세)","macd_hist":0.15,"cci90":-11.2,"cci_zone":"중립","rsi14":56.1},"cot":{"report_date":"2026-11-17","net":-1048899,"weekly_change":-64983,"index_pct":0,"range_52w":[-1048899,-534883]},"rollover":{"active":"ZNZ26.CBT","next":"ZNH27.CBT","remaining_trading_days":98,"spread_pct":-0.12},"signals":["COT_EXTREME_LOW (+1.5 매수: 52주 수급 백분위 0.0% 바닥 극단치)"],"risks":["MACRO_SHOCK (미10년물 금리 일간 -14.0bp 급변 (4.912%))","MACRO_SHOCK (VIX 경계 (35.89, +26.2%))"],"calc_stops":{"long":104.77922,"short":107.7989,"atr14":0.598,"atr_pct":0.56},"forecast":{"base_price":105.3906,"base_time":"2026-11-17 12:02:48 KST","anchor_date":"2026-11-17","forecast":{"1주":{"P10":104.24,"P50":105.27,"P90":106.27,"up_pct":44.5},"1개월":{"P10":103.22,"P50":105.48,"P90":107.38,"up_pct":51.5},"3개월":{"P10":101.27,"P50":104.6,"P90":108.82,"up_pct":36.4},"6개월":{"P10":98.94,"P50":105.09,"P90":108.99,"up_pct":46.4}},"backtest":{"1개월":{"dir_pct":47.7,"cover_pct":85,"mape_pct":1.53,"n":214},"3개월":{"dir_pct":50,"cover_pct":86,"mape_pct":2.54,"n":214},"6개월":{"dir_pct":50,"cover_pct":86.4,"mape_pct":3.53,"n":214}},"indicators":{"rsi14":42.7,"cci90":-71,"macd_hist":-0.11,"sma20":106.2,"sma60":106.06}},"oi_history_latest":{"date":"2026-11-20","total_oi":6719804,"active_contract":"ZNZ26","active_oi":4834469,"next_contract":"ZNH27","next_oi":1885272,"next_oi_share_pct":28.1}},{"code":"NGF27.NYM","name":"천연가스 (NYMEX Natural Gas 27.01)","zone":"energy","active_contract":"NGF27.NYM","next_contract":"NGG27.NYM","kiwoom_code":"NGF27","levels":[{"name":"sma20_ref","value":3.532},{"name":"user_line","value":3.621},{"name":"vprofile_res","value":3.873},{"name":"oct_low","value":3.313}],"stops":{"long_invalidation":3.254},"note":"27.01월물(NGF27) 잔존거래일 11/13 기준 44일(12/29 만기). 3.621 사용자 기준선·3.873~3.974 주봉 매물대 저항·3.313 10월 저점 주시. 2·3월물 백워데이션 계절성 유의.","price":3.619,"price_date":"2026-11-23","change_pct":-3.44,"score":{"buy":1.5,"sell":3.5,"threshold":3,"grade":"일반 변곡","high_purity":false,"high_purity_sides":[]},"indicators":{"macd_bias":"시그널 위(강세)","macd_hist":0.06,"cci90":-72.3,"cci_zone":"중립","rsi14":49.4},"oi_rollover":{"as_of":"2026-11-23","total_oi":915181,"total_oi_change_pct":-1.7,"active_contract":"NGF27","active_oi":338022,"next_contract":"NGG27","next_oi":149366,"next_oi_share_pct":30.6,"regime":"가격 하락 + OI 감소 (기존 롱 청산 · 투매 마무리 주시)"},"cot":{"report_date":"2026-11-17","net":-211545,"weekly_change":12918,"index_pct":6.1,"range_52w":[-225359,-47]},"rollover":{"active":"NGF27.NYM","next":"NGG27.NYM","remaining_trading_days":38,"spread_pct":-12.1},"signals":["MA60_BREAK (+1.0 매도: 60일 이평선 이탈)","WEEKLY_BEAR_ALIGNED (+1.0 주봉 모멘텀 동조)","LEVEL_BREAK_DOWN (user_line 3.621 종가 이탈)","COT_EXTREME_LOW (+1.5 매수: 52주 수급 백분위 6.1% 바닥 극단치)"],"risks":["LEVEL_BREAK_DOWN (user_line 3.621 종가 이탈)","MACRO_SHOCK (미10년물 금리 일간 -14.0bp 급변 (4.912%))","MACRO_SHOCK (VIX 경계 (35.89, +26.2%))"],"calc_stops":{"long":3.242,"short":3.879,"atr14":0.142,"atr_pct":3.91},"forecast":{"base_price":3.479,"base_time":"2026-11-17 12:03:04 KST","anchor_date":"2026-11-17","forecast":{"1주":{"P10":3.31,"P50":3.47,"P90":3.67,"up_pct":45.4},"1개월":{"P10":3.04,"P50":3.38,"P90":3.78,"up_pct":29.4},"3개월":{"P10":2.71,"P50":3.27,"P90":4.06,"up_pct":43.3},"6개월":{"P10":2.24,"P50":3.37,"P90":3.97,"up_pct":37.1}},"backtest":{"1개월":{"dir_pct":45.3,"cover_pct":82.7,"mape_pct":4.14,"n":214},"3개월":{"dir_pct":51.4,"cover_pct":80.8,"mape_pct":6.04,"n":214},"6개월":{"dir_pct":39.7,"cover_pct":80.8,"mape_pct":9.91,"n":214}},"indicators":{"rsi14":42.3,"cci90":-128.9,"macd_hist":0.03,"sma20":3.51,"sma60":3.74}},"oi_history_latest":{"date":"2026-11-23","total_oi":915181,"active_contract":"NGF27","active_oi":338022,"next_contract":"NGG27","next_oi":149366,"next_oi_share_pct":30.6}},{"code":"ZW=F","name":"소맥/밀 (CBOT Wheat)","zone":"ags","active_contract":"ZWZ26.CBT","next_contract":"ZWH27.CBT","kiwoom_code":"ZWZ26","levels":[{"name":"기준선","value":600},{"name":"11월저점","value":582},{"name":"매물대하단","value":651.5},{"name":"매물대상단","value":662.5}],"stops":{},"note":"26.12월물(ZWZ26) 잔존 14일, 이미 ZWH27(27.03)로 OI 63.8%·거래량 롤오버 역전. 600.0 기준선 이탈 후 582.0 테스트, 주봉 651.5~662.5 매물대(14.2%). USDA WASDE 및 흑해 항구 주시.","price":592.75,"price_date":"2026-11-23","change_pct":3.22,"score":{"buy":2.5,"sell":0,"threshold":3,"grade":"중립","high_purity":false,"high_purity_sides":[]},"indicators":{"macd_bias":"시그널 아래(약세)","macd_hist":-3.91,"cci90":-117.5,"cci_zone":"침체(-100↓)","rsi14":43.4},"oi_rollover":{"as_of":"2026-11-23","total_oi":491583,"total_oi_change_pct":0,"active_contract":"ZWZ26","active_oi":64282,"next_contract":"ZWH27","next_oi":265577,"next_oi_share_pct":80.5,"regime":"보합"},"cot":{"report_date":"2026-11-17","net":-84836,"weekly_change":-3786,"index_pct":22.4,"range_52w":[-113560,14904]},"rollover":{"active":"ZWZ26.CBT","next":"ZWH27.CBT","remaining_trading_days":10,"spread_pct":3.04},"signals":["BULLISH_DIVERGENCE_RSI (+1.0 매수: RSI14 저점 상승 반전)","LEVEL_RECLAIM_UP (11월저점 582.0 종가 회복)","ROLLOVER_SOON (만기 잔존 10거래일 — 롤오버 준비)","ROLLOVER_OI_CROSSOVER (차근월물 OI 비중 80.5% — 보유 월물 추월)"],"risks":["LEVEL_RECLAIM_UP (11월저점 582.0 종가 회복)","ROLLOVER_SOON (만기 잔존 10거래일 — 롤오버 준비)","ROLLOVER_OI_CROSSOVER (차근월물 OI 비중 80.5% — 보유 월물 추월)","MACRO_SHOCK (미10년물 금리 일간 -14.0bp 급변 (4.912%))"],"calc_stops":{"long":557.29,"short":635.46,"atr14":15.93,"atr_pct":2.69},"forecast":{"base_price":601.5,"base_time":"2026-11-17 12:02:00 KST","anchor_date":"2026-11-17","forecast":{"1주":{"P10":566.39,"P50":597.29,"P90":627.35,"up_pct":46},"1개월":{"P10":531.93,"P50":596.88,"P90":672.05,"up_pct":46.5},"3개월":{"P10":544.95,"P50":621.91,"P90":767.68,"up_pct":67.5},"6개월":{"P10":469.81,"P50":586.03,"P90":762.76,"up_pct":34}},"backtest":{"1개월":{"dir_pct":53.3,"cover_pct":85.5,"mape_pct":6.78,"n":214},"3개월":{"dir_pct":48.6,"cover_pct":86.9,"mape_pct":11.66,"n":214},"6개월":{"dir_pct":27.1,"cover_pct":86,"mape_pct":17.58,"n":214}},"indicators":{"rsi14":41.5,"cci90":-123,"macd_hist":-4.26,"sma20":602.6,"sma60":670.85}},"oi_history_latest":{"date":"2026-11-23","total_oi":491583,"active_contract":"ZWZ26","active_oi":64282,"next_contract":"ZWH27","next_oi":265577,"next_oi_share_pct":80.5}},{"code":"CL=F","name":"WTI 크루드오일 (NYMEX Crude Oil 27.01)","zone":"energy","active_contract":"CLF27.NYM","next_contract":"CLG27.NYM","kiwoom_code":"CLF27","levels":[{"name":"support","value":82.39},{"name":"vprofile_res","value":89.63},{"name":"sma20_ref","value":93.38}],"stops":{"long_invalidation":80},"note":"26.12월물(CLZ26) 11/20 만기 앞두고 주력 유동성·OI(74.2%)가 CLF27(27.01, 12/21 만기)로 이전 완료. 89.63~94.44 주봉 매물대·20일선 아래 하락 압력, 82.39 지지 및 80.00 무효화선 주시. 매주 목요일 새벽(KST) EIA 원유재고 및 중동/OPEC 변수 추적.","price":83.04,"price_date":"2026-11-23","change_pct":-1.12,"score":{"buy":0,"sell":0,"threshold":3,"grade":"중립","high_purity":false,"high_purity_sides":[]},"indicators":{"macd_bias":"시그널 아래(약세)","macd_hist":-2.67,"cci90":-78.0,"cci_zone":"중립","rsi14":35.5},"oi_rollover":{"as_of":"2026-11-23","total_oi":621373,"total_oi_change_pct":-1.4,"active_contract":"CLF27","active_oi":267254,"next_contract":"CLG27","next_oi":119884,"next_oi_share_pct":31,"regime":"가격 하락 + OI 감소 (기존 롱 청산 · 투매 마무리 주시)"},"cot":{"report_date":"2026-11-17","net":15814,"weekly_change":-9900,"index_pct":35.5,"range_52w":[-37010,111731]},"rollover":{"active":"CLF27.NYM","next":"CLG27.NYM","remaining_trading_days":19,"spread_pct":-1.35},"signals":[],"risks":["MACRO_SHOCK (미10년물 금리 일간 -14.0bp 급변 (4.912%))","MACRO_SHOCK (VIX 경계 (35.89, +26.2%))"],"calc_stops":{"long":79.62,"short":106.92,"atr14":3.86,"atr_pct":4.65},"forecast":{"base_price":82.44,"base_time":"2026-11-19 18:33:32 KST","anchor_date":"2026-11-19","forecast":{"1주":{"P10":76.15,"P50":82.6,"P90":89.84,"up_pct":50.3},"1개월":{"P10":64.14,"P50":80.93,"P90":90.02,"up_pct":40.8},"3개월":{"P10":64.55,"P50":85.88,"P90":116.1,"up_pct":60.6},"6개월":{"P10":66.56,"P50":80.05,"P90":152.69,"up_pct":46.6}},"backtest":{"1개월":{"dir_pct":33.2,"cover_pct":65,"mape_pct":7.76,"n":214},"3개월":{"dir_pct":34.1,"cover_pct":61.7,"mape_pct":13.58,"n":214},"6개월":{"dir_pct":33.6,"cover_pct":69.2,"mape_pct":18.23,"n":214}},"indicators":{"rsi14":34.1,"cci90":-83.9,"macd_hist":-3.05,"sma20":92.5,"sma60":93.85}},"oi_history_latest":{"date":"2026-11-23","total_oi":621373,"active_contract":"CLF27","active_oi":267254,"next_contract":"CLG27","next_oi":119884,"next_oi_share_pct":31}}],"forecast_hits":[{"code":"GC=F","name":"골드 (COMEX Gold)","1개월":{"dir_pct":54.2,"cover_pct":85,"mape_pct":3.91,"n":214},"3개월":{"dir_pct":67.3,"cover_pct":79.9,"mape_pct":7.77,"n":214},"6개월":{"dir_pct":70.6,"cover_pct":72.4,"mape_pct":12.52,"n":214}},{"code":"6S=F","name":"스위스프랑 (CME Swiss Franc)","1개월":{"dir_pct":49.3,"cover_pct":81.9,"mape_pct":1.96,"n":215},"3개월":{"dir_pct":43.3,"cover_pct":78.1,"mape_pct":3.45,"n":215},"6개월":{"dir_pct":40.5,"cover_pct":83.3,"mape_pct":4.36,"n":215}},{"code":"6C=F","name":"캐나다달러 (CME Canadian Dollar)","1개월":{"dir_pct":49.1,"cover_pct":82.2,"mape_pct":1.37,"n":214},"3개월":{"dir_pct":51.9,"cover_pct":84.1,"mape_pct":2.08,"n":214},"6개월":{"dir_pct":62.6,"cover_pct":86,"mape_pct":2.39,"n":214}},{"code":"ZN=F","name":"미국 10년물 국채선물 (CBOT 10Y T-Note)","1개월":{"dir_pct":47.7,"cover_pct":85,"mape_pct":1.53,"n":214},"3개월":{"dir_pct":50,"cover_pct":86,"mape_pct":2.54,"n":214},"6개월":{"dir_pct":50,"cover_pct":86.4,"mape_pct":3.53,"n":214}},{"code":"NGF27.NYM","name":"천연가스 (NYMEX Natural Gas 27.01)","1개월":{"dir_pct":45.3,"cover_pct":82.7,"mape_pct":4.14,"n":214},"3개월":{"dir_pct":51.4,"cover_pct":80.8,"mape_pct":6.04,"n":214},"6개월":{"dir_pct":39.7,"cover_pct":80.8,"mape_pct":9.91,"n":214}},{"code":"ZW=F","name":"소맥/밀 (CBOT Wheat)","1개월":{"dir_pct":53.3,"cover_pct":85.5,"mape_pct":6.78,"n":214},"3개월":{"dir_pct":48.6,"cover_pct":86.9,"mape_pct":11.66,"n":214},"6개월":{"dir_pct":27.1,"cover_pct":86,"mape_pct":17.58,"n":214}},{"code":"CL=F","name":"WTI 크루드오일 (NYMEX Crude Oil 27.01)","1개월":{"dir_pct":33.2,"cover_pct":65,"mape_pct":7.76,"n":214},"3개월":{"dir_pct":34.1,"cover_pct":61.7,"mape_pct":13.58,"n":214},"6개월":{"dir_pct":33.6,"cover_pct":69.2,"mape_pct":18.23,"n":214}}],"zones":{"fx":{"name":"통화","en":"CURRENCY","symbols":[{"code":"6S=F","name":"스위스프랑 (CME Swiss Franc)"},{"code":"6C=F","name":"캐나다달러 (CME Canadian Dollar)"}],"news":[{"tag":"달러지수","code":"DXY","headline":"달러 103.80 — 고점서 숨고르기","price":"103.80","change":"-0.04%","lines":["유로 1.0974(+0.1%) · 엔 158.63(+0.2%)","12월 25bp 88.6% · 동결 11.4%"]},{"tag":"스위스프랑","code":"6SZ26","headline":"프랑 1.19285 — 1.20 아래 약세 지속","price":"1.19285","change":"-0.21%","lines":["3월물 1.20615 · 프리미엄 1.11%","COT 순매도 -8,281(52주 100%) — 천장 부담"]},{"tag":"캐나다달러","code":"6CZ26","headline":"캐나다달러 0.6982 — 기준선 회복 실패","price":"0.6982","change":"-0.04%","lines":["기준선 0.70336 아래 · RSI 29.2 과매도","12월물 OI 318,619(-17,594)"]},{"tag":"엔 · 유로","code":"6J · 6E","headline":"엔 158.63엔 · 유로 1.0974 — 대피 진정","price":"158.63엔","change":"유로 1.0974","lines":["위험회피 완화로 엔 강세 되돌림","일본 11/23 휴장(노동감사절) · BoJ 다무라 11/26"]}]},"metals":{"name":"금속","en":"METALS","symbols":[{"code":"GC=F","name":"골드 (COMEX Gold)"}],"news":[{"tag":"골드","code":"GCZ26","headline":"골드 3,573.4 — 14개월 최저서 +1.65% 반등","price":"3,573.4","change":"+1.65%","lines":["현물 3,577~3,588 · 금요일 저점 3,502.9","인상 베팅 축소 + 협상 기대 + 저가 매수"]},{"tag":"골드 OI","code":"GC","headline":"3월물 OI 51.7% — 12월물 추월","price":"312,953","change":"3월 51.7%","lines":["12월물 150,028(-21,805, -12.7%)","3월물 160,553(+9,220) — 롤오버 본격화"]},{"tag":"골드 COT","code":"GC","headline":"골드 순매수 102,942 — 52주 24.0%","price":"102,942","change":"-9,399","lines":["52주 상단 144,747에서 후퇴한 순매수","중앙은행 매수(월 85톤 추정)는 구조적 지지"]},{"tag":"은 · 구리","code":"SI · HG","headline":"은 41.95(+2.1%) · 구리 12,160(-2.9%)","price":"은 41.95","change":"구리 -2.9%","lines":["은 주간 -15.5% 뒤 반등 · RSI 25","구리 LME 금요일 -2.9% — 경기 우려"]}]},"index":{"name":"지수","en":"INDEX","symbols":[],"news":[{"tag":"S&P500","code":"ESZ26","headline":"S&P500 6,910.39 — 조정권, 선물은 반등","price":"6,910.39","change":"-3.70%","lines":["월요일 선물 +1.0~1.5% · NDX 선물 +2%","10/6 고점 대비 -11.6% · 200일선 아래"]},{"tag":"나스닥","code":"NQZ26","headline":"나스닥 22,617.73 — 주간 -10.0%","price":"22,617.73","change":"-5.28%","lines":["나스닥100 고점 대비 -19.8% — 약세장 경계","엔비디아 -13.8%(SEC 회계조사)"]},{"tag":"다우","code":"YMZ26","headline":"다우 48,147.33 — 949p 급락, 주간 -8%","price":"48,147.33","change":"-1.93%","lines":["선물 +0.9% 반등 · 방어주만 선방","주간 -8.0% — 2020년 이후 최악 수준"]},{"tag":"러셀2000","code":"RTYZ26","headline":"러셀 2,581.79 — 중소형주 -2.76%","price":"2,581.79","change":"-2.76%","lines":["주간 -7.5% · 자금조달 부담 확대","신용 스프레드 확대 여부 주시"]}]},"rates":{"name":"금리","en":"RATES","symbols":[{"code":"ZN=F","name":"미국 10년물 국채선물 (CBOT 10Y T-Note)"}],"news":[{"tag":"FOMC","code":"FOMC","headline":"12월 인상 88.6% — 50bp 기대 소멸","price":"3.75~4.00%","change":"인상 88.6%","lines":["금요일 96% → 88.6% · 동결 11.4%","월러 50bp 카드 잔존 · 윌리엄스 신중론"]},{"tag":"10년물","code":"ZNZ26","headline":"10년물 106'19.0 — 금요일 급등 뒤 숨고르기","price":"106'19.0","change":"-0.23%","lines":["금요일 +0.91%(106'27.0) · 60일선 위","매수 1.5점 · 역효과 차단으로 관망(43.8%)"]},{"tag":"국채 OI","code":"#225","headline":"10년물 OI 672만 — 3월물 28.1%로 급증","price":"6,719,804","change":"3월 28.1%","lines":["12월물 -749,703 · 3월물 +994,970","12월물 FND 11/30 — ZNH27 기준으로 볼 때"]},{"tag":"수급","code":"ZN","headline":"10년물 순매도 -1,048,899 — 52주 최대","price":"-1,048,899","change":"COT 0.0%","lines":["주간 -64,983 추가 · 투기 매도 극단","숏커버 여지는 크나 바닥 매수 적중률 43.8%"]}]},"energy":{"name":"에너지","en":"ENERGY","symbols":[{"code":"NGF27.NYM","name":"천연가스 (NYMEX Natural Gas 27.01)"},{"code":"CL=F","name":"WTI 크루드오일 (NYMEX Crude Oil 27.01)"}],"news":[{"tag":"WTI","code":"CLF27","headline":"WTI 27.01월물 82.82 — 지지 82.39 공방","price":"82.82","change":"-1.38%","lines":["브렌트 92.28(-0.3%) · 12월물은 11/20 만기","20일선 90.63 아래 · 12주 저점 81.55"]},{"tag":"호르무즈","code":"HORMUZ","headline":"봉쇄 지속 — 협상은 난항","price":"호르무즈","change":"이란","lines":["트럼프: 연초 이후 타격 재개 선호","후티 라비그 정유·홍해 모카 공격"]},{"tag":"OPEC+","code":"OPEC+","headline":"OPEC+ 11/29 회의 — 2027 생산정책","price":"11/29","change":"2027 쿼터","lines":["각료회의·JMMC·8개국 회의 동시 개최","감산 유지 vs 증산 — 회의 전 발언 민감"]},{"tag":"원유재고","code":"EIA","headline":"원유 2주 연속 증가(+340만 배럴)","price":"+3.4M bbl","change":"417.8M","lines":["EIA 11/25(수) 발표 — 휴장으로 하루 앞당김","가솔린·정제유 동반 증가 — 수요 우려"]}]},"ags":{"name":"농축산물","en":"AGS","symbols":[{"code":"ZW=F","name":"소맥/밀 (CBOT Wheat)"}],"news":[{"tag":"소맥","code":"ZWZ26","headline":"소맥 12월물 574.25 — 만기 12/14","price":"574.25","change":"-0.69%","lines":["12월물 -40,872(-38.9%) 청산 · 3월물로 이동","FND 11/30 · 20일선 595.4 아래"]},{"tag":"3월물","code":"ZWH27","headline":"3월물 592.0 — 월요일 +0.8% 반등","price":"592.0","change":"+0.8%","lines":["주말 러·우 상호 공격 — 흑해 수출 기대 후퇴","변곡 매수 2.5점 · 582 회복(LEVEL_RECLAIM)"]},{"tag":"흑해","code":"BLACK SEA","headline":"흑해 긴장 재점화 — 수출 5년·12년 최저","price":"흑해","change":"수출 차질","lines":["주말 상호 공격 · 케르치 다리 피해 지속","SovEcon 러 36(USDA 39) · 우크라 11.5"]},{"tag":"수출","code":"USDA","headline":"미 소맥 수출 344,800톤(+89%)","price":"344,800톤","change":"+89%","lines":["멕시코 9.36만·일본 9.13만 톤 · 한국 10만","4주 평균은 -24% — 반등 지속 여부 관건"]}]}},"news":{"updated":"2026-11-23 09:30 KST","updated_label":"2026.11.23 (월) 09:30","hall":[{"tag":"정책 · 연준","code":"FOMC","headline":"12월 인상 88.6% — 50bp 위험은 소멸","price":"인상 88.6%","change":"12/8~9 회의"},{"tag":"위험회피 · 증시","code":"SPX · NDX","headline":"AI 매도 진정 — 선물 반등, 현물 조정권","price":"6,910.39","change":"선물 +1.5%"},{"tag":"변동성 · 금리","code":"VIX · US10Y","headline":"VIX 35.89 · 10년 4.912% — 진정 여부가 관건","price":"VIX 35.89","change":"10Y 4.912%"},{"tag":"달러","code":"DXY","headline":"달러 103.80 — 19개월 고점서 첫 숨고르기","price":"103.80","change":"-0.04%"},{"tag":"지정학 · 물류","code":"HORMUZ","headline":"이란 협상 난항 — 호르무즈 봉쇄 지속","price":"호르무즈","change":"이란 협상"},{"tag":"만기 · 롤오버","code":"ROLL","headline":"골드 3월물 OI 추월 — 12월물 막바지","price":"FND 11/30","change":"12월→3월"},{"tag":"일정 · 휴장","code":"CAL","headline":"11/25 PCE → 11/26 휴장 → 11/27 조기","price":"11/25 22:30","change":"11/26 휴장"}]}};</script>
 <script>
 (function () {
   'use strict';
@@ -6084,12 +6130,13 @@
     drawBubble(fig.bubble, name, text);
     fig.bubble.sprite.visible = true;
     fig.bubble.sprite.material.opacity = 1;
-    fig.bubble.sprite.position.y = FIG_BUBBLE_Y;
+    fig.bubble.sprite.position.y = fig.bubbleY || FIG_BUBBLE_Y;
     fig.bubbleState = { t: 0, until: 5.4, text: String(text || ''), name: String(name || '') };
   }
 
   function updateBubbles(dt) {
     var list = [state.fig, HOSTS.lua, HOSTS.dohyun];
+    if (HEEMANG.fig) list.push(HEEMANG.fig);
     Object.keys(visitors).forEach(function (k) { list.push(visitors[k].fig); });
     list.forEach(function (fig) {
       if (!fig || !fig.bubbleState) return;
@@ -6103,7 +6150,7 @@
       }
       var fadeOut = st.t > st.until ? Math.max(0, 1 - (st.t - st.until) / 0.7) : 1;
       b.sprite.material.opacity = fadeOut;
-      b.sprite.position.y = FIG_BUBBLE_Y + Math.min(st.t * 0.09, 0.16);
+      b.sprite.position.y = (fig.bubbleY || FIG_BUBBLE_Y) + Math.min(st.t * 0.09, 0.16);
     });
   }
 
@@ -6253,6 +6300,197 @@
       },
       tag: tag, bubble: bubble, bubbleState: null, name: opts.name || '방문자'
     };
+  }
+
+  /* ══════════════════════════════════════════════════════════════════
+     🩷 피클 마스코트 — 분홍 한글 'ㅈ' 3D 캐릭터
+     ──────────────────────────────────────────────────────────────
+     위 가로획(bar) + 가운데 몸통(torso) + 좌우로 벌어진 두 다리(ㅅ) = 'ㅈ'.
+     부드러운 파스텔 핑크 점토(roughness 0.72) · 반짝이는 눈·눈썹·미소·볼 · 금 라펠 핀.
+     걷을 때 두 다리가 앞뒤로 흔들리고, 서 있을 때는 가볍게 까딱인다.
+     ══════════════════════════════════════════════════════════════════ */
+  var PICKLE_PINK = 0xf49bb4;
+  var PICKLE_GOLD = 0xc9a227;
+
+  function buildPickleMascot(opts) {
+    opts = opts || {};
+    var g = new THREE.Group();
+    var rig = new THREE.Group(); g.add(rig);
+
+    function pMat(color, rough, metal) {
+      return new THREE.MeshStandardMaterial({
+        color: color, roughness: rough == null ? 0.72 : rough, metalness: metal == null ? 0.04 : metal
+      });
+    }
+    var bodyMat = pMat(opts.color != null ? opts.color : PICKLE_PINK, 0.72, 0.04);
+    var bodySoft = pMat(0xffc3d4, 0.78, 0.02);
+    var bodyDeep = pMat(0xe07d9b, 0.74, 0.04);
+    var eyeMat = new THREE.MeshStandardMaterial({ color: 0x2b141d, roughness: 0.34, metalness: 0.02 });
+    var glintMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    var goldMat = new THREE.MeshStandardMaterial({ color: opts.badgeColor != null ? opts.badgeColor : PICKLE_GOLD, roughness: 0.28, metalness: 0.82 });
+    var blushMat = pMat(0xf59ab1, 0.86, 0.0);
+
+    // 바닥 그림자(몸의 바운스는 rig 안에서만)
+    var sh = new THREE.Mesh(new THREE.PlaneGeometry(0.86, 0.86),
+      new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false }));
+    sh.rotation.x = -Math.PI / 2; sh.position.y = 0.012; g.add(sh);
+
+    function ball(rx, ry, rz, m, sx, sy) {
+      var mesh = new THREE.Mesh(new THREE.SphereGeometry(1, sx || 22, sy || 16), m);
+      mesh.scale.set(rx, ry, rz);
+      return mesh;
+    }
+    function cyl(rt, rb, h, m, seg) {
+      return new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, seg || 16), m);
+    }
+
+    // ── 다리: 몸통 아래에서 좌우로 벌어진 'ㅅ' 획 ──
+    var HIP_Y = 0.60;
+    function makeLeg(side) {
+      var pivot = new THREE.Group();
+      pivot.position.set(side * 0.048, HIP_Y, 0);
+      pivot.rotation.z = -side * 0.46;                 // 바깥으로 벌린다
+      var thigh = cyl(0.058, 0.046, 0.56, bodyMat, 14);
+      thigh.position.y = -0.28; pivot.add(thigh);
+      var foot = ball(0.105, 0.058, 0.142, bodySoft);
+      foot.position.set(0, -0.548, 0.026); pivot.add(foot);
+      var toe = ball(0.052, 0.038, 0.042, bodyDeep);
+      toe.position.set(0, -0.552, 0.135); pivot.add(toe);
+      rig.add(pivot);
+      return pivot;
+    }
+    var legL = makeLeg(-1), legR = makeLeg(1);
+
+    // ── 몸통: 가운데 기둥(ㅈ의 세로획) ──
+    var torso = ball(0.180, 0.255, 0.155, bodyMat, 26, 20);
+    torso.position.y = 0.795; rig.add(torso);
+    var belly = ball(0.128, 0.165, 0.068, bodySoft, 22, 16);
+    belly.position.set(0, 0.770, 0.097); rig.add(belly);
+
+    // ── 머리(위 가로획 + 얼굴) — 작게 갸우뚱/고개 돌림 ──
+    var head = new THREE.Group();
+    head.position.y = 0.945;
+    rig.add(head);
+
+    // 'ㅈ'의 위 가로획 — 둥글고 얇은 막대
+    var bar = ball(0.315, 0.060, 0.116, bodyMat, 30, 18);
+    bar.position.y = 0.158;
+    head.add(bar);
+    var barShine = ball(0.255, 0.017, 0.026, new THREE.MeshStandardMaterial({
+      color: 0xffd9e4, roughness: 0.5, metalness: 0.02
+    }), 22, 12);
+    barShine.position.set(0, 0.203, 0.041); head.add(barShine);
+
+    // 눈 — 납작하고 반짝이는 눈 + 흰 점
+    var eyeL = ball(0.034, 0.044, 0.018, eyeMat, 22, 16);
+    eyeL.position.set(-0.055, -0.048, 0.147); eyeL.userData.sy = 0.044;
+    head.add(eyeL);
+    var eyeR = ball(0.034, 0.044, 0.018, eyeMat, 22, 16);
+    eyeR.position.set(0.055, -0.048, 0.147); eyeR.userData.sy = 0.044;
+    head.add(eyeR);
+    var glintL = ball(0.011, 0.011, 0.006, glintMat);
+    glintL.position.set(-0.064, -0.036, 0.158); head.add(glintL);
+    var glintR = ball(0.011, 0.011, 0.006, glintMat);
+    glintR.position.set(0.046, -0.036, 0.158); head.add(glintR);
+
+    // 눈썹 — 짧고 귀여운 호
+    function brow(side) {
+      var b = new THREE.Mesh(new THREE.TorusGeometry(0.040, 0.0075, 8, 16, Math.PI * 0.78), bodyDeep);
+      b.position.set(side * 0.056, 0.016, 0.143);
+      b.rotation.z = side > 0 ? Math.PI + 0.30 : -0.30;
+      head.add(b);
+      return b;
+    }
+    var browL = brow(-1), browR = brow(1);
+
+    // 미소
+    var smile = new THREE.Mesh(new THREE.TorusGeometry(0.044, 0.0085, 8, 18, Math.PI), bodyDeep);
+    smile.position.set(0, -0.112, 0.140);
+    smile.rotation.z = Math.PI;
+    head.add(smile);
+
+    // 볼
+    [-1, 1].forEach(function (s) {
+      var cheek = ball(0.040, 0.024, 0.010, blushMat);
+      cheek.position.set(s * 0.112, -0.098, 0.112);
+      head.add(cheek);
+    });
+
+    // 작은 금 라펠 핀 (가슴 아래)
+    var pin = new THREE.Mesh(new THREE.TorusGeometry(0.019, 0.0065, 8, 16), goldMat);
+    pin.position.set(0.086, 0.665, 0.104);
+    pin.rotation.x = -0.18;
+    rig.add(pin);
+    var pinDot = ball(0.011, 0.011, 0.008, goldMat);
+    pinDot.position.set(0.086, 0.665, 0.110); rig.add(pinDot);
+
+    // 이름표·말풍선 — 키(약 1.17m)에 맞춘 높이
+    var tag = makeNameTag(opts.name || '피클');
+    tag.position.y = 1.32;
+    tag.scale.set(0.84, 0.215, 1);
+    g.add(tag);
+    var bubble = makeBubbleSprite();
+    bubble.sprite.position.y = 2.02;
+    bubble.sprite.scale.set(1.95, 0.98, 1);
+    g.add(bubble.sprite);
+
+    return {
+      group: g,
+      parts: {
+        rig: rig, head: head, bar: bar, legL: legL, legR: legR,
+        eyeL: eyeL, eyeR: eyeR, glintL: glintL, glintR: glintR,
+        browL: browL, browR: browR, smile: smile, pin: pin,
+        t: 0, blink: 0, nextBlink: 2.6, faceYaw: 0, walkPhase: 0
+      },
+      tag: tag, bubble: bubble, bubbleState: null,
+      bubbleY: 2.02, tagY: 1.32,
+      name: opts.name || '피클'
+    };
+  }
+
+  /* 피클 걷기·대기 애니메이션 — speed 는 실제 이동 속도(m/s) */
+  function animatePickle(fig, dt, elapsed, speed) {
+    if (!fig || !fig.parts) return;
+    var p = fig.parts;
+    var moving = clamp(speed / 3.2, 0, 1);
+    p.walkPhase += dt * (2.2 + Math.min(speed, 6) * 1.9);
+    var s1 = Math.sin(p.walkPhase);
+
+    p.legL.rotation.x = -s1 * 0.62 * moving;
+    p.legR.rotation.x = s1 * 0.62 * moving;
+    p.rig.position.y = Math.abs(Math.cos(p.walkPhase)) * 0.055 * moving +
+      Math.sin(elapsed * 1.65) * 0.014 * (1 - moving);
+    p.rig.rotation.z = s1 * 0.05 * moving + Math.sin(elapsed * 1.1) * 0.028 * (1 - moving);
+    p.rig.rotation.x = -0.05 * moving;
+    p.head.rotation.z = -s1 * 0.05 * moving + Math.sin(elapsed * 0.85) * 0.05 * (1 - moving);
+    p.head.rotation.x = Math.sin(elapsed * 1.3) * 0.03 * (1 - moving) + 0.02 * moving;
+
+    // 가까이 오면 회장님·방문객 쪽으로 고개를 살짝 돌린다
+    if (state.avatar) {
+      var dx = state.avatar.position.x - fig.group.position.x;
+      var dz = state.avatar.position.z - fig.group.position.z;
+      var d = Math.hypot(dx, dz);
+      var want = 0;
+      if (d < 4.2) {
+        want = Math.atan2(dx, dz) - fig.group.rotation.y;
+        while (want > Math.PI) want -= Math.PI * 2;
+        while (want < -Math.PI) want += Math.PI * 2;
+        want = clamp(want, -0.38, 0.38);
+      }
+      p.faceYaw = mixTo(p.faceYaw || 0, want, 1 - Math.exp(-4 * dt));
+      p.head.rotation.y = p.faceYaw;
+    }
+
+    // 눈 깜빡임
+    p.t += dt;
+    if (p.blink > 0) p.blink = Math.max(0, p.blink - dt);
+    else if (p.t > p.nextBlink) { p.blink = 0.16; p.t = 0; p.nextBlink = 2.2 + Math.random() * 2.6; }
+    var closed = p.blink > 0 ? Math.sin(Math.PI * (1 - p.blink / 0.16)) : 0;
+    var ey = 1 - 0.9 * closed;
+    p.eyeL.scale.y = p.eyeL.userData.sy * ey;
+    p.eyeR.scale.y = p.eyeR.userData.sy * ey;
+    p.glintL.scale.y = 0.013 * ey;
+    p.glintR.scale.y = 0.013 * ey;
   }
 
   /* ── 인사 제스처: 👋 손 흔들기(wave) · 🙇 꾸벅 인사(bow) ─────────
@@ -7101,6 +7339,7 @@
   function tryOpen(hit) {
     if (!hit) return;
     if (hit.kind === 'desk') openDeskModal(hit.who);
+    else if (hit.kind === 'pickle') openPickle(hit);
     else if (hit.kind === 'portal') portalAct(hit.side);
     else if (hit.kind === 'news-tv') openNewsTV(hit.tv || 'hall');
     else if (hit.kind === 'guestbook') openGuestbook();
@@ -7139,7 +7378,7 @@
 
   function updateNearHint() {
     var el = $('near');
-    if (!state.avatar || state.firstPerson) { el.classList.remove('show'); state.near = null; state.nearPortal = null; return; }
+    if (!state.avatar || state.firstPerson) { el.classList.remove('show'); state.near = null; state.nearPortal = null; state.nearPickle = null; return; }
     var p = state.avatar.position;
     // 🏛️ 2층 회의실에서는 중앙홀 카운터·부스 알약을 띄우지 않고 회의실 포털만 안내한다
     if (state.floor === 2) {
@@ -7193,6 +7432,17 @@
         el.classList.remove('show');
       }
     }
+    // 🩷 피클 비서(희망이·방 안내) — 2.4m 안에 서면 대화 알약
+    var pk = nearestPickle(p);
+    if (pk) {
+      state.nearPickle = pk;
+      state.near = null; state.nearTV = null; state.nearDesk = null; state.nearPortal = null;
+      var ptxt = pk.who === 'heemang' ? '🩷 희망이 · AI 비서와 대화' : '🩷 ' + pk.label + '와 대화';
+      if ($('near-text').textContent !== ptxt) $('near-text').textContent = ptxt;
+      el.classList.add('show');
+      return;
+    }
+    state.nearPickle = null;
     // 📺 뉴스 TV — 지금 있는 방(중앙홀이면 중앙홀 TV)의 화면을 가까이서 바라볼 때 안내 알약
     var tvNear = null;
     var tvId = (myRoom === 'hall') ? 'hall' : myRoom;
@@ -9178,6 +9428,8 @@
     hideOverlay('nick-modal');
     // 닉네임 창을 닫으면 바로 '대화 시작 방법' 안내를 띄운다
     setTimeout(function () { showFirstVisitGuide(); }, 320);
+    // 🩷 회장님은 닉네임 창을 닫자마자 희망이가 알아본다
+    setTimeout(function () { maybeChairmanArrival(); }, 700);
   }
   function maybeOfferNickname() {
     // 저장된 닉네임도 없고, 안내를 닫은 기록도 없는 '처음 들어온' 방문자에게만
@@ -9782,6 +10034,7 @@
       if (document.body.classList.contains('modal-open')) return;
       if (k === 'e' || k === 'enter') {
         if (state.nearPortal) { portalAct(state.nearPortal); e.preventDefault(); return; }
+        if (state.nearPickle) { openPickle(state.nearPickle); e.preventDefault(); return; }
         if (state.nearDesk) { openDeskModal(state.nearDesk.who); e.preventDefault(); return; }
         // 안내 알약이 📺 뉴스 TV 를 가리키고 있으면 E 도 그 화면을 연다
         if (state.nearTV) { openNewsTV(state.nearTV); e.preventDefault(); return; }
@@ -9957,6 +10210,7 @@
     // 안내 알약을 탭하면 그 부스의 가장 가까운 판넬(없으면 첫 칸)을 바로 연다
     $('near').addEventListener('click', function () {
       if (state.nearPortal) { portalAct(state.nearPortal); return; }
+      if (state.nearPickle) { openPickle(state.nearPickle); return; }
       if (state.nearDesk) { openDeskModal(state.nearDesk.who); return; }
       if (state.nearTV) { openNewsTV(state.nearTV); return; }
       var b = state.near;
@@ -10097,6 +10351,7 @@
     updateGreetings();
     updateBubbles(dt);
     updateHosts(dt);      // 프런트데스크 두 캐릭터
+    updateHeemang(dt);    // 🩷 희망이(피클 비서) · 수행 모드
     updateNewsTV(dt);
     updatePortals(dt);    // 회의실 ↔ 중앙홀 포털 링 회전
     updateDokdoVista(dt); // 창밖 동해 물결·선박·갈매기·독도 LIVE(2층에서만)
@@ -10157,6 +10412,433 @@
   };
   var DESK_HINT = '💬 루아·도현을 누르거나 E 키로 대화를 시작하세요';
   var HOSTS = {};              // { lua: fig, dohyun: fig }
+
+  /* ══════════════════════════════════════════════════════════════════
+     🩷 희망이 — 독도국제무역 회장님 전담 AI 비서 (분홍 'ㅈ' 피클)
+     ──────────────────────────────────────────────────────────────
+     · 1층 중앙홀 프런트데스크 옆, 2층에서는 회의실 안에 기본으로 서 있다.
+     · 관리자 PIN 인증(🔐 관리 · 2층 회의실 PIN · 상담 창 👑)을 한 번 하면
+       회장님 수행 모드 — 회장님 곁(뒤 오른쪽 1.35m)을 따라다니며 모든 층을 함께 간다.
+     · PIN 원문은 저장하지 않는다. localStorage 에는 '인증했다'는 표시(1)만 둔다.
+     · 브리프(secretary_brief.json)는 매일 09:30 동기화된 국제상품 분석 데이터다.
+     ══════════════════════════════════════════════════════════════════ */
+  var CHAIRMAN_KEY = 'mg_chairman_verified_v1';
+  var SECRETARY = { data: null };        // { meta, methodology, symbols, zones, forecast_hits, news }
+  var heemangBriefFetched = false;
+
+  function applySecretaryBrief(b) {
+    if (b && b.symbols && b.symbols.length) SECRETARY.data = b;
+    return SECRETARY.data;
+  }
+  function loadSecretaryBrief() {
+    if (heemangBriefFetched) return Promise.resolve(SECRETARY.data);
+    heemangBriefFetched = true;
+    if (location.protocol === 'file:') return Promise.resolve(SECRETARY.data);
+    return fetch('secretary_brief.json', { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (b) { return applySecretaryBrief(b); })
+      .catch(function () { return SECRETARY.data; });
+  }
+
+  var HEEMANG = {
+    id: 'heemang',
+    fig: null, group: null, proxy: null,
+    adminUnlocked: false,      // 관리자 PIN 인증을 한 번이라도 통과했는가
+    isChairman: false,         // 지금 이 방문자가 회장님인가(수행 모드의 기준)
+    following: false,          // 수행 모드 켜짐
+    arrived: false,            // 이번 접속에서 이미 맞이했는가
+    floor: 1,
+    pos: null, yaw: Math.PI, speed: 0,
+    homeHall: { x: 3.7, z: 9.8, ry: Math.PI },
+    home2F: { x: -4.2, z: -2.2, ry: 0.983 }
+  };
+  var ROOM_PICKLES = {};       // { fx: {fig, zone, ...}, ... }
+  var PICKLE_ROOMS = [
+    { zone: 'fx', name: '통화 · 피클 비서', short: '통화' },
+    { zone: 'metals', name: '금속 · 피클 비서', short: '금속' },
+    { zone: 'index', name: '지수 · 피클 비서', short: '지수' },
+    { zone: 'rates', name: '금리 · 피클 비서', short: '금리' },
+    { zone: 'energy', name: '에너지 · 피클 비서', short: '에너지' },
+    { zone: 'ags', name: '농축산물 · 피클 비서', short: '농축산물' }
+  ];
+
+  function heemangHome() {
+    return state.floor === 2 ? HEEMANG.home2F : HEEMANG.homeHall;
+  }
+
+  /* 방문자 뒤 오른쪽 1.35m — 수행 모드의 목표 지점 */
+  function heemangTarget() {
+    var a = state.avatar;
+    if (!a) return { x: 0, z: 4.5 };
+    var ry = a.rotation.y;
+    var fx = Math.sin(ry), fz = Math.cos(ry);
+    var rx = -Math.cos(ry), rz = Math.sin(ry);
+    return {
+      x: a.position.x - fx * 1.25 + rx * 0.42,
+      z: a.position.z - fz * 1.25 + rz * 0.42
+    };
+  }
+
+  function heemangSay(text) {
+    var fig = HEEMANG.fig;
+    if (!fig) return;
+    var s = String(text || '');
+    showBubble(fig, '희망이', s.length > 90 ? s.slice(0, 88) + '…' : s);
+    try { SPEAK.say(s.split('\n')[0], 'heemang'); } catch (e) {}
+  }
+
+  function heemangUpdateChip() {
+    var b = $('heemang-follow');
+    if (b) {
+      b.classList.toggle('show', !!HEEMANG.adminUnlocked);
+      b.classList.toggle('off', !HEEMANG.following);
+      b.textContent = HEEMANG.following ? '🩷 희망이 수행 중' : '🩷 희망이 대기';
+    }
+    var c = $('dm-chair');
+    if (c) {
+      c.classList.toggle('on', !!HEEMANG.isChairman && HEEMANG.following);
+      c.textContent = HEEMANG.isChairman
+        ? (HEEMANG.following ? '🩷 수행 중 · 끄기' : '🩷 수행 시작')
+        : '👑 회장님 인증';
+    }
+  }
+
+  /* 희망이를 지금 층의 목표 지점에 바로 세운다(층 이동·첫 등장) */
+  function heemangSnapTo(x, z) {
+    if (!HEEMANG.fig) return;
+    HEEMANG.pos.set(x, state.floorY, z);
+    HEEMANG.fig.group.position.copy(HEEMANG.pos);
+  }
+
+  /* 회장님 맞이 — 중앙홀 입구(z=4.5)에 나타나 곧바로 곁으로 걸어온다 */
+  function heemangArrival(reason) {
+    if (!HEEMANG.fig) return;
+    var a = state.avatar;
+    if (state.floor === 1) {
+      var sx = a ? clamp(a.position.x + 2.3, HALL.x0 + 1.2, HALL.x1 - 1.2) : 2.3;
+      heemangSnapTo(sx, 4.5);
+    } else {
+      var t = heemangTarget();
+      heemangSnapTo(t.x + 1.2, t.z + 1.2);
+    }
+    HEEMANG.yaw = Math.atan2((a ? a.position.x : 0) - HEEMANG.pos.x,
+                             (a ? a.position.z : 4.5) - HEEMANG.pos.z);
+    HEEMANG.fig.group.rotation.y = HEEMANG.yaw;
+    HEEMANG.following = true;
+    heemangUpdateChip();
+    heemangSay('회장님, 오셨습니까! 바로 곁에서 수행하겠습니다.');
+    toast('🩷 희망이 — 회장님, 오셨습니까! 바로 곁에서 수행하겠습니다', 4200);
+    HEEMANG.arrived = true;
+  }
+
+  /* 관리자 PIN 통과 → 회장님 인증 · 수행 모드 */
+  function heemangChairmanOn(opts) {
+    opts = opts || {};
+    var first = !HEEMANG.isChairman;
+    HEEMANG.adminUnlocked = true;
+    HEEMANG.isChairman = true;
+    HEEMANG.following = true;
+    try { localStorage.setItem(CHAIRMAN_KEY, '1'); } catch (e) {}
+    heemangUpdateChip();
+    if (first || opts.arrive) {
+      heemangArrival(opts.via || 'pin');
+    } else {
+      heemangSay('회장님, 수행 모드를 다시 켰습니다.');
+    }
+    return true;
+  }
+
+  function heemangToggleFollow(force) {
+    var want = (force == null) ? !HEEMANG.following : !!force;
+    HEEMANG.following = want;
+    heemangUpdateChip();
+    heemangSay(want ? '회장님, 다시 곁에서 수행하겠습니다.' : '회장님, 여기서 대기하겠습니다.');
+    toast(want ? '🩷 희망이 수행 모드 켜짐' : '🩷 희망이 잠시 대기', 2200);
+  }
+
+  function chairmanRemembered() {
+    try { return localStorage.getItem(CHAIRMAN_KEY) === '1'; } catch (e) { return false; }
+  }
+
+  /* 접속 직후 — 이 브라우저에서 한 번 인증한 적이 있으면 곧바로 알아본다 */
+  function maybeChairmanArrival() {
+    if (HEEMANG.arrived || !HEEMANG.fig) return false;
+    if (!chairmanRemembered()) return false;
+    HEEMANG.adminUnlocked = true;
+    HEEMANG.isChairman = true;
+    HEEMANG.following = true;
+    heemangUpdateChip();
+    heemangArrival('memory');
+    return true;
+  }
+
+  /* 가까운 피클 비서 찾기 — 2.4m 안 */
+  function nearestPickle(p) {
+    var best = null, bestD = 2.4;
+    if (HEEMANG.fig) {
+      var hd = Math.hypot(p.x - HEEMANG.fig.group.position.x, p.z - HEEMANG.fig.group.position.z);
+      if (hd < bestD) { bestD = hd; best = { kind: 'pickle', who: 'heemang', zone: '', label: '희망이 · AI 비서' }; }
+    }
+    for (var id in ROOM_PICKLES) {
+      var it = ROOM_PICKLES[id];
+      if (!it || !it.fig) continue;
+      var d = Math.hypot(p.x - it.fig.group.position.x, p.z - it.fig.group.position.z);
+      if (d < bestD) { bestD = d; best = { kind: 'pickle', who: 'room', zone: id, label: it.name }; }
+    }
+    return best;
+  }
+
+  function openPickle(hit) {
+    if (!hit) return;
+    if (hit.who === 'heemang') openHeemang('');
+    else openHeemang(hit.zone || '');
+  }
+
+  /* ── 3D 배치 ─────────────────────────────────────── */
+  function buildHeemang() {
+    var fig = buildPickleMascot({ name: '희망이 · AI 비서', scale: 1, badgeColor: PICKLE_GOLD });
+    fig.group.scale.set(1.0, 1.0, 1.0);
+    HEEMANG.fig = fig;
+    HEEMANG.group = fig.group;
+    HEEMANG.pos = new THREE.Vector3(HEEMANG.homeHall.x, 0, HEEMANG.homeHall.z);
+    fig.group.position.copy(HEEMANG.pos);
+    fig.group.rotation.y = HEEMANG.homeHall.ry;
+    state.scene.add(fig.group);
+
+    // 누르기용 보이지 않는 프록시(길을 막지 않는다 — 충돌체를 넣지 않는다)
+    var proxy = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 1.5, 10),
+      new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }));
+    proxy.userData.hit = { kind: 'pickle', who: 'heemang', zone: '' };
+    fig.group.add(proxy);
+    proxy.position.y = 0.78;
+    HEEMANG.proxy = proxy;
+    state.pickable.push(proxy);
+  }
+
+  /* 문 밖 1.25m · 문 중심축에서 1.55m (중앙홀을 바라보는 사람 기준 오른쪽) */
+  function roomDoorSpot(r) {
+    var out = { x: -r.inward.x, z: -r.inward.z };
+    var right = { x: -out.z, z: out.x };
+    var ax = (r.door.axis === 'z') ? { x: r.door.at, z: r.door.c } : { x: r.door.c, z: r.door.at };
+    return {
+      x: ax.x + out.x * 1.25 + right.x * 1.55,
+      z: ax.z + out.z * 1.25 + right.z * 1.55,
+      ry: Math.atan2(out.x, out.z)
+    };
+  }
+
+  function buildPickleGuides() {
+    ROOMS.forEach(function (r) {
+      var meta = null;
+      for (var i = 0; i < PICKLE_ROOMS.length; i++) if (PICKLE_ROOMS[i].zone === r.zone) meta = PICKLE_ROOMS[i];
+      if (!meta) return;
+      var spot = roomDoorSpot(r);
+      var fig = buildPickleMascot({ name: meta.name, scale: 0.88, badgeColor: PICKLE_GOLD });
+      fig.group.scale.set(0.88, 0.88, 0.88);
+      fig.group.position.set(spot.x, 0, spot.z);
+      fig.group.rotation.y = spot.ry;
+      state.scene.add(fig.group);
+      var proxy = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.38, 1.35, 10),
+        new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }));
+      proxy.userData.hit = { kind: 'pickle', who: 'room', zone: r.zone };
+      proxy.position.y = 0.7;
+      fig.group.add(proxy);
+      state.pickable.push(proxy);
+      ROOM_PICKLES[r.zone] = { fig: fig, zone: r.zone, name: meta.name, short: meta.short, baseYaw: spot.ry };
+    });
+  }
+
+  /* ── 매 프레임: 수행 모드 이동 + 대기 자세 ── */
+  function updateHeemang(dt) {
+    var h = HEEMANG;
+    if (!h.fig || !h.pos) return;
+    var y = state.floorY;
+
+    // 층이 바뀌면 — 수행 중이면 회장님 뒤로, 아니면 그 층의 기본 자리로
+    if (h.floor !== state.floor) {
+      h.floor = state.floor;
+      if (h.following && state.avatar) {
+        var t0 = heemangTarget();
+        h.pos.set(t0.x, y, t0.z);
+      } else {
+        var hm = heemangHome();
+        h.pos.set(hm.x, y, hm.z);
+        h.yaw = hm.ry;
+      }
+    }
+
+    var speed = 0;
+    if (h.following && state.avatar) {
+      var t = heemangTarget();
+      var dx = t.x - h.pos.x, dz = t.z - h.pos.z;
+      var dist = Math.hypot(dx, dz);
+      if (dist > 0.32) {
+        // 회장님보다 조금 더 빠르게 — 걷기(4.6)·빠른 걷기(7.6) 모두 따라잡는다
+        var avSpeed = state.speedSmooth || 0;
+        var want = Math.min(8.0, Math.max(4.9, avSpeed * 1.25 + 1.2) + dist * 1.6);
+        var step = Math.min(dist, want * dt);
+        var pt = new THREE.Vector3(h.pos.x + (dx / dist) * step, y, h.pos.z + (dz / dist) * step);
+        pushOutOfColliders(pt);
+        speed = Math.hypot(pt.x - h.pos.x, pt.z - h.pos.z) / Math.max(dt, 0.0001);
+        h.pos.x = pt.x; h.pos.z = pt.z;
+        var ty = Math.atan2(dx, dz);
+        var diff = ((ty - h.yaw + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI;
+        h.yaw += diff * Math.min(1, dt * 7);
+      } else if (state.avatar) {
+        // 도착 — 회장님 곁에서 회장님이 보는 쪽을 함께 본다
+        var face = state.avatar.rotation.y;
+        var d2 = ((face - h.yaw + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI;
+        h.yaw += d2 * Math.min(1, dt * 4.5);
+      }
+    } else {
+      // 대기 — 기본 자리에서 방문객 쪽을 살짝 바라본다
+      var hm2 = heemangHome();
+      var hdx = hm2.x - h.pos.x, hdz = hm2.z - h.pos.z;
+      if (!h.adminUnlocked && Math.hypot(hdx, hdz) > 0.35) {
+        h.pos.x += hdx * Math.min(1, dt * 1.6);
+        h.pos.z += hdz * Math.min(1, dt * 1.6);
+        h.yaw = Math.atan2(hdx, hdz);
+      }
+    }
+
+    h.fig.group.position.set(h.pos.x, y, h.pos.z);
+    h.fig.group.rotation.y = h.yaw;
+    animatePickle(h.fig, dt, state.elapsed + 1.3, speed);
+
+    // 방 피클 — 가볍게 까딱이며 서 있다
+    for (var id in ROOM_PICKLES) {
+      var it = ROOM_PICKLES[id];
+      if (!it || !it.fig) continue;
+      it.fig.group.rotation.y = it.baseYaw + Math.sin(state.elapsed * 0.7 + id.length) * 0.10;
+      animatePickle(it.fig, dt, state.elapsed + id.length, 0);
+    }
+  }
+
+  /* ── 희망이 대화용 브리프(compact) — AI context 에 넣는다 ── */
+  function heemangBriefContext() {
+    var b = SECRETARY.data;
+    if (!b) return null;
+    var syms = (b.symbols || []).map(function (s) {
+      var sc = s.score || {};
+      var shortName = String(s.name || s.code).split(' (')[0];
+      var lv = (s.levels || []).slice(0, 2).map(function (l) { return l.name + ' ' + l.value; }).join('·');
+      var st = s.stops || {};
+      var ind = s.indicators || {};
+      var o = {
+        code: s.code, name: shortName, zone: s.zone,
+        price: s.price, chg: s.change_pct,
+        grade: sc.grade, hp: !!sc.high_purity, buy: sc.buy, sell: sc.sell,
+        levels: lv,
+        stop: st.long_invalidation != null ? st.long_invalidation : null,
+        contract: (s.rollover && s.rollover.active) || s.active_contract,
+        next: (s.rollover && s.rollover.next) || s.next_contract,
+        remain: s.rollover ? s.rollover.remaining_trading_days : null,
+        oi: s.oi_rollover ? s.oi_rollover.next_oi_share_pct : null,
+        oi_regime: String((s.oi_rollover && s.oi_rollover.regime) || '').slice(0, 40),
+        cot: s.cot ? s.cot.index_pct : null,
+        rsi: ind.rsi14 != null ? ind.rsi14 : null,
+        cci: ind.cci90 != null ? ind.cci90 : null,
+        sig: (s.signals || []).slice(0, 2).map(function (x) { return String(x).split(' (')[0]; }),
+        risk: (s.risks || []).slice(0, 1).map(function (x) { return String(x).split(' (')[0]; })
+      };
+      var fc = (s.forecast || {}).forecast || {};
+      if (fc['1개월']) o.f1m = { p50: fc['1개월'].P50, up: fc['1개월'].up_pct };
+      var bt = (s.forecast || {}).backtest || {};
+      if (bt['1개월']) o.hit1m = bt['1개월'].dir_pct;
+      if (bt['6개월']) o.hit6m = bt['6개월'].dir_pct;
+      return o;
+    });
+    var zones = {};
+    for (var z in (b.zones || {})) {
+      var zz = b.zones[z];
+      zones[z] = {
+        name: zz.name,
+        sym: (zz.symbols || []).map(function (x) { return x.code; }).join(',')
+      };
+    }
+    return {
+      updated: (b.meta || {}).inflection_at || (b.meta || {}).news_updated || '',
+      owner: '회장님', assistant: '희망이',
+      horizon: '1~6개월 스윙',
+      rules: [
+        'MACD 12·130·9', 'CCI 90 ±100', 'RSI 14', '이동평균 20/60/120/200일',
+        '일봉 20·60일 · 주봉 12·26주 스윕', 'CFTC COT 52주', 'DXY 20일 역상관 확인 +1점',
+        'v2.1 2단 구조 3.0점 이상 일반 변곡 + ★ 고순도',
+        '역효과 차단 GC=F 매도 34.3% · ZN=F 매수 43.8%',
+        '4종 특화 ZW/ZC · 3-2-1 크랙 · NG/HO · 6S WILLCO',
+        '야후 롤오버 거래량 가드 · OI·만기 롤오버·FND/LTD',
+        'Walk-Forward 55% 미만 구간 관망'
+      ],
+      symbols: syms,
+      zones: zones,
+      news_updated: (b.meta || {}).news_updated || '',
+      hall_news: ((b.news || {}).hall || []).slice(0, 3).map(function (n) {
+        return n.headline + (n.price ? ' ' + n.price : '');
+      })
+    };
+  }
+
+  /* 브리프가 없을 때도 희망이가 답할 수 있는 기본 문법 */
+  function heemangLocalAnswer(q) {
+    var b = SECRETARY.data;
+    var text = String(q || '');
+    var low = text.toLowerCase();
+    var zone = DESK_CHAT.roomZone || deskZoneGuess(low);
+    var addr = heemangAddress();
+    if (!b) {
+      return { reply: addr + ', 아직 오늘 브리프를 받지 못했습니다. 매일 09:30 동기화되면 7종목 분석과 시장 뉴스로 바로 답해 드리겠습니다.', moves: zone ? [{ zone: zone, ticker: '', label: deskZoneName(zone) + '로 이동' }] : null };
+    }
+    var syms = b.symbols || [];
+    var wantsAll = /7\s*종목|일곱|전체|전 종목|모두|전체\s*브리프|브리프\s*(전체|다)|요약/.test(text);
+    var hit = null;
+    for (var i = 0; !wantsAll && i < syms.length; i++) {
+      var s = syms[i];
+      var nm = String(s.name || '');
+      var code = String(s.code || '').toLowerCase();
+      if ((nm && text.indexOf(nm.split(' ')[0]) >= 0) || (code && low.indexOf(code) >= 0)) { hit = s; break; }
+    }
+    if (!hit && zone && !wantsAll) {
+      var zs = syms.filter(function (x) { return x.zone === zone; });
+      if (zs.length === 1) hit = zs[0];
+    }
+    if (hit) {
+      var sc = hit.score || {};
+      var lv = (hit.levels || []).map(function (l) { return l.name + ' ' + l.value; }).join(' · ');
+      var st = hit.stops || {};
+      var stopTxt = Object.keys(st).map(function (k) { return (k === 'long_invalidation' ? '매수 무효화' : '매도 무효화') + ' ' + st[k]; }).join(' · ');
+      var oi = hit.oi_rollover || {};
+      var lines = [
+        hit.name + '(' + hit.code + ') — ' + (hit.price != null ? hit.price : '-') + (hit.change_pct != null ? ' (' + (hit.change_pct > 0 ? '+' : '') + hit.change_pct + '%)' : ''),
+        '변곡: ' + (sc.grade || '중립') + (sc.high_purity ? ' · ★ 고순도' : '') + ' · 점수 매수 ' + (sc.buy != null ? sc.buy : '-') + ' / 매도 ' + (sc.sell != null ? sc.sell : '-') + ' (기준 ' + (sc.threshold != null ? sc.threshold : 3) + '점)',
+        lv ? '수평선: ' + lv : '',
+        stopTxt ? '무효화선: ' + stopTxt : '',
+        oi.next_oi_share_pct != null ? '롤오버: ' + oi.next_contract + ' OI ' + oi.next_oi_share_pct + '%' + (hit.rollover && hit.rollover.remaining_trading_days != null ? ' · 잔존 ' + hit.rollover.remaining_trading_days + '거래일' : '') : '',
+        (hit.signals && hit.signals.length) ? '신호: ' + hit.signals.slice(0, 2).join(' / ') : ''
+      ].filter(function (x) { return !!x; });
+      return { reply: lines.join('\n'), moves: hit.zone ? [{ zone: hit.zone, ticker: '', label: deskZoneName(hit.zone) + '로 이동' }] : null };
+    }
+    if (zone && !wantsAll) {
+      var z = (b.zones || {})[zone] || {};
+      var zs2 = syms.filter(function (x) { return x.zone === zone; });
+      var news = (z.news || []).slice(0, 2).map(function (n) { return '📰 ' + n.headline + (n.price ? ' — ' + n.price : ''); });
+      return {
+        reply: (z.name || deskZoneName(zone)) + ' 방 브리프입니다.\n' +
+          zs2.map(function (x) { return '· ' + x.name + '(' + x.code + ') — ' + (x.price != null ? x.price : '-') + ' · ' + ((x.score || {}).grade || '중립'); }).join('\n') +
+          (news.length ? '\n' + news.join('\n') : ''),
+        moves: [{ zone: zone, ticker: '', label: deskZoneName(zone) + '로 이동' }]
+      };
+    }
+    if (/지표|macd|cci|rsi|cot|oi|롤오버|만기|변곡|스윕|고순도|관망/.test(low)) {
+      return { reply: addr + ', 저희 분석 체계는 이렇습니다.\n· MACD 12·130·9 · CCI 90 ±100 · RSI 14\n· 이동평균 20/60/120/200일 · 일봉 20·60일 / 주봉 12·26주 스윕\n· CFTC COT 52주 · DXY 20일 역상관 확인 +1점\n· v2.1 2단 구조 — 3.0점 이상 일반 변곡, 그중 ★ 고순도 변곡\n· 역효과 차단(GC=F 매도 34.3% · ZN=F 매수 43.8%) · 4종 특화 필터\n· Walk-Forward 적중률 55% 미만 구간은 관망', moves: null };
+    }
+    var rows = syms.slice(0, 7).map(function (x) {
+      return '· ' + x.name + ' — ' + (x.price != null ? x.price : '-') + ' · ' + ((x.score || {}).grade || '중립') + (x.score && x.score.high_purity ? ' ★' : '');
+    });
+    return {
+      reply: addr + ', ' + ((b.meta || {}).inflection_at || '오늘 09:30') + ' 기준 7종목 브리프입니다.\n' + rows.join('\n'),
+      moves: null
+    };
+  }
 
   /* 따뜻한 조명 느낌의 바닥 빛 웅덩이 텍스처 */
   var _warmGlowTex = null;
@@ -10770,6 +11452,7 @@
 
   /* 답변이 나오면 그 캐릭터가 3D 말풍선 + 가벼운 제스처로 반응한다 */
   function hostSay(who, text) {
+    if (who === 'heemang') { heemangSay(text); return; }
     var fig = HOSTS[who];
     if (!fig) return;
     var short = String(text || '').replace(/\s+/g, ' ').trim();
@@ -10783,7 +11466,8 @@
      ══════════════════════════════════════════════════════════════════ */
   var DESK_CHAT = {
     who: 'lua',
-    log: { lua: [], dohyun: [] },
+    log: { lua: [], dohyun: [], heemang: [] },
+    roomZone: '',             // 희망이를 방 입구 피클에서 열었을 때 그 방(zone)
     busy: false,
     mode: 'local',            // 'ai' = 실시간 두뇌 연결 · 'local' = 내장 안내
     provider: '', model: '',
@@ -10947,8 +11631,31 @@
     };
     if (!ctx.catalog.length) delete ctx.catalog;
 
+    // 🩷 희망이 — 매일 09:30 동기화된 국제상품 브리프 + 회장님 여부
+    if (DESK_CHAT.who === 'heemang') {
+      var sbCtx = heemangBriefContext();
+      if (sbCtx) ctx.secretary = sbCtx;
+      ctx.heemang = {
+        roomZone: DESK_CHAT.roomZone || '',
+        isChairman: !!HEEMANG.isChairman,
+        visitorName: ownName()
+      };
+    }
+
     // 안전장치 — 5,500자를 넘으면 방별 뉴스 → 카탈로그 → 종목 상세 순으로 덜어 낸다.
-    var steps = [
+    var steps = [];
+    if (DESK_CHAT.who === 'heemang') {
+      // 희망이는 브리프가 우선 — 잡다한 목록부터 줄인다
+      steps = steps.concat([
+        function (c) { delete c.catalog; },
+        function (c) { delete c.news.rooms; },
+        function (c) { c.exhibits.related = []; },
+        function (c) { c.news.hall = c.news.hall.slice(0, 3); },
+        function (c) { if (c.secretary) delete c.secretary.zones; },
+        function (c) { if (c.secretary) c.secretary.symbols = c.secretary.symbols.slice(0, 4); }
+      ]);
+    }
+    steps = steps.concat([
       function (c) {   // 물어본 방 뉴스만 남긴다
         var keep = {};
         if (zoneHit && c.news.rooms[zoneHit]) keep[zoneHit] = c.news.rooms[zoneHit];
@@ -10965,7 +11672,7 @@
       function (c) {
         c.exhibits.zones.forEach(function (z) { z.list = z.list.split(', ').slice(0, 3).join(', '); });
       }
-    ];
+    ]);
     for (var i = 0; i < steps.length && JSON.stringify(ctx).length > DESK_CTX_MAX; i++) steps[i](ctx);
     return ctx;
   }
@@ -10992,6 +11699,7 @@
     var nb = deskNewsBundle();
     var n = nb.hall.items.length;
     var when = nb.hall.updated_label || nb.hall.updated || '오늘 09:30';
+    if (who === 'heemang') return heemangGreeting(DESK_CHAT.roomZone);
     if (who === 'lua') {
       return '안녕하세요! 저는 프런트데스크 안내원 루아예요 😊\n' +
         '뉴스 TV는 ' + when + ' 기준 ' + n + '건으로 준비되어 있어요. 전시실·종목·쇼츠·지표, 무엇이든 물어보세요!';
@@ -11000,21 +11708,72 @@
       '현재 뉴스 TV는 ' + when + ' 기준 ' + n + '건이 게시되어 있습니다. 전시관 안내·종목 정보·쇼츠·매매 지표 중 궁금하신 것을 말씀해 주십시오.';
   }
 
+  function heemangAddress() { return HEEMANG.isChairman ? '회장님' : '방문자님'; }
+
+  /* 방 입구 피클에서 열면 그 방(zone)에 맞춘 인사말 */
+  function heemangGreeting(zone) {
+    var b = SECRETARY.data;
+    var when = (b && ((b.meta || {}).inflection_at || (b.meta || {}).news_updated)) || '오늘 09:30';
+    var who = heemangAddress();
+    if (!zone) {
+      return who + ', 희망이입니다. ' + when + ' 동기화된 국제상품 브리프로 바로 답해 드리겠습니다.\n' +
+        '7종목 변곡·롤오버·COT·예측 적중률까지 무엇이든 물어보세요.';
+    }
+    var z = (b && b.zones && b.zones[zone]) || null;
+    var nm = (z && z.name) || deskZoneName(zone);
+    var syms = z ? (z.symbols || []).map(function (x) { return x.name; }).slice(0, 3).join(' · ') : '';
+    return who + ', ' + nm + ' 방 피클 비서 희망이입니다. ' + (syms ? syms + ' 관련 ' : '') +
+      '변곡·레벨·롤오버·뉴스 무엇이든 물어보세요.';
+  }
+
   function deskChips(who) {
+    if (who === 'heemang') {
+      var z = DESK_CHAT.roomZone;
+      if (z) {
+        var zn = deskZoneName(z);
+        return [zn + ' 핵심 종목 어때?', zn + ' 뉴스 요약', '변곡점·레벨 점검', '롤오버·OI 점검'];
+      }
+      return ['오늘 7종목 브리프', '골드 지금 어때?', '변곡점·고순도 점검', '롤오버·OI·COT'];
+    }
     var base = ['오늘 핵심 시장 뉴스', '전시실·종목 안내', '쇼츠 추천해 줘', '매매 지표(MACD·CCI) 설명'];
     return base;
   }
 
   function renderDeskWho() {
-    ['lua', 'dohyun'].forEach(function (w) {
+    ['lua', 'dohyun', 'heemang'].forEach(function (w) {
       var b = $('dm-' + w);
       if (b) { b.classList.toggle('on', DESK_CHAT.who === w); b.setAttribute('aria-selected', DESK_CHAT.who === w ? 'true' : 'false'); }
     });
     var chip = $('dm-chip');
     if (chip) {
-      chip.textContent = DESK_CHAT.who === 'lua' ? '👧 루아 · 안내' : '🧑 도현 · 컨시어지';
-      chip.style.background = DESK_CHAT.who === 'lua' ? '#e8607a' : '#2b4368';
+      if (DESK_CHAT.who === 'heemang') {
+        var zid = DESK_CHAT.roomZone;
+        var zz = (SECRETARY.data && SECRETARY.data.zones ? SECRETARY.data.zones[zid] : null) || null;
+        chip.textContent = zid
+          ? '🩷 ' + ((zz && zz.name) || deskZoneName(zid)) + ' · 피클 비서'
+          : '🩷 희망이 · AI 비서';
+        chip.style.background = '#e8607a';
+      } else {
+        chip.textContent = DESK_CHAT.who === 'lua' ? '👧 루아 · 안내' : '🧑 도현 · 컨시어지';
+        chip.style.background = DESK_CHAT.who === 'lua' ? '#e8607a' : '#2b4368';
+      }
     }
+    var box = $('desk-modal');
+    if (box) box.classList.toggle('heemang', DESK_CHAT.who === 'heemang');
+    // 제목·부제도 담당에 맞춰 바꾼다
+    var h2 = $('dm-title'), sub = $('dm-sub');
+    if (DESK_CHAT.who === 'heemang') {
+      var zid2 = DESK_CHAT.roomZone;
+      var zn2 = zid2 ? (((SECRETARY.data && SECRETARY.data.zones && SECRETARY.data.zones[zid2]) || {}).name || deskZoneName(zid2)) : '';
+      if (h2) h2.textContent = zn2 ? zn2 + ' 전시실 · 희망이 피클 비서' : '국제상품 분석, 희망이에게 물어보세요';
+      if (sub) sub.textContent = zn2
+        ? zn2 + ' 방 종목 · 변곡 · 롤오버 · 뉴스까지 바로 답해 드립니다'
+        : '회장님 전담 AI 비서 · 매일 09:30 동기화 · 7종목 변곡·롤오버·COT·예측 적중률';
+    } else if (h2 && sub) {
+      h2.textContent = '프런트데스크에 무엇이든 물어보세요';
+      sub.textContent = '독도국제무역 프런트데스크 — 뉴스 TV·전시실·종목·쇼츠·지표까지 바로 안내합니다';
+    }
+    heemangUpdateChip();
   }
 
   function renderDeskBadge() {
@@ -11035,10 +11794,11 @@
     if (!box) return;
     var who = DESK_CHAT.who;
     var rows = DESK_CHAT.log[who];
+    var av = who === 'heemang' ? '🩷' : (who === 'lua' ? '👧' : '🧑');
     var html = '';
     rows.forEach(function (r, i) {
       var me = r.role !== 'host';
-      var av = me ? '' : '<span class="dm-av">' + (who === 'lua' ? '👧' : '🧑') + '</span>';
+      var avatar = me ? '' : '<span class="dm-av">' + av + '</span>';
       var moves = '';
       if (r.moves && r.moves.length) {
         moves = '<div class="dm-mv">' + r.moves.map(function (m, k) {
@@ -11049,11 +11809,11 @@
       if (!me) {
         body += '<div><button type="button" class="dm-say" data-say="' + i + '">🔊 다시 듣기</button></div>';
       }
-      html += '<div class="dm-row' + (me ? ' me' : '') + '">' + av +
+      html += '<div class="dm-row' + (me ? ' me' : '') + '">' + avatar +
         '<div class="dm-bub">' + body + '</div></div>';
     });
     if (DESK_CHAT.busy) {
-      html += '<div class="dm-row"><span class="dm-av">' + (who === 'lua' ? '👧' : '🧑') +
+      html += '<div class="dm-row"><span class="dm-av">' + av +
         '</span><div class="dm-bub dm-typing"><i></i><i></i><i></i> 답변을 준비하고 있어요</div></div>';
     }
     box.innerHTML = html;
@@ -11067,7 +11827,7 @@
   }
 
   function openDeskModal(who) {
-    if (who === 'lua' || who === 'dohyun') DESK_CHAT.who = who;
+    if (who === 'lua' || who === 'dohyun' || who === 'heemang') DESK_CHAT.who = who;
     hideFirstVisitGuide(true);       // 첫 방문 안내는 대화를 시작하면 역할을 다했다
     if (!DESK_CHAT.log[DESK_CHAT.who].length) {
       DESK_CHAT.log[DESK_CHAT.who].push({ role: 'host', text: deskGreeting(DESK_CHAT.who), moves: null });
@@ -11080,10 +11840,53 @@
     showOverlay('desk-modal');
     var inp = $('dm-text');
     if (inp && !document.body.classList.contains('touch')) { try { inp.focus({ preventScroll: true }); } catch (e) {} }
-    hostGesture(DESK_CHAT.who, DESK_CHAT.who === 'lua' ? 'wave' : 'nod');
+    if (DESK_CHAT.who !== 'heemang') hostGesture(DESK_CHAT.who, DESK_CHAT.who === 'lua' ? 'wave' : 'nod');
     // 인사도 목소리로 — 첫 터치 전이면 대기했다가 터치 직후 재생된다
     var first = DESK_CHAT.log[DESK_CHAT.who][0];
     if (first && first.role === 'host') SPEAK.say(first.text.split('\n')[0], DESK_CHAT.who);
+  }
+
+  /* 방 입구 피클·희망이를 눌렀을 때 — 희망이 모드(방 지정 가능)로 상담 창 */
+  function openHeemang(zone) {
+    DESK_CHAT.roomZone = zone || '';
+    DESK_CHAT.who = 'heemang';
+    if (!DESK_CHAT.log.heemang.length) {
+      DESK_CHAT.log.heemang.push({ role: 'host', text: heemangGreeting(DESK_CHAT.roomZone), moves: null });
+    }
+    openDeskModal('heemang');
+    if (HEEMANG.fig) {
+      var adr = heemangAddress();
+      showBubble(HEEMANG.fig, '희망이', zone
+        ? adr + ', ' + deskZoneName(zone) + ' 방 브리프를 준비했습니다.'
+        : adr + ', 말씀하세요. 바로 답해 드리겠습니다.');
+    }
+  }
+
+  /* 👑 상담 창 안에서 관리자 PIN으로 회장님 인증 — PIN 원문은 저장하지 않는다 */
+  function chairPinSubmit() {
+    var msg = $('dm-chair-msg');
+    function say(t, err) {
+      if (!msg) return;
+      msg.textContent = t;
+      msg.style.color = err ? '#b4453a' : '#0d5a34';
+    }
+    var pin = String(($('dm-chair-pin') && $('dm-chair-pin').value) || '').trim();
+    if (pin.length < 4) { say('관리자 PIN을 4자 이상 입력해 주세요.', true); return; }
+    if (!PANELS.online()) { say('회장님 인증은 라이브 사이트 주소에서 동작합니다.', true); return; }
+    say('관리자 PIN 확인 중…', false);
+    STAFF.checkPin(pin).then(function (r) {
+      var inp = $('dm-chair-pin');
+      if (inp) inp.value = '';                    // PIN 원문은 화면·저장소에 남기지 않는다
+      if (!r || !r.ok) {
+        say((r && r.error === 'net') ? 'PIN 확인 서버에 연결하지 못했습니다.' : '관리자 PIN이 맞지 않습니다.', true);
+        return;
+      }
+      say('회장님 인증 완료 · 희망이 수행 모드를 켰습니다.', false);
+      var row = $('dm-chair-row');
+      if (row) row.classList.remove('show');
+      heemangChairmanOn({ via: 'desk' });
+      renderDeskWho();
+    }).catch(function () { say('PIN 확인 서버에 연결하지 못했습니다.', true); });
   }
 
   function closeDeskModal() {
@@ -11165,14 +11968,15 @@
   }
 
   function switchDeskWho(who) {
-    if (who !== 'lua' && who !== 'dohyun') return;
+    if (who !== 'lua' && who !== 'dohyun' && who !== 'heemang') return;
     if (DESK_CHAT.who === who) return;
     DESK_CHAT.who = who;
+    if (who === 'heemang') DESK_CHAT.roomZone = '';   // 캐릭터 알약으로 직접 고르면 방 지정 없음
     if (!DESK_CHAT.log[who].length) {
       DESK_CHAT.log[who].push({ role: 'host', text: deskGreeting(who), moves: null });
     }
     renderDeskWho(); renderDeskBadge(); renderDeskLog(); renderDeskChips();
-    hostGesture(who, who === 'lua' ? 'wave' : 'nod');
+    if (who !== 'heemang') hostGesture(who, who === 'lua' ? 'wave' : 'nod');
     var first = DESK_CHAT.log[who][0];
     if (first && first.role === 'host') SPEAK.say(first.text.split('\n')[0], who);
   }
@@ -11243,6 +12047,11 @@
     var cfg = deskCfg();
     var body = { character: who, message: q, history: history, context: ctx };
     if (fromVoice) body.voiceMode = true;      // 짧고 자연스러운 구어체 답변을 요청
+    if (who === 'heemang') {
+      body.roomZone = DESK_CHAT.roomZone || '';
+      body.isChairman = !!HEEMANG.isChairman;
+      body.visitorName = ownName();
+    }
     var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
     var timer = setTimeout(function () { if (ctrl) try { ctrl.abort(); } catch (e) {} }, 25000);
     return fetch(url, {
@@ -11260,6 +12069,10 @@
       return r.json();
     }).then(function (d) {
       if (!d || d.ok !== true) return { ok: false, error: (d && (d.error || d.detail)) || 'not-ready' };
+      // 배포된 함수가 아직 희망이를 모르면(캐릭터가 lua로 되돌아옴) 내장 브리프로 답한다
+      if (who === 'heemang' && d.character && String(d.character).toLowerCase() !== 'heemang') {
+        return { ok: false, error: 'character-unsupported' };
+      }
       var reply = String(d.reply || '').trim();
       // 배포된 Edge Function 버전에 따라 <<MOVE:metals>> 토큰이 답변에 그대로 남는다.
       // 화면에서는 토큰을 걷어내고 이동 버튼으로 바꿔 준다(음성으로 읽힐 때도 토큰이 나가지 않게).
@@ -11301,6 +12114,7 @@
   /* ── 내장 지식 응답기(Edge Function 이 없거나 실패할 때) ──────────
      뉴스 TV 7개 피드 · 34개 종목 스펙 · 604편 카탈로그 · 지표 지식으로 답한다. */
   function localDeskAnswer(who, q) {
+    if (who === 'heemang') return heemangLocalAnswer(q);
     var text = String(q || '');
     var low = text.toLowerCase();
     var nb = deskNewsBundle();
@@ -11525,8 +12339,30 @@
     $('desk-modal').addEventListener('click', function (e) {
       if (e.target === $('desk-modal') && performance.now() - state.modalOpenedAt > 400) closeDeskModal();
     });
-    ['lua', 'dohyun'].forEach(function (w) {
-      $('dm-' + w).addEventListener('click', function () { switchDeskWho(w); });
+    ['lua', 'dohyun', 'heemang'].forEach(function (w) {
+      var el = $('dm-' + w);
+      if (el) el.addEventListener('click', function () { switchDeskWho(w); });
+    });
+    // 👑 회장님 인증 · 수행 모드 토글 (희망이 상담 중)
+    var chair = $('dm-chair');
+    if (chair) chair.addEventListener('click', function () {
+      if (HEEMANG.isChairman) { heemangToggleFollow(); renderDeskWho(); return; }
+      var row = $('dm-chair-row');
+      if (row) row.classList.toggle('show');
+      var pin = $('dm-chair-pin');
+      if (pin && row && row.classList.contains('show')) { try { pin.focus(); } catch (e) {} }
+    });
+    var chairOk = $('dm-chair-ok');
+    if (chairOk) chairOk.addEventListener('click', chairPinSubmit);
+    var chairPin = $('dm-chair-pin');
+    if (chairPin) chairPin.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); chairPinSubmit(); }
+    });
+    var hf = $('heemang-follow');
+    if (hf) hf.addEventListener('click', function () {
+      if (!HEEMANG.adminUnlocked) return;
+      heemangToggleFollow();
+      renderDeskWho();
     });
     $('dm-chips').addEventListener('click', function (e) {
       var b = e.target.closest ? e.target.closest('button[data-q]') : null;
@@ -12425,6 +13261,8 @@
       if (inp) inp.value = '';
       adminMsg('');
       loadAdminStats();
+      // 🩷 관리자 PIN 통과 = 회장님 인증 → 희망이 수행 모드
+      heemangChairmanOn({ via: 'admin' });
     }).catch(function (e) {
       adminMsg(STAFF.isMissing(e)
         ? '관리자 PIN 확인 기능이 DB에 없습니다(supabase_setup.sql).'
@@ -12591,6 +13429,8 @@
     if (gf) gf.addEventListener('submit', function (e) { e.preventDefault(); DOKDO_LIVE.armGesture(); submitGate(); });
     var gm = $('gate-manage');
     if (gm) gm.addEventListener('click', function () { openStaffAdmin(); });
+    var mh = $('mv-heemang');
+    if (mh) mh.addEventListener('click', function () { openHeemang(''); });
     var ge = $('gate-admin-enter');
     if (ge) ge.addEventListener('click', function () {
       var pr = $('gate-pinrow');
@@ -12609,6 +13449,7 @@
       STAFF.checkPin(pin).then(function (r) {
         if (r.ok) {
           STAFF.pin = pin;
+          heemangChairmanOn({ via: 'meeting' });   // 🩷 회장님 인증 → 희망이 수행
           enterMeetingRoom({ name: '관리자', grade: 'A', admin: true });
         } else if (r.error === 'net') {
           gateMsg('PIN 확인 서버에 연결하지 못했습니다.', 'err');
@@ -12636,6 +13477,7 @@
           return;
         }
         STAFF.pin = pin;
+        heemangChairmanOn({ via: 'staff' });          // 🩷 회장님 인증 → 희망이 수행
         $('st-body').classList.remove('hidden');
         $('st-pinrow').classList.add('hidden');
         loadStaffList();
@@ -12842,6 +13684,8 @@
     buildMeetingRoom();     // 2층 회의실 + 회의실/중앙홀 포털(1층 중앙홀 위 FLOOR2_Y)
     buildMeetingLounge();   // 12석 테이블·의자 — 2층 회의실 가운데로 옮겼다
     buildFrontDesk();     // 중앙 프런트데스크 + 루아·도현
+    buildHeemang();       // 🩷 희망이 — 분홍 'ㅈ' 피클 AI 비서
+    buildPickleGuides();  // 6개 전시실 문 앞 피클 비서
     buildAvatar();
     bindInput();
     bindEditor();
@@ -12863,6 +13707,12 @@
       applyNewsData(n);
       NEWS_ROOM_IDS.forEach(function (id) { initNewsTV(NEWS_TVS[id]); });
       updateDeskMonitor();
+    });
+
+    // 🩷 희망이 브리프 — 내장값으로 먼저 두고, 서버 파일(secretary_brief.json)을 읽으면 그것으로 바꾼다
+    applySecretaryBrief(window.__SECRETARY_BRIEF_FALLBACK__);
+    loadSecretaryBrief().then(function () {
+      if (DESK_CHAT.who === 'heemang') { renderDeskWho(); renderDeskChips(); }
     });
 
     loadData().then(function (data) {
@@ -12890,6 +13740,8 @@
       });
       // 첫 방문자에게 대화 시작 방법을 한 번 안내(닉네임 창이 떠 있으면 닫은 뒤에)
       setTimeout(function () { if (!state.nickOpen) showFirstVisitGuide(); }, 1500);
+      // 🩷 이 브라우저에서 한 번 회장님 인증을 했으면 — 중앙홀에서 바로 알아보고 곁으로 온다
+      setTimeout(function () { maybeChairmanArrival(); }, 900);
       window.__gallery = {
         state: state,
         data: data,
@@ -12920,6 +13772,32 @@
           context: buildDeskContext, local: localDeskAnswer, near: function () { return state.nearDesk; },
           group: function () { return state.deskGroup; }, monitor: function () { return state.deskMonitor; },
           gesture: hostGesture, say: hostSay, refreshMonitor: updateDeskMonitor
+        },
+        // 🩷 희망이 — 검증·디버그용(상태·위치·브리프·수행 모드)
+        heemang: {
+          obj: HEEMANG, pickles: ROOM_PICKLES, open: openHeemang,
+          chairman: function (via) { return heemangChairmanOn({ via: via || 'api' }); },
+          follow: heemangToggleFollow, say: heemangSay,
+          target: heemangTarget, blocked: blockedAt,
+          brief: function () { return SECRETARY.data; },
+          context: heemangBriefContext,
+          local: heemangLocalAnswer,
+          remembered: chairmanRemembered,
+          pos: function () {
+            var g = HEEMANG.fig && HEEMANG.fig.group;
+            return g ? { x: +g.position.x.toFixed(2), y: +g.position.y.toFixed(2), z: +g.position.z.toFixed(2), ry: +g.rotation.y.toFixed(2) } : null;
+          },
+          tag: function () { return HEEMANG.fig && HEEMANG.fig.tag ? HEEMANG.fig.tag.userData.label : ''; },
+          bubble: function () {
+            var b = HEEMANG.fig && HEEMANG.fig.bubble;
+            return b && b.sprite.visible ? { text: (HEEMANG.fig.bubbleState || {}).text || '', y: +b.sprite.position.y.toFixed(2) } : null;
+          },
+          state: function () {
+            return { adminUnlocked: HEEMANG.adminUnlocked, isChairman: HEEMANG.isChairman,
+                     following: HEEMANG.following, arrived: HEEMANG.arrived, floor: HEEMANG.floor,
+                     chip: ($('heemang-follow') ? $('heemang-follow').textContent : ''),
+                     chipShown: ($('heemang-follow') ? $('heemang-follow').classList.contains('show') : false) };
+          }
         },
         HALL: HALL,
         ROOMS: ROOMS,

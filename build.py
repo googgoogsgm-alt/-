@@ -24,6 +24,7 @@ THREE = os.path.join(HERE, "vendor", "three.min.js")
 DATA = os.path.join(HERE, "exhibits.json")
 CATALOG = os.path.join(HERE, "catalog.json")
 NEWS = os.path.join(HERE, "news.json")
+BRIEF = os.path.join(HERE, "secretary_brief.json")
 OUT = os.path.join(HERE, "index.html")
 
 
@@ -65,11 +66,21 @@ def main():
         except ValueError as e:
             raise SystemExit(f"news.json 을 읽지 못했습니다: {e}")
 
+    brief = None
+    if os.path.exists(BRIEF):
+        try:
+            brief = _load_json(BRIEF)
+            if not brief.get("symbols"):
+                brief = None
+        except ValueError as e:
+            raise SystemExit(f"secretary_brief.json 을 읽지 못했습니다: {e}")
+
     html = (tpl
             .replace("/*__THREE_JS__*/", three)
             .replace("/*__EXHIBITS_JSON__*/", _embed(data))
             .replace("/*__CATALOG_JSON__*/", _embed(catalog) if catalog else "null")
-            .replace("/*__NEWS_JSON__*/", _embed(news) if news else "null"))
+            .replace("/*__NEWS_JSON__*/", _embed(news) if news else "null")
+            .replace("/*__SECRETARY_BRIEF_JSON__*/", _embed(brief) if brief else "null"))
     with open(OUT, "w", encoding="utf-8") as f:
         f.write(html)
 
@@ -92,6 +103,12 @@ def main():
               f"(기준 {news.get('meta', {}).get('updated', '')})")
     else:
         print("  news.json 없음 · 뉴스 TV 는 '뉴스 준비 중' 상태로 남습니다")
+    if brief:
+        print(f"  secretary_brief.json 내장 · 🩷 희망이 비서 종목 {len(brief.get('symbols', []))}개 "
+              f"(변곡 {brief.get('meta', {}).get('inflection_at', '')})")
+    else:
+        print("  secretary_brief.json 없음 · 희망이는 뉴스·종목 데이터로만 답합니다"
+              "(python3 export_brief.py 로 만들 수 있습니다)")
 
 
 if __name__ == "__main__":

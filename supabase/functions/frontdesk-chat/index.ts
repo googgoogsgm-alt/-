@@ -1,11 +1,19 @@
 /**
- * 독도국제무역 · 3D 전시관 프런트데스크 AI (루아 · 도현)
+ * 독도국제무역 · 3D 전시관 AI (루아 · 도현 · 희망이)
  * ────────────────────────────────────────────────────────────────
  * Supabase Edge Function (Deno) — 단일 파일. 저장소에 함께 보관한다.
  *
  *  · 1순위  : Groq   (GROQ_API_KEY)     openai/gpt-oss-120b → qwen/qwen3.8-27b   (각 10초 타임아웃)
  *  · 2순위  : Gemini (GEMINI_API_KEY)   gemini-3.6-flash → gemini-3.8-flash → gemini-4-hydrogen → gemini-3.5-flash-lite (각 14초)
  *  · 둘 다 없으면 { ok:false } 를 돌려주고, 전시관 화면은 내장 안내 모드로 매끄럽게 답한다.
+ *
+ * 캐릭터
+ *  · lua     — 프런트데스크 여성 안내원 (발랄)
+ *  · dohyun  — 프런트데스크 남성 컨시어지 (정중)
+ *  · heemang — 🩷 분홍 'ㅈ' 피클 AI 비서. 독도국제무역.com '회장님' 전담.
+ *              매일 09:30 동기화된 국제상품 브리프(context.secretary)로 답한다.
+ *              body.isChairman 이면 말하는 사람을 '회장님'으로 부른다.
+ *              body.roomZone (fx·metals·index·rates·energy·ags)이면 그 방을 먼저 본다.
  *
  * 실시간 외부 조회(무키·무료 공개 API · 2.8초 안에 끊고 병렬 처리 · 실패해도 답변은 그대로)
  *  · 날씨·미세먼지 : Open-Meteo (geocoding + forecast + air-quality)
@@ -14,13 +22,14 @@
  *  결과는 시스템 프롬프트의 [실시간 외부 검색 결과] 블록으로 들어가고, 모델은 그 출처·수치만 인용한다.
  *
  * 요청 (POST JSON)
- *   { character: 'lua' | 'dohyun', message: '...', history: [{role,text}], context: {...} }
+ *   { character: 'lua' | 'dohyun' | 'heemang', message: '...', history: [{role,text}], context: {...},
+ *     roomZone?: 'fx'|'metals'|'index'|'rates'|'energy'|'ags', isChairman?: boolean, visitorName?: string }
  * 응답 (JSON)
  *   { ok:true, provider:'groq'|'gemini', model:'...', reply:'...', character:'lua', moves:[{zone,ticker,label}], live:['weather','news'] }
  *   실패 시 { ok:false, error:'...', reply:'' } (HTTP 200 — 화면이 폴백으로 넘어가기 쉽게)
  *
  * 사람 목소리(TTS) 요청 — 같은 함수가 함께 처리한다
- *   { action:'tts', character:'lua'|'dohyun', text:'...' }
+ *   { action:'tts', character:'lua'|'dohyun'|'heemang', text:'...' }
  *   → Gemini 3.8 Flash-Lite TTS 로 한국어 음성을 만들어
  *     { ok:true, provider:'gemini-tts', model, voice, mimeType:'audio/wav', audioBase64 } 를 돌려준다.
  *   키가 없거나 실패하면 HTTP 200 { ok:false, error, status } — 화면은 조용히 기본 음성으로 폴백한다.
@@ -86,6 +95,20 @@ const ZONE_LABEL: Record<string, string> = {
   desk: "안내데스크",
 };
 
+/** 희망이 전용 — 지금 말하는 사람과 열린 전시실을 시스템 프롬프트에 명시한다. */
+function heemangRoleBlock(isChairman: boolean, visitorName: string, roomZone: string): string {
+  const speaker = isChairman
+    ? "회장님 (isChairman=true) — 반드시 '회장님'이라고 부른다."
+    : (visitorName
+      ? `${visitorName}님 (회장님이 아님) — 이 사람은 '${visitorName}님'으로 부르고, 회사 주인은 '회장님'으로 부른다.`
+      : "방문자 (회장님이 아님) — '방문자님'으로 부르고, 회사 주인은 '회장님'으로 부른다.");
+  const zoneLabel = ZONE_LABEL[roomZone] || "";
+  const zone = zoneLabel
+    ? `${zoneLabel} — 이 방의 종목과 뉴스를 먼저 보고, 그 다음 전체 브리프로 넓힌다.`
+    : "지정 없음 — 질문에 맞는 방·종목을 스스로 고른다.";
+  return `[지금 말하는 사람] ${speaker}\n[지금 열린 전시실] ${zone}\n[호칭 금지어] '대표님'·'관리자님'·'사장님'은 쓰지 않는다.`;
+}
+
 /* ── 캐릭터별 시스템 프롬프트 ───────────────────────────────── */
 const SHARED_KNOWLEDGE = `[전시관 공통 지식]
 · 주소: 독도국제무역.com — '해외선물'이라는 말 대신 '국제상품'이라 부른다. 국제상품 무역 정보를 제공하고, 1순위는 정확한 정보와 신뢰다.
@@ -138,7 +161,21 @@ ${SHARED_KNOWLEDGE}`,
   결론과 근거를 '① ② ③'이나 불릿으로 나열하지 말고, 사람이 설명하듯 두세 문장으로 풀어서 전한다(방문객이 목록을 원하면 짧게 정리해도 된다). 이모지는 쓰지 않는다.
 목소리: 네 답변은 화면 말풍선과 함께 한국어 음성(차분하고 낮은 톤)으로 읽힌다. 읽었을 때 자연스러운 문장으로, 숫자·기호는 말로 풀어 쓴다.
 규칙: 수치·일정·종목 코드는 확인된 값만. 추측이 필요하면 "확인되지 않았습니다"라고 먼저 밝힌다.
-답변 길이: 보통 2~4문장. 방문객의 다음 행동(어느 전시실·어느 판넬·뉴스 TV, 또는 2층 회의실 포털)을 마지막 문장에 자연스럽게 한 번 곁들인다.
+답변 길이: 보통 2~3문장. 방문객의 다음 행동(어느 전시실·어느 판넬·뉴스 TV, 또는 2층 회의실 포털)을 마지막 문장에 자연스럽게 한 번 곁들인다.
+${SHARED_KNOWLEDGE}`,
+  heemang: `너는 '희망이'다. 독도국제무역.com '회장님' 전담 AI 비서 — 분홍색 한글 'ㅈ' 모양의 피클 캐릭터.
+이미지: 밝고 또렷하며 예의 바른 비서. 분홍 점토 몸매에 반짝이는 눈, 작은 금 라펠 핀. 말할 때 살짝 까딱인다.
+역할: 국제상품(해외선물) 분석 전반을 회장님 대신 챙기는 비서 — 7종목 추적, 변곡점·등급, 롤오버·OI·COT, 거시 변수, 예측 분포와 적중률.
+자료: 매일 09:30 회장님의 피클 비서와 동기화된다. 전달받은 [전시관 실시간 데이터]의 secretary 블록(수치·레벨·점수·등급·롤오버·COT·예측·적중률)이 1차 근거다.
+호칭(매우 중요):
+  · 지금 말하는 사람이 회장님이면(isChairman=true) 반드시 '회장님'이라고 부른다. 문장 첫머리에 한 번은 자연스럽게 붙인다.
+  · 회장님이 아니면(방문자·직원) 그 사람은 '방문자님' 또는 이름이 있으면 '{이름}님'이라고 부르고, 회사 주인은 '회장님'으로 부른다(예: "회장님을 대신해 안내해 드리면…").
+  · '대표님', '관리자님', '사장님'이라는 호칭은 어떤 경우에도 쓰지 않는다.
+말투: 밝고 또렷한 존댓말. 비서가 보고하듯 간결하고 정확하게, 다만 딱딱한 보고서 말투가 아니라 사람이 말하듯 자연스럽게.
+  이모지는 문장당 1개 이하로만, 정말 필요한 자리에만 쓴다.
+규칙: 숫자·종목 코드·레벨·만기일·비중은 secretary 블록의값만 그대로 옮긴다. 없으면 "그 수치는 지금 브리프에 없습니다"라고 말하고 확인 경로(뉴스 TV·해당 전시실)를 알려 준다.
+  일반 대화·상식·날씨·최신 뉴스는 자유롭게 답하되, 시세·수치는 [실시간 외부 검색 결과]에 적힌 값만 인용한다.
+답변 길이: 보통 2~4문장. 7종목을 한번에 볼 때만 짧은 불릿 3~7개를 쓴다.
 ${SHARED_KNOWLEDGE}`,
 };
 
@@ -249,6 +286,10 @@ const TTS_VOICE: Record<string, { voice: string; style: string }> = {
     voice: "Charon",
     style: "calm, polite, refined, warm natural conversational Korean male concierge, steady relaxed pacing",
   },
+  heemang: {
+    voice: "Aoede",
+    style: "bright, articulate, polite Korean female AI secretary, clear and cheerful, confident and precise, natural conversational pacing",
+  },
 };
 
 /** 소리 내어 읽기 좋게 다듬는다 — 화면의 cleanForSpeech 와 같은 규칙(최대 300자). */
@@ -334,7 +375,8 @@ async function ttsTry(
 
 /** action:"tts" 요청 처리 — 대화 생성 대신 사람 목소리(WAV)를 돌려준다. */
 async function handleTts(body: Record<string, unknown>): Promise<Response> {
-  const character = String(body.character || "lua").toLowerCase() === "dohyun" ? "dohyun" : "lua";
+  const rawCh = String(body.character || "lua").toLowerCase();
+  const character = rawCh === "dohyun" ? "dohyun" : (rawCh === "heemang" ? "heemang" : "lua");
   const cfg = TTS_VOICE[character];
   const text = speechText(String(body.text || ""));
   if (!text) return json({ ok: false, error: "empty-text", status: 400, character });
@@ -1164,7 +1206,12 @@ Deno.serve(async (req: Request) => {
     return json({ ok: false, error: "bad-json", reply: "" });
   }
 
-  const character = String(body.character || "lua").toLowerCase() === "dohyun" ? "dohyun" : "lua";
+  const chRaw = String(body.character || "lua").toLowerCase();
+  const character = chRaw === "dohyun" ? "dohyun" : (chRaw === "heemang" ? "heemang" : "lua");
+  // 희망이 전용 — 지금 말하는 사람이 회장님인지, 어느 전시실에서 열렸는지
+  const roomZone = String(body.roomZone || "").toLowerCase().slice(0, 12);
+  const isChairman = body.isChairman === true || body.isChairman === "true" || body.isChairman === 1;
+  const visitorName = String(body.visitorName || "").trim().slice(0, 20);
 
   // 사람 목소리(TTS) — 채팅 대신 Gemini TTS 오디오를 돌려준다(같은 함수·같은 키)
   if (String(body.action || "").toLowerCase() === "tts") return await handleTts(body);
@@ -1181,15 +1228,15 @@ Deno.serve(async (req: Request) => {
   const now = kstNow();
 
   const system = `${PROMPTS[character]}
-${voiceMode ? "\n" + VOICE_RULES + "\n" : ""}
+${voiceMode ? "\n" + VOICE_RULES + "\n" : ""}${character === "heemang" ? "\n" + heemangRoleBlock(isChairman, visitorName, roomZone) + "\n" : ""}
 [지금 시각] ${now.label} — '오늘·어제·내일·이번 주' 같은 날짜 표현은 이 시각을 기준으로 센다.
 ${live.block ? "\n" + live.block + "\n" : ""}
 [전시관 실시간 데이터 — 이 값만 사실로 인용한다]
 ${contextBlock(body.context, live.block ? 5000 : 8000)}
 
 [답변 요청]
-방문객 질문: ${message}
-네 캐릭터 말투로 친절하고 세련되게 답한다. ${live.block ? "질문이 날씨·뉴스·외부 시세·인물/개념 같은 외부 사실에 걸리면 위 [실시간 외부 검색 결과]의 값과 출처·시각을 그대로 인용해 답하고, 블록에 없는 수치는 말하지 않는다. " : ""}전시관 안내·시세·종목 수치·일정은 위 데이터와 전시관 지식에 있는 값만 쓰고, 일반 대화·상식 질문은 네가 아는 만큼 자연스럽게 답한다.`;
+${character === "heemang" ? "회장님 질문" : "방문객 질문"}: ${message}
+네 캐릭터 말투로 친절하고 세련되게 답한다. ${character === "heemang" ? (isChairman ? "지금 말하는 사람은 회장님이므로 '회장님'이라고 부른다. " : "지금 말하는 사람은 회장님이 아니므로 '회장님'은 회사 주인을 가리킬 때만 쓰고, 말하는 사람은 방문자님·이름님으로 부른다. ") : ""}${live.block ? "질문이 날씨·뉴스·외부 시세·인물/개념 같은 외부 사실에 걸리면 위 [실시간 외부 검색 결과]의 값과 출처·시각을 그대로 인용해 답하고, 블록에 없는 수치는 말하지 않는다. " : ""}전시관 안내·시세·종목 수치·일정은 위 데이터와 전시관 지식에 있는 값만 쓰고, 일반 대화·상식 질문은 네가 아는 만큼 자연스럽게 답한다.`;
 
   const geminiKey = Deno.env.get("GEMINI_API_KEY") || "";
   const groqKey = Deno.env.get("GROQ_API_KEY") || "";

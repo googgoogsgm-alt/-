@@ -626,6 +626,37 @@
   .dm-pick[data-who="dohyun"].on{border-color:#2b4368;background:#f3f7fd;color:#1d2b45;
     box-shadow:0 4px 14px rgba(29,43,69,.18)}
   .dm-pick[data-who="dohyun"].on .dm-role{color:#4a6187}
+  /* 🩷 희망이 — 분홍 'ㅈ' 피클 비서 */
+  .dm-pick[data-who="heemang"].on{border-color:#f49bb4;background:#fff2f7;color:#a33549;
+    box-shadow:0 4px 14px rgba(244,155,180,.26)}
+  .dm-pick[data-who="heemang"].on .dm-role{color:#c05a75}
+  .dm-pick[data-who="heemang"] .dm-face{filter:saturate(1.1)}
+  /* 👑 회장님 인증 · 수행 모드 — 희망이가 열려 있을 때만 보인다 */
+  #dm-chair{display:none;border:1.4px solid #f0c4d2;background:#fff;cursor:pointer;
+    font-family:inherit;font-size:11px;font-weight:900;color:#a33549;border-radius:999px;padding:5px 10px;
+    align-items:center;gap:4px;white-space:nowrap}
+  #desk-modal.heemang #dm-chair{display:inline-flex}
+  #dm-chair.on{background:#fff2f7;border-color:#f49bb4}
+  #dm-chair-row{display:none;align-items:center;gap:6px;margin:0 0 8px;padding:7px 9px;border-radius:11px;
+    background:#fff4f8;border:1px solid #f6cdd9;flex-wrap:wrap}
+  #dm-chair-row.show{display:flex}
+  #dm-chair-row label{font-size:10.5px;font-weight:900;color:#a33549}
+  #dm-chair-row input{flex:0 0 92px;min-width:0;font-family:inherit;font-size:13px;padding:6px 8px;
+    border:1.4px solid #f0c4d2;border-radius:9px;background:#fff;outline:none}
+  #dm-chair-row button{border:0;cursor:pointer;font-family:inherit;font-size:11px;font-weight:900;
+    color:#fff;background:#e8607a;border-radius:9px;padding:7px 11px}
+  #dm-chair-row .dm-chair-msg{flex:1 1 120px;min-width:0;font-size:10.5px;font-weight:800;color:#a33549;line-height:1.35}
+  /* 희망이 수행 모드 토글 — 관리자 인증 뒤에만 보이는 작은 알약 */
+  #heemang-follow{position:fixed;left:calc(10px + env(safe-area-inset-left));top:46%;z-index:12;display:none;
+    align-items:center;gap:5px;border:1.4px solid #f0c4d2;cursor:pointer;font-family:inherit;font-size:11.5px;
+    font-weight:900;color:#a33549;background:rgba(255,255,255,.94);backdrop-filter:blur(10px);border-radius:999px;
+    padding:7px 11px;box-shadow:0 4px 14px rgba(9,15,28,.16);white-space:nowrap;
+    transform:translateY(-50%)}
+  #heemang-follow.show{display:inline-flex}
+  #heemang-follow.off{color:#6b7688;border-color:#cfd8e6;background:rgba(255,255,255,.9)}
+  body.touch #heemang-follow{font-size:11px;padding:6px 10px;top:42%}
+  #desk-modal.heemang .dm-top{flex-wrap:wrap;gap:5px;justify-content:flex-start}
+  #desk-modal.heemang .dm-top #dm-chair{margin-left:auto}
 
   .dm-log{flex:1 1 auto;min-height:180px;height:auto;max-height:360px;overflow-y:auto;overscroll-behavior:contain;
     display:flex;flex-direction:column;
@@ -961,6 +992,9 @@
 
 <div id="near" role="button" tabindex="0"><span class="k">E</span><span id="near-text">판넬 열기</span></div>
 
+<!-- 🩷 희망이 수행 모드 토글 — 관리자 인증(회장님) 뒤에만 보인다 -->
+<button type="button" id="heemang-follow" title="희망이 수행 모드를 켜거나 잠시 멈춥니다">🩷 희망이 수행 중</button>
+
 <!-- 첫 방문자 대화 시작 안내 — 상단 구역 바 아래, 버튼·캐릭터를 가리지 않는 자리 -->
 <div id="first-visit" role="status" aria-live="polite">
   <span class="fv-ico">👋</span>
@@ -974,6 +1008,7 @@
 <div id="meeting-voice" role="status">
   <span class="mv-ico">🎙️</span>
   <div class="mv-txt"><b>2층 회의실 · 음성 회의</b><span id="mv-msg">마이크를 켜면 이 회의실 사람들과 목소리로 대화합니다.</span></div>
+  <button type="button" id="mv-heemang" title="국제상품·종목·변곡·전망 무엇이든 희망이에게">🩷 희망이 비서</button>
   <button type="button" id="mv-join">마이크 켜기</button>
 </div>
 <!-- 2층 회의실 창밖 — 독도 실시간(동도/서도) · 3D 뷰 · 창밖 소리 전환 (2층에서만 보인다) -->
@@ -1043,9 +1078,16 @@
       <p class="sub" id="dm-sub">독도국제무역 프런트데스크 — 뉴스 TV·전시실·종목·쇼츠·지표까지 바로 안내합니다</p>
       <div class="dm-top">
         <button type="button" class="dm-convo" id="dm-convo" aria-pressed="false" title="켜면 대답이 끝난 뒤 자동으로 다시 듣습니다. 말로 끊고 바로 물어도 됩니다">🗣️ 연속 대화</button>
-        <button type="button" class="dm-voice on" id="dm-voice" aria-pressed="true" title="루아·도현의 목소리 답변을 켜거나 끕니다">🔊 목소리 응답 ON</button>
+        <button type="button" class="dm-voice on" id="dm-voice" aria-pressed="true" title="희망이·루아·도현의 목소리 답변을 켜거나 끕니다">🔊 목소리 응답 ON</button>
         <button type="button" class="dm-voice" id="dm-stop" title="지금 나오는 목소리를 멈춥니다">⏹ 정지</button>
+        <button type="button" id="dm-chair" title="관리자 PIN으로 회장님 인증 · 희망이 수행 모드">👑 회장님 인증</button>
       </div>
+    </div>
+    <div id="dm-chair-row">
+      <label for="dm-chair-pin">관리자 PIN</label>
+      <input id="dm-chair-pin" type="password" inputmode="numeric" autocomplete="off" maxlength="16" placeholder="PIN">
+      <button type="button" id="dm-chair-ok">확인</button>
+      <span class="dm-chair-msg" id="dm-chair-msg">한 번 인증하면 이 브라우저에서 희망이가 회장님을 알아봅니다.</span>
     </div>
     <p class="dm-guide" id="dm-guide">아래 질문 버튼을 누르거나 글을 입력하고 · 🎤 마이크로 말을 걸어 보세요. 목소리로도 답해 드려요.</p>
     <p class="dm-convo-hint" id="dm-convo-hint">대답이 끝나면 자동으로 다시 들어요 · 말 끊고 바로 물으셔도 돼요 · 끝낼 때는 '이제 그만'이라고 말하거나 이 단추를 한 번 더 누르세요</p>
@@ -1055,6 +1097,9 @@
       </button>
       <button type="button" class="dm-pick" id="dm-dohyun" data-who="dohyun" role="tab" aria-selected="false">
         <span class="dm-face">🧑</span><b>도현</b><span class="dm-role">정중·세련</span>
+      </button>
+      <button type="button" class="dm-pick" id="dm-heemang" data-who="heemang" role="tab" aria-selected="false" title="독도국제무역 대표님 전담 AI 비서 · 국제상품 분석">
+        <span class="dm-face">🩷</span><b>희망이</b><span class="dm-role">AI 비서</span>
       </button>
     </div>
     <div class="dm-log" id="dm-log" role="log" aria-live="polite"></div>
@@ -1329,6 +1374,7 @@
 <script>window.__EXHIBITS_FALLBACK__ = /*__EXHIBITS_JSON__*/;</script>
 <script>window.__CATALOG_FALLBACK__ = /*__CATALOG_JSON__*/;</script>
 <script>window.__NEWS_FALLBACK__ = /*__NEWS_JSON__*/;</script>
+<script>window.__SECRETARY_BRIEF_FALLBACK__ = /*__SECRETARY_BRIEF_JSON__*/;</script>
 <script>
 (function () {
   'use strict';
@@ -6078,12 +6124,13 @@
     drawBubble(fig.bubble, name, text);
     fig.bubble.sprite.visible = true;
     fig.bubble.sprite.material.opacity = 1;
-    fig.bubble.sprite.position.y = FIG_BUBBLE_Y;
+    fig.bubble.sprite.position.y = fig.bubbleY || FIG_BUBBLE_Y;
     fig.bubbleState = { t: 0, until: 5.4, text: String(text || ''), name: String(name || '') };
   }
 
   function updateBubbles(dt) {
     var list = [state.fig, HOSTS.lua, HOSTS.dohyun];
+    if (HEEMANG.fig) list.push(HEEMANG.fig);
     Object.keys(visitors).forEach(function (k) { list.push(visitors[k].fig); });
     list.forEach(function (fig) {
       if (!fig || !fig.bubbleState) return;
@@ -6097,7 +6144,7 @@
       }
       var fadeOut = st.t > st.until ? Math.max(0, 1 - (st.t - st.until) / 0.7) : 1;
       b.sprite.material.opacity = fadeOut;
-      b.sprite.position.y = FIG_BUBBLE_Y + Math.min(st.t * 0.09, 0.16);
+      b.sprite.position.y = (fig.bubbleY || FIG_BUBBLE_Y) + Math.min(st.t * 0.09, 0.16);
     });
   }
 
@@ -6247,6 +6294,197 @@
       },
       tag: tag, bubble: bubble, bubbleState: null, name: opts.name || '방문자'
     };
+  }
+
+  /* ══════════════════════════════════════════════════════════════════
+     🩷 피클 마스코트 — 분홍 한글 'ㅈ' 3D 캐릭터
+     ──────────────────────────────────────────────────────────────
+     위 가로획(bar) + 가운데 몸통(torso) + 좌우로 벌어진 두 다리(ㅅ) = 'ㅈ'.
+     부드러운 파스텔 핑크 점토(roughness 0.72) · 반짝이는 눈·눈썹·미소·볼 · 금 라펠 핀.
+     걷을 때 두 다리가 앞뒤로 흔들리고, 서 있을 때는 가볍게 까딱인다.
+     ══════════════════════════════════════════════════════════════════ */
+  var PICKLE_PINK = 0xf49bb4;
+  var PICKLE_GOLD = 0xc9a227;
+
+  function buildPickleMascot(opts) {
+    opts = opts || {};
+    var g = new THREE.Group();
+    var rig = new THREE.Group(); g.add(rig);
+
+    function pMat(color, rough, metal) {
+      return new THREE.MeshStandardMaterial({
+        color: color, roughness: rough == null ? 0.72 : rough, metalness: metal == null ? 0.04 : metal
+      });
+    }
+    var bodyMat = pMat(opts.color != null ? opts.color : PICKLE_PINK, 0.72, 0.04);
+    var bodySoft = pMat(0xffc3d4, 0.78, 0.02);
+    var bodyDeep = pMat(0xe07d9b, 0.74, 0.04);
+    var eyeMat = new THREE.MeshStandardMaterial({ color: 0x2b141d, roughness: 0.34, metalness: 0.02 });
+    var glintMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    var goldMat = new THREE.MeshStandardMaterial({ color: opts.badgeColor != null ? opts.badgeColor : PICKLE_GOLD, roughness: 0.28, metalness: 0.82 });
+    var blushMat = pMat(0xf59ab1, 0.86, 0.0);
+
+    // 바닥 그림자(몸의 바운스는 rig 안에서만)
+    var sh = new THREE.Mesh(new THREE.PlaneGeometry(0.86, 0.86),
+      new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false }));
+    sh.rotation.x = -Math.PI / 2; sh.position.y = 0.012; g.add(sh);
+
+    function ball(rx, ry, rz, m, sx, sy) {
+      var mesh = new THREE.Mesh(new THREE.SphereGeometry(1, sx || 22, sy || 16), m);
+      mesh.scale.set(rx, ry, rz);
+      return mesh;
+    }
+    function cyl(rt, rb, h, m, seg) {
+      return new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, seg || 16), m);
+    }
+
+    // ── 다리: 몸통 아래에서 좌우로 벌어진 'ㅅ' 획 ──
+    var HIP_Y = 0.60;
+    function makeLeg(side) {
+      var pivot = new THREE.Group();
+      pivot.position.set(side * 0.048, HIP_Y, 0);
+      pivot.rotation.z = -side * 0.46;                 // 바깥으로 벌린다
+      var thigh = cyl(0.058, 0.046, 0.56, bodyMat, 14);
+      thigh.position.y = -0.28; pivot.add(thigh);
+      var foot = ball(0.105, 0.058, 0.142, bodySoft);
+      foot.position.set(0, -0.548, 0.026); pivot.add(foot);
+      var toe = ball(0.052, 0.038, 0.042, bodyDeep);
+      toe.position.set(0, -0.552, 0.135); pivot.add(toe);
+      rig.add(pivot);
+      return pivot;
+    }
+    var legL = makeLeg(-1), legR = makeLeg(1);
+
+    // ── 몸통: 가운데 기둥(ㅈ의 세로획) ──
+    var torso = ball(0.180, 0.255, 0.155, bodyMat, 26, 20);
+    torso.position.y = 0.795; rig.add(torso);
+    var belly = ball(0.128, 0.165, 0.068, bodySoft, 22, 16);
+    belly.position.set(0, 0.770, 0.097); rig.add(belly);
+
+    // ── 머리(위 가로획 + 얼굴) — 작게 갸우뚱/고개 돌림 ──
+    var head = new THREE.Group();
+    head.position.y = 0.945;
+    rig.add(head);
+
+    // 'ㅈ'의 위 가로획 — 둥글고 얇은 막대
+    var bar = ball(0.315, 0.060, 0.116, bodyMat, 30, 18);
+    bar.position.y = 0.158;
+    head.add(bar);
+    var barShine = ball(0.255, 0.017, 0.026, new THREE.MeshStandardMaterial({
+      color: 0xffd9e4, roughness: 0.5, metalness: 0.02
+    }), 22, 12);
+    barShine.position.set(0, 0.203, 0.041); head.add(barShine);
+
+    // 눈 — 납작하고 반짝이는 눈 + 흰 점
+    var eyeL = ball(0.034, 0.044, 0.018, eyeMat, 22, 16);
+    eyeL.position.set(-0.055, -0.048, 0.147); eyeL.userData.sy = 0.044;
+    head.add(eyeL);
+    var eyeR = ball(0.034, 0.044, 0.018, eyeMat, 22, 16);
+    eyeR.position.set(0.055, -0.048, 0.147); eyeR.userData.sy = 0.044;
+    head.add(eyeR);
+    var glintL = ball(0.011, 0.011, 0.006, glintMat);
+    glintL.position.set(-0.064, -0.036, 0.158); head.add(glintL);
+    var glintR = ball(0.011, 0.011, 0.006, glintMat);
+    glintR.position.set(0.046, -0.036, 0.158); head.add(glintR);
+
+    // 눈썹 — 짧고 귀여운 호
+    function brow(side) {
+      var b = new THREE.Mesh(new THREE.TorusGeometry(0.040, 0.0075, 8, 16, Math.PI * 0.78), bodyDeep);
+      b.position.set(side * 0.056, 0.016, 0.143);
+      b.rotation.z = side > 0 ? Math.PI + 0.30 : -0.30;
+      head.add(b);
+      return b;
+    }
+    var browL = brow(-1), browR = brow(1);
+
+    // 미소
+    var smile = new THREE.Mesh(new THREE.TorusGeometry(0.044, 0.0085, 8, 18, Math.PI), bodyDeep);
+    smile.position.set(0, -0.112, 0.140);
+    smile.rotation.z = Math.PI;
+    head.add(smile);
+
+    // 볼
+    [-1, 1].forEach(function (s) {
+      var cheek = ball(0.040, 0.024, 0.010, blushMat);
+      cheek.position.set(s * 0.112, -0.098, 0.112);
+      head.add(cheek);
+    });
+
+    // 작은 금 라펠 핀 (가슴 아래)
+    var pin = new THREE.Mesh(new THREE.TorusGeometry(0.019, 0.0065, 8, 16), goldMat);
+    pin.position.set(0.086, 0.665, 0.104);
+    pin.rotation.x = -0.18;
+    rig.add(pin);
+    var pinDot = ball(0.011, 0.011, 0.008, goldMat);
+    pinDot.position.set(0.086, 0.665, 0.110); rig.add(pinDot);
+
+    // 이름표·말풍선 — 키(약 1.17m)에 맞춘 높이
+    var tag = makeNameTag(opts.name || '피클');
+    tag.position.y = 1.32;
+    tag.scale.set(0.84, 0.215, 1);
+    g.add(tag);
+    var bubble = makeBubbleSprite();
+    bubble.sprite.position.y = 2.02;
+    bubble.sprite.scale.set(1.95, 0.98, 1);
+    g.add(bubble.sprite);
+
+    return {
+      group: g,
+      parts: {
+        rig: rig, head: head, bar: bar, legL: legL, legR: legR,
+        eyeL: eyeL, eyeR: eyeR, glintL: glintL, glintR: glintR,
+        browL: browL, browR: browR, smile: smile, pin: pin,
+        t: 0, blink: 0, nextBlink: 2.6, faceYaw: 0, walkPhase: 0
+      },
+      tag: tag, bubble: bubble, bubbleState: null,
+      bubbleY: 2.02, tagY: 1.32,
+      name: opts.name || '피클'
+    };
+  }
+
+  /* 피클 걷기·대기 애니메이션 — speed 는 실제 이동 속도(m/s) */
+  function animatePickle(fig, dt, elapsed, speed) {
+    if (!fig || !fig.parts) return;
+    var p = fig.parts;
+    var moving = clamp(speed / 3.2, 0, 1);
+    p.walkPhase += dt * (2.2 + Math.min(speed, 6) * 1.9);
+    var s1 = Math.sin(p.walkPhase);
+
+    p.legL.rotation.x = -s1 * 0.62 * moving;
+    p.legR.rotation.x = s1 * 0.62 * moving;
+    p.rig.position.y = Math.abs(Math.cos(p.walkPhase)) * 0.055 * moving +
+      Math.sin(elapsed * 1.65) * 0.014 * (1 - moving);
+    p.rig.rotation.z = s1 * 0.05 * moving + Math.sin(elapsed * 1.1) * 0.028 * (1 - moving);
+    p.rig.rotation.x = -0.05 * moving;
+    p.head.rotation.z = -s1 * 0.05 * moving + Math.sin(elapsed * 0.85) * 0.05 * (1 - moving);
+    p.head.rotation.x = Math.sin(elapsed * 1.3) * 0.03 * (1 - moving) + 0.02 * moving;
+
+    // 가까이 오면 회장님·방문객 쪽으로 고개를 살짝 돌린다
+    if (state.avatar) {
+      var dx = state.avatar.position.x - fig.group.position.x;
+      var dz = state.avatar.position.z - fig.group.position.z;
+      var d = Math.hypot(dx, dz);
+      var want = 0;
+      if (d < 4.2) {
+        want = Math.atan2(dx, dz) - fig.group.rotation.y;
+        while (want > Math.PI) want -= Math.PI * 2;
+        while (want < -Math.PI) want += Math.PI * 2;
+        want = clamp(want, -0.38, 0.38);
+      }
+      p.faceYaw = mixTo(p.faceYaw || 0, want, 1 - Math.exp(-4 * dt));
+      p.head.rotation.y = p.faceYaw;
+    }
+
+    // 눈 깜빡임
+    p.t += dt;
+    if (p.blink > 0) p.blink = Math.max(0, p.blink - dt);
+    else if (p.t > p.nextBlink) { p.blink = 0.16; p.t = 0; p.nextBlink = 2.2 + Math.random() * 2.6; }
+    var closed = p.blink > 0 ? Math.sin(Math.PI * (1 - p.blink / 0.16)) : 0;
+    var ey = 1 - 0.9 * closed;
+    p.eyeL.scale.y = p.eyeL.userData.sy * ey;
+    p.eyeR.scale.y = p.eyeR.userData.sy * ey;
+    p.glintL.scale.y = 0.013 * ey;
+    p.glintR.scale.y = 0.013 * ey;
   }
 
   /* ── 인사 제스처: 👋 손 흔들기(wave) · 🙇 꾸벅 인사(bow) ─────────
@@ -7095,6 +7333,7 @@
   function tryOpen(hit) {
     if (!hit) return;
     if (hit.kind === 'desk') openDeskModal(hit.who);
+    else if (hit.kind === 'pickle') openPickle(hit);
     else if (hit.kind === 'portal') portalAct(hit.side);
     else if (hit.kind === 'news-tv') openNewsTV(hit.tv || 'hall');
     else if (hit.kind === 'guestbook') openGuestbook();
@@ -7133,7 +7372,7 @@
 
   function updateNearHint() {
     var el = $('near');
-    if (!state.avatar || state.firstPerson) { el.classList.remove('show'); state.near = null; state.nearPortal = null; return; }
+    if (!state.avatar || state.firstPerson) { el.classList.remove('show'); state.near = null; state.nearPortal = null; state.nearPickle = null; return; }
     var p = state.avatar.position;
     // 🏛️ 2층 회의실에서는 중앙홀 카운터·부스 알약을 띄우지 않고 회의실 포털만 안내한다
     if (state.floor === 2) {
@@ -7187,6 +7426,17 @@
         el.classList.remove('show');
       }
     }
+    // 🩷 피클 비서(희망이·방 안내) — 2.4m 안에 서면 대화 알약
+    var pk = nearestPickle(p);
+    if (pk) {
+      state.nearPickle = pk;
+      state.near = null; state.nearTV = null; state.nearDesk = null; state.nearPortal = null;
+      var ptxt = pk.who === 'heemang' ? '🩷 희망이 · AI 비서와 대화' : '🩷 ' + pk.label + '와 대화';
+      if ($('near-text').textContent !== ptxt) $('near-text').textContent = ptxt;
+      el.classList.add('show');
+      return;
+    }
+    state.nearPickle = null;
     // 📺 뉴스 TV — 지금 있는 방(중앙홀이면 중앙홀 TV)의 화면을 가까이서 바라볼 때 안내 알약
     var tvNear = null;
     var tvId = (myRoom === 'hall') ? 'hall' : myRoom;
@@ -9172,6 +9422,8 @@
     hideOverlay('nick-modal');
     // 닉네임 창을 닫으면 바로 '대화 시작 방법' 안내를 띄운다
     setTimeout(function () { showFirstVisitGuide(); }, 320);
+    // 🩷 회장님은 닉네임 창을 닫자마자 희망이가 알아본다
+    setTimeout(function () { maybeChairmanArrival(); }, 700);
   }
   function maybeOfferNickname() {
     // 저장된 닉네임도 없고, 안내를 닫은 기록도 없는 '처음 들어온' 방문자에게만
@@ -9776,6 +10028,7 @@
       if (document.body.classList.contains('modal-open')) return;
       if (k === 'e' || k === 'enter') {
         if (state.nearPortal) { portalAct(state.nearPortal); e.preventDefault(); return; }
+        if (state.nearPickle) { openPickle(state.nearPickle); e.preventDefault(); return; }
         if (state.nearDesk) { openDeskModal(state.nearDesk.who); e.preventDefault(); return; }
         // 안내 알약이 📺 뉴스 TV 를 가리키고 있으면 E 도 그 화면을 연다
         if (state.nearTV) { openNewsTV(state.nearTV); e.preventDefault(); return; }
@@ -9951,6 +10204,7 @@
     // 안내 알약을 탭하면 그 부스의 가장 가까운 판넬(없으면 첫 칸)을 바로 연다
     $('near').addEventListener('click', function () {
       if (state.nearPortal) { portalAct(state.nearPortal); return; }
+      if (state.nearPickle) { openPickle(state.nearPickle); return; }
       if (state.nearDesk) { openDeskModal(state.nearDesk.who); return; }
       if (state.nearTV) { openNewsTV(state.nearTV); return; }
       var b = state.near;
@@ -10091,6 +10345,7 @@
     updateGreetings();
     updateBubbles(dt);
     updateHosts(dt);      // 프런트데스크 두 캐릭터
+    updateHeemang(dt);    // 🩷 희망이(피클 비서) · 수행 모드
     updateNewsTV(dt);
     updatePortals(dt);    // 회의실 ↔ 중앙홀 포털 링 회전
     updateDokdoVista(dt); // 창밖 동해 물결·선박·갈매기·독도 LIVE(2층에서만)
@@ -10151,6 +10406,433 @@
   };
   var DESK_HINT = '💬 루아·도현을 누르거나 E 키로 대화를 시작하세요';
   var HOSTS = {};              // { lua: fig, dohyun: fig }
+
+  /* ══════════════════════════════════════════════════════════════════
+     🩷 희망이 — 독도국제무역 회장님 전담 AI 비서 (분홍 'ㅈ' 피클)
+     ──────────────────────────────────────────────────────────────
+     · 1층 중앙홀 프런트데스크 옆, 2층에서는 회의실 안에 기본으로 서 있다.
+     · 관리자 PIN 인증(🔐 관리 · 2층 회의실 PIN · 상담 창 👑)을 한 번 하면
+       회장님 수행 모드 — 회장님 곁(뒤 오른쪽 1.35m)을 따라다니며 모든 층을 함께 간다.
+     · PIN 원문은 저장하지 않는다. localStorage 에는 '인증했다'는 표시(1)만 둔다.
+     · 브리프(secretary_brief.json)는 매일 09:30 동기화된 국제상품 분석 데이터다.
+     ══════════════════════════════════════════════════════════════════ */
+  var CHAIRMAN_KEY = 'mg_chairman_verified_v1';
+  var SECRETARY = { data: null };        // { meta, methodology, symbols, zones, forecast_hits, news }
+  var heemangBriefFetched = false;
+
+  function applySecretaryBrief(b) {
+    if (b && b.symbols && b.symbols.length) SECRETARY.data = b;
+    return SECRETARY.data;
+  }
+  function loadSecretaryBrief() {
+    if (heemangBriefFetched) return Promise.resolve(SECRETARY.data);
+    heemangBriefFetched = true;
+    if (location.protocol === 'file:') return Promise.resolve(SECRETARY.data);
+    return fetch('secretary_brief.json', { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (b) { return applySecretaryBrief(b); })
+      .catch(function () { return SECRETARY.data; });
+  }
+
+  var HEEMANG = {
+    id: 'heemang',
+    fig: null, group: null, proxy: null,
+    adminUnlocked: false,      // 관리자 PIN 인증을 한 번이라도 통과했는가
+    isChairman: false,         // 지금 이 방문자가 회장님인가(수행 모드의 기준)
+    following: false,          // 수행 모드 켜짐
+    arrived: false,            // 이번 접속에서 이미 맞이했는가
+    floor: 1,
+    pos: null, yaw: Math.PI, speed: 0,
+    homeHall: { x: 3.7, z: 9.8, ry: Math.PI },
+    home2F: { x: -4.2, z: -2.2, ry: 0.983 }
+  };
+  var ROOM_PICKLES = {};       // { fx: {fig, zone, ...}, ... }
+  var PICKLE_ROOMS = [
+    { zone: 'fx', name: '통화 · 피클 비서', short: '통화' },
+    { zone: 'metals', name: '금속 · 피클 비서', short: '금속' },
+    { zone: 'index', name: '지수 · 피클 비서', short: '지수' },
+    { zone: 'rates', name: '금리 · 피클 비서', short: '금리' },
+    { zone: 'energy', name: '에너지 · 피클 비서', short: '에너지' },
+    { zone: 'ags', name: '농축산물 · 피클 비서', short: '농축산물' }
+  ];
+
+  function heemangHome() {
+    return state.floor === 2 ? HEEMANG.home2F : HEEMANG.homeHall;
+  }
+
+  /* 방문자 뒤 오른쪽 1.35m — 수행 모드의 목표 지점 */
+  function heemangTarget() {
+    var a = state.avatar;
+    if (!a) return { x: 0, z: 4.5 };
+    var ry = a.rotation.y;
+    var fx = Math.sin(ry), fz = Math.cos(ry);
+    var rx = -Math.cos(ry), rz = Math.sin(ry);
+    return {
+      x: a.position.x - fx * 1.25 + rx * 0.42,
+      z: a.position.z - fz * 1.25 + rz * 0.42
+    };
+  }
+
+  function heemangSay(text) {
+    var fig = HEEMANG.fig;
+    if (!fig) return;
+    var s = String(text || '');
+    showBubble(fig, '희망이', s.length > 90 ? s.slice(0, 88) + '…' : s);
+    try { SPEAK.say(s.split('\n')[0], 'heemang'); } catch (e) {}
+  }
+
+  function heemangUpdateChip() {
+    var b = $('heemang-follow');
+    if (b) {
+      b.classList.toggle('show', !!HEEMANG.adminUnlocked);
+      b.classList.toggle('off', !HEEMANG.following);
+      b.textContent = HEEMANG.following ? '🩷 희망이 수행 중' : '🩷 희망이 대기';
+    }
+    var c = $('dm-chair');
+    if (c) {
+      c.classList.toggle('on', !!HEEMANG.isChairman && HEEMANG.following);
+      c.textContent = HEEMANG.isChairman
+        ? (HEEMANG.following ? '🩷 수행 중 · 끄기' : '🩷 수행 시작')
+        : '👑 회장님 인증';
+    }
+  }
+
+  /* 희망이를 지금 층의 목표 지점에 바로 세운다(층 이동·첫 등장) */
+  function heemangSnapTo(x, z) {
+    if (!HEEMANG.fig) return;
+    HEEMANG.pos.set(x, state.floorY, z);
+    HEEMANG.fig.group.position.copy(HEEMANG.pos);
+  }
+
+  /* 회장님 맞이 — 중앙홀 입구(z=4.5)에 나타나 곧바로 곁으로 걸어온다 */
+  function heemangArrival(reason) {
+    if (!HEEMANG.fig) return;
+    var a = state.avatar;
+    if (state.floor === 1) {
+      var sx = a ? clamp(a.position.x + 2.3, HALL.x0 + 1.2, HALL.x1 - 1.2) : 2.3;
+      heemangSnapTo(sx, 4.5);
+    } else {
+      var t = heemangTarget();
+      heemangSnapTo(t.x + 1.2, t.z + 1.2);
+    }
+    HEEMANG.yaw = Math.atan2((a ? a.position.x : 0) - HEEMANG.pos.x,
+                             (a ? a.position.z : 4.5) - HEEMANG.pos.z);
+    HEEMANG.fig.group.rotation.y = HEEMANG.yaw;
+    HEEMANG.following = true;
+    heemangUpdateChip();
+    heemangSay('회장님, 오셨습니까! 바로 곁에서 수행하겠습니다.');
+    toast('🩷 희망이 — 회장님, 오셨습니까! 바로 곁에서 수행하겠습니다', 4200);
+    HEEMANG.arrived = true;
+  }
+
+  /* 관리자 PIN 통과 → 회장님 인증 · 수행 모드 */
+  function heemangChairmanOn(opts) {
+    opts = opts || {};
+    var first = !HEEMANG.isChairman;
+    HEEMANG.adminUnlocked = true;
+    HEEMANG.isChairman = true;
+    HEEMANG.following = true;
+    try { localStorage.setItem(CHAIRMAN_KEY, '1'); } catch (e) {}
+    heemangUpdateChip();
+    if (first || opts.arrive) {
+      heemangArrival(opts.via || 'pin');
+    } else {
+      heemangSay('회장님, 수행 모드를 다시 켰습니다.');
+    }
+    return true;
+  }
+
+  function heemangToggleFollow(force) {
+    var want = (force == null) ? !HEEMANG.following : !!force;
+    HEEMANG.following = want;
+    heemangUpdateChip();
+    heemangSay(want ? '회장님, 다시 곁에서 수행하겠습니다.' : '회장님, 여기서 대기하겠습니다.');
+    toast(want ? '🩷 희망이 수행 모드 켜짐' : '🩷 희망이 잠시 대기', 2200);
+  }
+
+  function chairmanRemembered() {
+    try { return localStorage.getItem(CHAIRMAN_KEY) === '1'; } catch (e) { return false; }
+  }
+
+  /* 접속 직후 — 이 브라우저에서 한 번 인증한 적이 있으면 곧바로 알아본다 */
+  function maybeChairmanArrival() {
+    if (HEEMANG.arrived || !HEEMANG.fig) return false;
+    if (!chairmanRemembered()) return false;
+    HEEMANG.adminUnlocked = true;
+    HEEMANG.isChairman = true;
+    HEEMANG.following = true;
+    heemangUpdateChip();
+    heemangArrival('memory');
+    return true;
+  }
+
+  /* 가까운 피클 비서 찾기 — 2.4m 안 */
+  function nearestPickle(p) {
+    var best = null, bestD = 2.4;
+    if (HEEMANG.fig) {
+      var hd = Math.hypot(p.x - HEEMANG.fig.group.position.x, p.z - HEEMANG.fig.group.position.z);
+      if (hd < bestD) { bestD = hd; best = { kind: 'pickle', who: 'heemang', zone: '', label: '희망이 · AI 비서' }; }
+    }
+    for (var id in ROOM_PICKLES) {
+      var it = ROOM_PICKLES[id];
+      if (!it || !it.fig) continue;
+      var d = Math.hypot(p.x - it.fig.group.position.x, p.z - it.fig.group.position.z);
+      if (d < bestD) { bestD = d; best = { kind: 'pickle', who: 'room', zone: id, label: it.name }; }
+    }
+    return best;
+  }
+
+  function openPickle(hit) {
+    if (!hit) return;
+    if (hit.who === 'heemang') openHeemang('');
+    else openHeemang(hit.zone || '');
+  }
+
+  /* ── 3D 배치 ─────────────────────────────────────── */
+  function buildHeemang() {
+    var fig = buildPickleMascot({ name: '희망이 · AI 비서', scale: 1, badgeColor: PICKLE_GOLD });
+    fig.group.scale.set(1.0, 1.0, 1.0);
+    HEEMANG.fig = fig;
+    HEEMANG.group = fig.group;
+    HEEMANG.pos = new THREE.Vector3(HEEMANG.homeHall.x, 0, HEEMANG.homeHall.z);
+    fig.group.position.copy(HEEMANG.pos);
+    fig.group.rotation.y = HEEMANG.homeHall.ry;
+    state.scene.add(fig.group);
+
+    // 누르기용 보이지 않는 프록시(길을 막지 않는다 — 충돌체를 넣지 않는다)
+    var proxy = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 1.5, 10),
+      new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }));
+    proxy.userData.hit = { kind: 'pickle', who: 'heemang', zone: '' };
+    fig.group.add(proxy);
+    proxy.position.y = 0.78;
+    HEEMANG.proxy = proxy;
+    state.pickable.push(proxy);
+  }
+
+  /* 문 밖 1.25m · 문 중심축에서 1.55m (중앙홀을 바라보는 사람 기준 오른쪽) */
+  function roomDoorSpot(r) {
+    var out = { x: -r.inward.x, z: -r.inward.z };
+    var right = { x: -out.z, z: out.x };
+    var ax = (r.door.axis === 'z') ? { x: r.door.at, z: r.door.c } : { x: r.door.c, z: r.door.at };
+    return {
+      x: ax.x + out.x * 1.25 + right.x * 1.55,
+      z: ax.z + out.z * 1.25 + right.z * 1.55,
+      ry: Math.atan2(out.x, out.z)
+    };
+  }
+
+  function buildPickleGuides() {
+    ROOMS.forEach(function (r) {
+      var meta = null;
+      for (var i = 0; i < PICKLE_ROOMS.length; i++) if (PICKLE_ROOMS[i].zone === r.zone) meta = PICKLE_ROOMS[i];
+      if (!meta) return;
+      var spot = roomDoorSpot(r);
+      var fig = buildPickleMascot({ name: meta.name, scale: 0.88, badgeColor: PICKLE_GOLD });
+      fig.group.scale.set(0.88, 0.88, 0.88);
+      fig.group.position.set(spot.x, 0, spot.z);
+      fig.group.rotation.y = spot.ry;
+      state.scene.add(fig.group);
+      var proxy = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.38, 1.35, 10),
+        new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }));
+      proxy.userData.hit = { kind: 'pickle', who: 'room', zone: r.zone };
+      proxy.position.y = 0.7;
+      fig.group.add(proxy);
+      state.pickable.push(proxy);
+      ROOM_PICKLES[r.zone] = { fig: fig, zone: r.zone, name: meta.name, short: meta.short, baseYaw: spot.ry };
+    });
+  }
+
+  /* ── 매 프레임: 수행 모드 이동 + 대기 자세 ── */
+  function updateHeemang(dt) {
+    var h = HEEMANG;
+    if (!h.fig || !h.pos) return;
+    var y = state.floorY;
+
+    // 층이 바뀌면 — 수행 중이면 회장님 뒤로, 아니면 그 층의 기본 자리로
+    if (h.floor !== state.floor) {
+      h.floor = state.floor;
+      if (h.following && state.avatar) {
+        var t0 = heemangTarget();
+        h.pos.set(t0.x, y, t0.z);
+      } else {
+        var hm = heemangHome();
+        h.pos.set(hm.x, y, hm.z);
+        h.yaw = hm.ry;
+      }
+    }
+
+    var speed = 0;
+    if (h.following && state.avatar) {
+      var t = heemangTarget();
+      var dx = t.x - h.pos.x, dz = t.z - h.pos.z;
+      var dist = Math.hypot(dx, dz);
+      if (dist > 0.32) {
+        // 회장님보다 조금 더 빠르게 — 걷기(4.6)·빠른 걷기(7.6) 모두 따라잡는다
+        var avSpeed = state.speedSmooth || 0;
+        var want = Math.min(8.0, Math.max(4.9, avSpeed * 1.25 + 1.2) + dist * 1.6);
+        var step = Math.min(dist, want * dt);
+        var pt = new THREE.Vector3(h.pos.x + (dx / dist) * step, y, h.pos.z + (dz / dist) * step);
+        pushOutOfColliders(pt);
+        speed = Math.hypot(pt.x - h.pos.x, pt.z - h.pos.z) / Math.max(dt, 0.0001);
+        h.pos.x = pt.x; h.pos.z = pt.z;
+        var ty = Math.atan2(dx, dz);
+        var diff = ((ty - h.yaw + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI;
+        h.yaw += diff * Math.min(1, dt * 7);
+      } else if (state.avatar) {
+        // 도착 — 회장님 곁에서 회장님이 보는 쪽을 함께 본다
+        var face = state.avatar.rotation.y;
+        var d2 = ((face - h.yaw + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI;
+        h.yaw += d2 * Math.min(1, dt * 4.5);
+      }
+    } else {
+      // 대기 — 기본 자리에서 방문객 쪽을 살짝 바라본다
+      var hm2 = heemangHome();
+      var hdx = hm2.x - h.pos.x, hdz = hm2.z - h.pos.z;
+      if (!h.adminUnlocked && Math.hypot(hdx, hdz) > 0.35) {
+        h.pos.x += hdx * Math.min(1, dt * 1.6);
+        h.pos.z += hdz * Math.min(1, dt * 1.6);
+        h.yaw = Math.atan2(hdx, hdz);
+      }
+    }
+
+    h.fig.group.position.set(h.pos.x, y, h.pos.z);
+    h.fig.group.rotation.y = h.yaw;
+    animatePickle(h.fig, dt, state.elapsed + 1.3, speed);
+
+    // 방 피클 — 가볍게 까딱이며 서 있다
+    for (var id in ROOM_PICKLES) {
+      var it = ROOM_PICKLES[id];
+      if (!it || !it.fig) continue;
+      it.fig.group.rotation.y = it.baseYaw + Math.sin(state.elapsed * 0.7 + id.length) * 0.10;
+      animatePickle(it.fig, dt, state.elapsed + id.length, 0);
+    }
+  }
+
+  /* ── 희망이 대화용 브리프(compact) — AI context 에 넣는다 ── */
+  function heemangBriefContext() {
+    var b = SECRETARY.data;
+    if (!b) return null;
+    var syms = (b.symbols || []).map(function (s) {
+      var sc = s.score || {};
+      var shortName = String(s.name || s.code).split(' (')[0];
+      var lv = (s.levels || []).slice(0, 2).map(function (l) { return l.name + ' ' + l.value; }).join('·');
+      var st = s.stops || {};
+      var ind = s.indicators || {};
+      var o = {
+        code: s.code, name: shortName, zone: s.zone,
+        price: s.price, chg: s.change_pct,
+        grade: sc.grade, hp: !!sc.high_purity, buy: sc.buy, sell: sc.sell,
+        levels: lv,
+        stop: st.long_invalidation != null ? st.long_invalidation : null,
+        contract: (s.rollover && s.rollover.active) || s.active_contract,
+        next: (s.rollover && s.rollover.next) || s.next_contract,
+        remain: s.rollover ? s.rollover.remaining_trading_days : null,
+        oi: s.oi_rollover ? s.oi_rollover.next_oi_share_pct : null,
+        oi_regime: String((s.oi_rollover && s.oi_rollover.regime) || '').slice(0, 40),
+        cot: s.cot ? s.cot.index_pct : null,
+        rsi: ind.rsi14 != null ? ind.rsi14 : null,
+        cci: ind.cci90 != null ? ind.cci90 : null,
+        sig: (s.signals || []).slice(0, 2).map(function (x) { return String(x).split(' (')[0]; }),
+        risk: (s.risks || []).slice(0, 1).map(function (x) { return String(x).split(' (')[0]; })
+      };
+      var fc = (s.forecast || {}).forecast || {};
+      if (fc['1개월']) o.f1m = { p50: fc['1개월'].P50, up: fc['1개월'].up_pct };
+      var bt = (s.forecast || {}).backtest || {};
+      if (bt['1개월']) o.hit1m = bt['1개월'].dir_pct;
+      if (bt['6개월']) o.hit6m = bt['6개월'].dir_pct;
+      return o;
+    });
+    var zones = {};
+    for (var z in (b.zones || {})) {
+      var zz = b.zones[z];
+      zones[z] = {
+        name: zz.name,
+        sym: (zz.symbols || []).map(function (x) { return x.code; }).join(',')
+      };
+    }
+    return {
+      updated: (b.meta || {}).inflection_at || (b.meta || {}).news_updated || '',
+      owner: '회장님', assistant: '희망이',
+      horizon: '1~6개월 스윙',
+      rules: [
+        'MACD 12·130·9', 'CCI 90 ±100', 'RSI 14', '이동평균 20/60/120/200일',
+        '일봉 20·60일 · 주봉 12·26주 스윕', 'CFTC COT 52주', 'DXY 20일 역상관 확인 +1점',
+        'v2.1 2단 구조 3.0점 이상 일반 변곡 + ★ 고순도',
+        '역효과 차단 GC=F 매도 34.3% · ZN=F 매수 43.8%',
+        '4종 특화 ZW/ZC · 3-2-1 크랙 · NG/HO · 6S WILLCO',
+        '야후 롤오버 거래량 가드 · OI·만기 롤오버·FND/LTD',
+        'Walk-Forward 55% 미만 구간 관망'
+      ],
+      symbols: syms,
+      zones: zones,
+      news_updated: (b.meta || {}).news_updated || '',
+      hall_news: ((b.news || {}).hall || []).slice(0, 3).map(function (n) {
+        return n.headline + (n.price ? ' ' + n.price : '');
+      })
+    };
+  }
+
+  /* 브리프가 없을 때도 희망이가 답할 수 있는 기본 문법 */
+  function heemangLocalAnswer(q) {
+    var b = SECRETARY.data;
+    var text = String(q || '');
+    var low = text.toLowerCase();
+    var zone = DESK_CHAT.roomZone || deskZoneGuess(low);
+    var addr = heemangAddress();
+    if (!b) {
+      return { reply: addr + ', 아직 오늘 브리프를 받지 못했습니다. 매일 09:30 동기화되면 7종목 분석과 시장 뉴스로 바로 답해 드리겠습니다.', moves: zone ? [{ zone: zone, ticker: '', label: deskZoneName(zone) + '로 이동' }] : null };
+    }
+    var syms = b.symbols || [];
+    var wantsAll = /7\s*종목|일곱|전체|전 종목|모두|전체\s*브리프|브리프\s*(전체|다)|요약/.test(text);
+    var hit = null;
+    for (var i = 0; !wantsAll && i < syms.length; i++) {
+      var s = syms[i];
+      var nm = String(s.name || '');
+      var code = String(s.code || '').toLowerCase();
+      if ((nm && text.indexOf(nm.split(' ')[0]) >= 0) || (code && low.indexOf(code) >= 0)) { hit = s; break; }
+    }
+    if (!hit && zone && !wantsAll) {
+      var zs = syms.filter(function (x) { return x.zone === zone; });
+      if (zs.length === 1) hit = zs[0];
+    }
+    if (hit) {
+      var sc = hit.score || {};
+      var lv = (hit.levels || []).map(function (l) { return l.name + ' ' + l.value; }).join(' · ');
+      var st = hit.stops || {};
+      var stopTxt = Object.keys(st).map(function (k) { return (k === 'long_invalidation' ? '매수 무효화' : '매도 무효화') + ' ' + st[k]; }).join(' · ');
+      var oi = hit.oi_rollover || {};
+      var lines = [
+        hit.name + '(' + hit.code + ') — ' + (hit.price != null ? hit.price : '-') + (hit.change_pct != null ? ' (' + (hit.change_pct > 0 ? '+' : '') + hit.change_pct + '%)' : ''),
+        '변곡: ' + (sc.grade || '중립') + (sc.high_purity ? ' · ★ 고순도' : '') + ' · 점수 매수 ' + (sc.buy != null ? sc.buy : '-') + ' / 매도 ' + (sc.sell != null ? sc.sell : '-') + ' (기준 ' + (sc.threshold != null ? sc.threshold : 3) + '점)',
+        lv ? '수평선: ' + lv : '',
+        stopTxt ? '무효화선: ' + stopTxt : '',
+        oi.next_oi_share_pct != null ? '롤오버: ' + oi.next_contract + ' OI ' + oi.next_oi_share_pct + '%' + (hit.rollover && hit.rollover.remaining_trading_days != null ? ' · 잔존 ' + hit.rollover.remaining_trading_days + '거래일' : '') : '',
+        (hit.signals && hit.signals.length) ? '신호: ' + hit.signals.slice(0, 2).join(' / ') : ''
+      ].filter(function (x) { return !!x; });
+      return { reply: lines.join('\n'), moves: hit.zone ? [{ zone: hit.zone, ticker: '', label: deskZoneName(hit.zone) + '로 이동' }] : null };
+    }
+    if (zone && !wantsAll) {
+      var z = (b.zones || {})[zone] || {};
+      var zs2 = syms.filter(function (x) { return x.zone === zone; });
+      var news = (z.news || []).slice(0, 2).map(function (n) { return '📰 ' + n.headline + (n.price ? ' — ' + n.price : ''); });
+      return {
+        reply: (z.name || deskZoneName(zone)) + ' 방 브리프입니다.\n' +
+          zs2.map(function (x) { return '· ' + x.name + '(' + x.code + ') — ' + (x.price != null ? x.price : '-') + ' · ' + ((x.score || {}).grade || '중립'); }).join('\n') +
+          (news.length ? '\n' + news.join('\n') : ''),
+        moves: [{ zone: zone, ticker: '', label: deskZoneName(zone) + '로 이동' }]
+      };
+    }
+    if (/지표|macd|cci|rsi|cot|oi|롤오버|만기|변곡|스윕|고순도|관망/.test(low)) {
+      return { reply: addr + ', 저희 분석 체계는 이렇습니다.\n· MACD 12·130·9 · CCI 90 ±100 · RSI 14\n· 이동평균 20/60/120/200일 · 일봉 20·60일 / 주봉 12·26주 스윕\n· CFTC COT 52주 · DXY 20일 역상관 확인 +1점\n· v2.1 2단 구조 — 3.0점 이상 일반 변곡, 그중 ★ 고순도 변곡\n· 역효과 차단(GC=F 매도 34.3% · ZN=F 매수 43.8%) · 4종 특화 필터\n· Walk-Forward 적중률 55% 미만 구간은 관망', moves: null };
+    }
+    var rows = syms.slice(0, 7).map(function (x) {
+      return '· ' + x.name + ' — ' + (x.price != null ? x.price : '-') + ' · ' + ((x.score || {}).grade || '중립') + (x.score && x.score.high_purity ? ' ★' : '');
+    });
+    return {
+      reply: addr + ', ' + ((b.meta || {}).inflection_at || '오늘 09:30') + ' 기준 7종목 브리프입니다.\n' + rows.join('\n'),
+      moves: null
+    };
+  }
 
   /* 따뜻한 조명 느낌의 바닥 빛 웅덩이 텍스처 */
   var _warmGlowTex = null;
@@ -10764,6 +11446,7 @@
 
   /* 답변이 나오면 그 캐릭터가 3D 말풍선 + 가벼운 제스처로 반응한다 */
   function hostSay(who, text) {
+    if (who === 'heemang') { heemangSay(text); return; }
     var fig = HOSTS[who];
     if (!fig) return;
     var short = String(text || '').replace(/\s+/g, ' ').trim();
@@ -10777,7 +11460,8 @@
      ══════════════════════════════════════════════════════════════════ */
   var DESK_CHAT = {
     who: 'lua',
-    log: { lua: [], dohyun: [] },
+    log: { lua: [], dohyun: [], heemang: [] },
+    roomZone: '',             // 희망이를 방 입구 피클에서 열었을 때 그 방(zone)
     busy: false,
     mode: 'local',            // 'ai' = 실시간 두뇌 연결 · 'local' = 내장 안내
     provider: '', model: '',
@@ -10941,8 +11625,31 @@
     };
     if (!ctx.catalog.length) delete ctx.catalog;
 
+    // 🩷 희망이 — 매일 09:30 동기화된 국제상품 브리프 + 회장님 여부
+    if (DESK_CHAT.who === 'heemang') {
+      var sbCtx = heemangBriefContext();
+      if (sbCtx) ctx.secretary = sbCtx;
+      ctx.heemang = {
+        roomZone: DESK_CHAT.roomZone || '',
+        isChairman: !!HEEMANG.isChairman,
+        visitorName: ownName()
+      };
+    }
+
     // 안전장치 — 5,500자를 넘으면 방별 뉴스 → 카탈로그 → 종목 상세 순으로 덜어 낸다.
-    var steps = [
+    var steps = [];
+    if (DESK_CHAT.who === 'heemang') {
+      // 희망이는 브리프가 우선 — 잡다한 목록부터 줄인다
+      steps = steps.concat([
+        function (c) { delete c.catalog; },
+        function (c) { delete c.news.rooms; },
+        function (c) { c.exhibits.related = []; },
+        function (c) { c.news.hall = c.news.hall.slice(0, 3); },
+        function (c) { if (c.secretary) delete c.secretary.zones; },
+        function (c) { if (c.secretary) c.secretary.symbols = c.secretary.symbols.slice(0, 4); }
+      ]);
+    }
+    steps = steps.concat([
       function (c) {   // 물어본 방 뉴스만 남긴다
         var keep = {};
         if (zoneHit && c.news.rooms[zoneHit]) keep[zoneHit] = c.news.rooms[zoneHit];
@@ -10959,7 +11666,7 @@
       function (c) {
         c.exhibits.zones.forEach(function (z) { z.list = z.list.split(', ').slice(0, 3).join(', '); });
       }
-    ];
+    ]);
     for (var i = 0; i < steps.length && JSON.stringify(ctx).length > DESK_CTX_MAX; i++) steps[i](ctx);
     return ctx;
   }
@@ -10986,6 +11693,7 @@
     var nb = deskNewsBundle();
     var n = nb.hall.items.length;
     var when = nb.hall.updated_label || nb.hall.updated || '오늘 09:30';
+    if (who === 'heemang') return heemangGreeting(DESK_CHAT.roomZone);
     if (who === 'lua') {
       return '안녕하세요! 저는 프런트데스크 안내원 루아예요 😊\n' +
         '뉴스 TV는 ' + when + ' 기준 ' + n + '건으로 준비되어 있어요. 전시실·종목·쇼츠·지표, 무엇이든 물어보세요!';
@@ -10994,21 +11702,72 @@
       '현재 뉴스 TV는 ' + when + ' 기준 ' + n + '건이 게시되어 있습니다. 전시관 안내·종목 정보·쇼츠·매매 지표 중 궁금하신 것을 말씀해 주십시오.';
   }
 
+  function heemangAddress() { return HEEMANG.isChairman ? '회장님' : '방문자님'; }
+
+  /* 방 입구 피클에서 열면 그 방(zone)에 맞춘 인사말 */
+  function heemangGreeting(zone) {
+    var b = SECRETARY.data;
+    var when = (b && ((b.meta || {}).inflection_at || (b.meta || {}).news_updated)) || '오늘 09:30';
+    var who = heemangAddress();
+    if (!zone) {
+      return who + ', 희망이입니다. ' + when + ' 동기화된 국제상품 브리프로 바로 답해 드리겠습니다.\n' +
+        '7종목 변곡·롤오버·COT·예측 적중률까지 무엇이든 물어보세요.';
+    }
+    var z = (b && b.zones && b.zones[zone]) || null;
+    var nm = (z && z.name) || deskZoneName(zone);
+    var syms = z ? (z.symbols || []).map(function (x) { return x.name; }).slice(0, 3).join(' · ') : '';
+    return who + ', ' + nm + ' 방 피클 비서 희망이입니다. ' + (syms ? syms + ' 관련 ' : '') +
+      '변곡·레벨·롤오버·뉴스 무엇이든 물어보세요.';
+  }
+
   function deskChips(who) {
+    if (who === 'heemang') {
+      var z = DESK_CHAT.roomZone;
+      if (z) {
+        var zn = deskZoneName(z);
+        return [zn + ' 핵심 종목 어때?', zn + ' 뉴스 요약', '변곡점·레벨 점검', '롤오버·OI 점검'];
+      }
+      return ['오늘 7종목 브리프', '골드 지금 어때?', '변곡점·고순도 점검', '롤오버·OI·COT'];
+    }
     var base = ['오늘 핵심 시장 뉴스', '전시실·종목 안내', '쇼츠 추천해 줘', '매매 지표(MACD·CCI) 설명'];
     return base;
   }
 
   function renderDeskWho() {
-    ['lua', 'dohyun'].forEach(function (w) {
+    ['lua', 'dohyun', 'heemang'].forEach(function (w) {
       var b = $('dm-' + w);
       if (b) { b.classList.toggle('on', DESK_CHAT.who === w); b.setAttribute('aria-selected', DESK_CHAT.who === w ? 'true' : 'false'); }
     });
     var chip = $('dm-chip');
     if (chip) {
-      chip.textContent = DESK_CHAT.who === 'lua' ? '👧 루아 · 안내' : '🧑 도현 · 컨시어지';
-      chip.style.background = DESK_CHAT.who === 'lua' ? '#e8607a' : '#2b4368';
+      if (DESK_CHAT.who === 'heemang') {
+        var zid = DESK_CHAT.roomZone;
+        var zz = (SECRETARY.data && SECRETARY.data.zones ? SECRETARY.data.zones[zid] : null) || null;
+        chip.textContent = zid
+          ? '🩷 ' + ((zz && zz.name) || deskZoneName(zid)) + ' · 피클 비서'
+          : '🩷 희망이 · AI 비서';
+        chip.style.background = '#e8607a';
+      } else {
+        chip.textContent = DESK_CHAT.who === 'lua' ? '👧 루아 · 안내' : '🧑 도현 · 컨시어지';
+        chip.style.background = DESK_CHAT.who === 'lua' ? '#e8607a' : '#2b4368';
+      }
     }
+    var box = $('desk-modal');
+    if (box) box.classList.toggle('heemang', DESK_CHAT.who === 'heemang');
+    // 제목·부제도 담당에 맞춰 바꾼다
+    var h2 = $('dm-title'), sub = $('dm-sub');
+    if (DESK_CHAT.who === 'heemang') {
+      var zid2 = DESK_CHAT.roomZone;
+      var zn2 = zid2 ? (((SECRETARY.data && SECRETARY.data.zones && SECRETARY.data.zones[zid2]) || {}).name || deskZoneName(zid2)) : '';
+      if (h2) h2.textContent = zn2 ? zn2 + ' 전시실 · 희망이 피클 비서' : '국제상품 분석, 희망이에게 물어보세요';
+      if (sub) sub.textContent = zn2
+        ? zn2 + ' 방 종목 · 변곡 · 롤오버 · 뉴스까지 바로 답해 드립니다'
+        : '회장님 전담 AI 비서 · 매일 09:30 동기화 · 7종목 변곡·롤오버·COT·예측 적중률';
+    } else if (h2 && sub) {
+      h2.textContent = '프런트데스크에 무엇이든 물어보세요';
+      sub.textContent = '독도국제무역 프런트데스크 — 뉴스 TV·전시실·종목·쇼츠·지표까지 바로 안내합니다';
+    }
+    heemangUpdateChip();
   }
 
   function renderDeskBadge() {
@@ -11029,10 +11788,11 @@
     if (!box) return;
     var who = DESK_CHAT.who;
     var rows = DESK_CHAT.log[who];
+    var av = who === 'heemang' ? '🩷' : (who === 'lua' ? '👧' : '🧑');
     var html = '';
     rows.forEach(function (r, i) {
       var me = r.role !== 'host';
-      var av = me ? '' : '<span class="dm-av">' + (who === 'lua' ? '👧' : '🧑') + '</span>';
+      var avatar = me ? '' : '<span class="dm-av">' + av + '</span>';
       var moves = '';
       if (r.moves && r.moves.length) {
         moves = '<div class="dm-mv">' + r.moves.map(function (m, k) {
@@ -11043,11 +11803,11 @@
       if (!me) {
         body += '<div><button type="button" class="dm-say" data-say="' + i + '">🔊 다시 듣기</button></div>';
       }
-      html += '<div class="dm-row' + (me ? ' me' : '') + '">' + av +
+      html += '<div class="dm-row' + (me ? ' me' : '') + '">' + avatar +
         '<div class="dm-bub">' + body + '</div></div>';
     });
     if (DESK_CHAT.busy) {
-      html += '<div class="dm-row"><span class="dm-av">' + (who === 'lua' ? '👧' : '🧑') +
+      html += '<div class="dm-row"><span class="dm-av">' + av +
         '</span><div class="dm-bub dm-typing"><i></i><i></i><i></i> 답변을 준비하고 있어요</div></div>';
     }
     box.innerHTML = html;
@@ -11061,7 +11821,7 @@
   }
 
   function openDeskModal(who) {
-    if (who === 'lua' || who === 'dohyun') DESK_CHAT.who = who;
+    if (who === 'lua' || who === 'dohyun' || who === 'heemang') DESK_CHAT.who = who;
     hideFirstVisitGuide(true);       // 첫 방문 안내는 대화를 시작하면 역할을 다했다
     if (!DESK_CHAT.log[DESK_CHAT.who].length) {
       DESK_CHAT.log[DESK_CHAT.who].push({ role: 'host', text: deskGreeting(DESK_CHAT.who), moves: null });
@@ -11074,10 +11834,53 @@
     showOverlay('desk-modal');
     var inp = $('dm-text');
     if (inp && !document.body.classList.contains('touch')) { try { inp.focus({ preventScroll: true }); } catch (e) {} }
-    hostGesture(DESK_CHAT.who, DESK_CHAT.who === 'lua' ? 'wave' : 'nod');
+    if (DESK_CHAT.who !== 'heemang') hostGesture(DESK_CHAT.who, DESK_CHAT.who === 'lua' ? 'wave' : 'nod');
     // 인사도 목소리로 — 첫 터치 전이면 대기했다가 터치 직후 재생된다
     var first = DESK_CHAT.log[DESK_CHAT.who][0];
     if (first && first.role === 'host') SPEAK.say(first.text.split('\n')[0], DESK_CHAT.who);
+  }
+
+  /* 방 입구 피클·희망이를 눌렀을 때 — 희망이 모드(방 지정 가능)로 상담 창 */
+  function openHeemang(zone) {
+    DESK_CHAT.roomZone = zone || '';
+    DESK_CHAT.who = 'heemang';
+    if (!DESK_CHAT.log.heemang.length) {
+      DESK_CHAT.log.heemang.push({ role: 'host', text: heemangGreeting(DESK_CHAT.roomZone), moves: null });
+    }
+    openDeskModal('heemang');
+    if (HEEMANG.fig) {
+      var adr = heemangAddress();
+      showBubble(HEEMANG.fig, '희망이', zone
+        ? adr + ', ' + deskZoneName(zone) + ' 방 브리프를 준비했습니다.'
+        : adr + ', 말씀하세요. 바로 답해 드리겠습니다.');
+    }
+  }
+
+  /* 👑 상담 창 안에서 관리자 PIN으로 회장님 인증 — PIN 원문은 저장하지 않는다 */
+  function chairPinSubmit() {
+    var msg = $('dm-chair-msg');
+    function say(t, err) {
+      if (!msg) return;
+      msg.textContent = t;
+      msg.style.color = err ? '#b4453a' : '#0d5a34';
+    }
+    var pin = String(($('dm-chair-pin') && $('dm-chair-pin').value) || '').trim();
+    if (pin.length < 4) { say('관리자 PIN을 4자 이상 입력해 주세요.', true); return; }
+    if (!PANELS.online()) { say('회장님 인증은 라이브 사이트 주소에서 동작합니다.', true); return; }
+    say('관리자 PIN 확인 중…', false);
+    STAFF.checkPin(pin).then(function (r) {
+      var inp = $('dm-chair-pin');
+      if (inp) inp.value = '';                    // PIN 원문은 화면·저장소에 남기지 않는다
+      if (!r || !r.ok) {
+        say((r && r.error === 'net') ? 'PIN 확인 서버에 연결하지 못했습니다.' : '관리자 PIN이 맞지 않습니다.', true);
+        return;
+      }
+      say('회장님 인증 완료 · 희망이 수행 모드를 켰습니다.', false);
+      var row = $('dm-chair-row');
+      if (row) row.classList.remove('show');
+      heemangChairmanOn({ via: 'desk' });
+      renderDeskWho();
+    }).catch(function () { say('PIN 확인 서버에 연결하지 못했습니다.', true); });
   }
 
   function closeDeskModal() {
@@ -11159,14 +11962,15 @@
   }
 
   function switchDeskWho(who) {
-    if (who !== 'lua' && who !== 'dohyun') return;
+    if (who !== 'lua' && who !== 'dohyun' && who !== 'heemang') return;
     if (DESK_CHAT.who === who) return;
     DESK_CHAT.who = who;
+    if (who === 'heemang') DESK_CHAT.roomZone = '';   // 캐릭터 알약으로 직접 고르면 방 지정 없음
     if (!DESK_CHAT.log[who].length) {
       DESK_CHAT.log[who].push({ role: 'host', text: deskGreeting(who), moves: null });
     }
     renderDeskWho(); renderDeskBadge(); renderDeskLog(); renderDeskChips();
-    hostGesture(who, who === 'lua' ? 'wave' : 'nod');
+    if (who !== 'heemang') hostGesture(who, who === 'lua' ? 'wave' : 'nod');
     var first = DESK_CHAT.log[who][0];
     if (first && first.role === 'host') SPEAK.say(first.text.split('\n')[0], who);
   }
@@ -11237,6 +12041,11 @@
     var cfg = deskCfg();
     var body = { character: who, message: q, history: history, context: ctx };
     if (fromVoice) body.voiceMode = true;      // 짧고 자연스러운 구어체 답변을 요청
+    if (who === 'heemang') {
+      body.roomZone = DESK_CHAT.roomZone || '';
+      body.isChairman = !!HEEMANG.isChairman;
+      body.visitorName = ownName();
+    }
     var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
     var timer = setTimeout(function () { if (ctrl) try { ctrl.abort(); } catch (e) {} }, 25000);
     return fetch(url, {
@@ -11254,6 +12063,10 @@
       return r.json();
     }).then(function (d) {
       if (!d || d.ok !== true) return { ok: false, error: (d && (d.error || d.detail)) || 'not-ready' };
+      // 배포된 함수가 아직 희망이를 모르면(캐릭터가 lua로 되돌아옴) 내장 브리프로 답한다
+      if (who === 'heemang' && d.character && String(d.character).toLowerCase() !== 'heemang') {
+        return { ok: false, error: 'character-unsupported' };
+      }
       var reply = String(d.reply || '').trim();
       // 배포된 Edge Function 버전에 따라 <<MOVE:metals>> 토큰이 답변에 그대로 남는다.
       // 화면에서는 토큰을 걷어내고 이동 버튼으로 바꿔 준다(음성으로 읽힐 때도 토큰이 나가지 않게).
@@ -11295,6 +12108,7 @@
   /* ── 내장 지식 응답기(Edge Function 이 없거나 실패할 때) ──────────
      뉴스 TV 7개 피드 · 34개 종목 스펙 · 604편 카탈로그 · 지표 지식으로 답한다. */
   function localDeskAnswer(who, q) {
+    if (who === 'heemang') return heemangLocalAnswer(q);
     var text = String(q || '');
     var low = text.toLowerCase();
     var nb = deskNewsBundle();
@@ -11519,8 +12333,30 @@
     $('desk-modal').addEventListener('click', function (e) {
       if (e.target === $('desk-modal') && performance.now() - state.modalOpenedAt > 400) closeDeskModal();
     });
-    ['lua', 'dohyun'].forEach(function (w) {
-      $('dm-' + w).addEventListener('click', function () { switchDeskWho(w); });
+    ['lua', 'dohyun', 'heemang'].forEach(function (w) {
+      var el = $('dm-' + w);
+      if (el) el.addEventListener('click', function () { switchDeskWho(w); });
+    });
+    // 👑 회장님 인증 · 수행 모드 토글 (희망이 상담 중)
+    var chair = $('dm-chair');
+    if (chair) chair.addEventListener('click', function () {
+      if (HEEMANG.isChairman) { heemangToggleFollow(); renderDeskWho(); return; }
+      var row = $('dm-chair-row');
+      if (row) row.classList.toggle('show');
+      var pin = $('dm-chair-pin');
+      if (pin && row && row.classList.contains('show')) { try { pin.focus(); } catch (e) {} }
+    });
+    var chairOk = $('dm-chair-ok');
+    if (chairOk) chairOk.addEventListener('click', chairPinSubmit);
+    var chairPin = $('dm-chair-pin');
+    if (chairPin) chairPin.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); chairPinSubmit(); }
+    });
+    var hf = $('heemang-follow');
+    if (hf) hf.addEventListener('click', function () {
+      if (!HEEMANG.adminUnlocked) return;
+      heemangToggleFollow();
+      renderDeskWho();
     });
     $('dm-chips').addEventListener('click', function (e) {
       var b = e.target.closest ? e.target.closest('button[data-q]') : null;
@@ -12419,6 +13255,8 @@
       if (inp) inp.value = '';
       adminMsg('');
       loadAdminStats();
+      // 🩷 관리자 PIN 통과 = 회장님 인증 → 희망이 수행 모드
+      heemangChairmanOn({ via: 'admin' });
     }).catch(function (e) {
       adminMsg(STAFF.isMissing(e)
         ? '관리자 PIN 확인 기능이 DB에 없습니다(supabase_setup.sql).'
@@ -12585,6 +13423,8 @@
     if (gf) gf.addEventListener('submit', function (e) { e.preventDefault(); DOKDO_LIVE.armGesture(); submitGate(); });
     var gm = $('gate-manage');
     if (gm) gm.addEventListener('click', function () { openStaffAdmin(); });
+    var mh = $('mv-heemang');
+    if (mh) mh.addEventListener('click', function () { openHeemang(''); });
     var ge = $('gate-admin-enter');
     if (ge) ge.addEventListener('click', function () {
       var pr = $('gate-pinrow');
@@ -12603,6 +13443,7 @@
       STAFF.checkPin(pin).then(function (r) {
         if (r.ok) {
           STAFF.pin = pin;
+          heemangChairmanOn({ via: 'meeting' });   // 🩷 회장님 인증 → 희망이 수행
           enterMeetingRoom({ name: '관리자', grade: 'A', admin: true });
         } else if (r.error === 'net') {
           gateMsg('PIN 확인 서버에 연결하지 못했습니다.', 'err');
@@ -12630,6 +13471,7 @@
           return;
         }
         STAFF.pin = pin;
+        heemangChairmanOn({ via: 'staff' });          // 🩷 회장님 인증 → 희망이 수행
         $('st-body').classList.remove('hidden');
         $('st-pinrow').classList.add('hidden');
         loadStaffList();
@@ -12836,6 +13678,8 @@
     buildMeetingRoom();     // 2층 회의실 + 회의실/중앙홀 포털(1층 중앙홀 위 FLOOR2_Y)
     buildMeetingLounge();   // 12석 테이블·의자 — 2층 회의실 가운데로 옮겼다
     buildFrontDesk();     // 중앙 프런트데스크 + 루아·도현
+    buildHeemang();       // 🩷 희망이 — 분홍 'ㅈ' 피클 AI 비서
+    buildPickleGuides();  // 6개 전시실 문 앞 피클 비서
     buildAvatar();
     bindInput();
     bindEditor();
@@ -12857,6 +13701,12 @@
       applyNewsData(n);
       NEWS_ROOM_IDS.forEach(function (id) { initNewsTV(NEWS_TVS[id]); });
       updateDeskMonitor();
+    });
+
+    // 🩷 희망이 브리프 — 내장값으로 먼저 두고, 서버 파일(secretary_brief.json)을 읽으면 그것으로 바꾼다
+    applySecretaryBrief(window.__SECRETARY_BRIEF_FALLBACK__);
+    loadSecretaryBrief().then(function () {
+      if (DESK_CHAT.who === 'heemang') { renderDeskWho(); renderDeskChips(); }
     });
 
     loadData().then(function (data) {
@@ -12884,6 +13734,8 @@
       });
       // 첫 방문자에게 대화 시작 방법을 한 번 안내(닉네임 창이 떠 있으면 닫은 뒤에)
       setTimeout(function () { if (!state.nickOpen) showFirstVisitGuide(); }, 1500);
+      // 🩷 이 브라우저에서 한 번 회장님 인증을 했으면 — 중앙홀에서 바로 알아보고 곁으로 온다
+      setTimeout(function () { maybeChairmanArrival(); }, 900);
       window.__gallery = {
         state: state,
         data: data,
@@ -12914,6 +13766,32 @@
           context: buildDeskContext, local: localDeskAnswer, near: function () { return state.nearDesk; },
           group: function () { return state.deskGroup; }, monitor: function () { return state.deskMonitor; },
           gesture: hostGesture, say: hostSay, refreshMonitor: updateDeskMonitor
+        },
+        // 🩷 희망이 — 검증·디버그용(상태·위치·브리프·수행 모드)
+        heemang: {
+          obj: HEEMANG, pickles: ROOM_PICKLES, open: openHeemang,
+          chairman: function (via) { return heemangChairmanOn({ via: via || 'api' }); },
+          follow: heemangToggleFollow, say: heemangSay,
+          target: heemangTarget, blocked: blockedAt,
+          brief: function () { return SECRETARY.data; },
+          context: heemangBriefContext,
+          local: heemangLocalAnswer,
+          remembered: chairmanRemembered,
+          pos: function () {
+            var g = HEEMANG.fig && HEEMANG.fig.group;
+            return g ? { x: +g.position.x.toFixed(2), y: +g.position.y.toFixed(2), z: +g.position.z.toFixed(2), ry: +g.rotation.y.toFixed(2) } : null;
+          },
+          tag: function () { return HEEMANG.fig && HEEMANG.fig.tag ? HEEMANG.fig.tag.userData.label : ''; },
+          bubble: function () {
+            var b = HEEMANG.fig && HEEMANG.fig.bubble;
+            return b && b.sprite.visible ? { text: (HEEMANG.fig.bubbleState || {}).text || '', y: +b.sprite.position.y.toFixed(2) } : null;
+          },
+          state: function () {
+            return { adminUnlocked: HEEMANG.adminUnlocked, isChairman: HEEMANG.isChairman,
+                     following: HEEMANG.following, arrived: HEEMANG.arrived, floor: HEEMANG.floor,
+                     chip: ($('heemang-follow') ? $('heemang-follow').textContent : ''),
+                     chipShown: ($('heemang-follow') ? $('heemang-follow').classList.contains('show') : false) };
+          }
         },
         HALL: HALL,
         ROOMS: ROOMS,
