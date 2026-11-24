@@ -7,13 +7,27 @@
    "url": "https://www.youtube.com/@%EC%9E%AC%EB%A1%B1%EB%91%A5%EC%9D%B4-r4y",
    "channel_id": "UCyicBXHBc9G3BFqokbRVUGA"
   },
-  "generated": "2026-11-23 09:36 KST",
+  "generated": "2026-11-24 09:34 KST",
   "source": "live",
-  "total": 606,
+  "total": 608,
   "excluded_songs": 110,
   "note": "노래 쇼츠는 빼고 모았습니다. 편집 화면의 '전체 영상' 목록으로 쓰입니다."
  },
  "videos": [
+  {
+   "id": "PU96GbqXWVs",
+   "title": "독도국제무역 회사 방문 1.카카오툭 재롱둥이 프로필에서 2. 유튜브 재롱둥이 머니 쇼츠에서",
+   "date": "2026-11-23",
+   "kind": "shorts",
+   "matched_ticker": "dokdo"
+  },
+  {
+   "id": "GSEmdRJwj68",
+   "title": "항생 오늘의 전망",
+   "date": "2026-11-23",
+   "kind": "shorts",
+   "matched_ticker": null
+  },
   {
    "id": "ffC3604a_ZQ",
    "title": "독도국제무역.com 회의실 오픈",
@@ -66,14 +80,14 @@
   {
    "id": "4JoKISPgKNw",
    "title": "오일 오늘의 전망",
-   "date": "2026-11-05",
+   "date": "",
    "kind": "shorts",
    "matched_ticker": "oil"
   },
   {
    "id": "tGeS_9vj3sI",
    "title": "미국채10년물 오늘의 전망",
-   "date": "2026-11-04",
+   "date": "",
    "kind": "shorts",
    "matched_ticker": "zn"
   },
@@ -405,20 +419,6 @@
    "date": "",
    "kind": "shorts",
    "matched_ticker": "es"
-  },
-  {
-   "id": "4M84VL0_tsI",
-   "title": "옥수수 오늘의 전망 ~ 가격 폭발 언제까지?",
-   "date": "",
-   "kind": "shorts",
-   "matched_ticker": "corn"
-  },
-  {
-   "id": "xQ1iMia38sY",
-   "title": "돈육 오늘의 전망 ~ 가격 급등 신호",
-   "date": "",
-   "kind": "shorts",
-   "matched_ticker": "hogs"
   },
   {
    "id": "GgXaKhZGvZw",
@@ -946,6 +946,20 @@
    "matched_ticker": null
   },
   {
+   "id": "4M84VL0_tsI",
+   "title": "옥수수 오늘의 전망 ~ 가격 폭발 언제까지?",
+   "date": "",
+   "kind": "shorts",
+   "matched_ticker": "corn"
+  },
+  {
+   "id": "xQ1iMia38sY",
+   "title": "돈육 오늘의 전망 ~ 가격 급등 신호",
+   "date": "",
+   "kind": "shorts",
+   "matched_ticker": "hogs"
+  },
+  {
    "id": "ecDnwI_eaZI",
    "title": "미국채10년물 오늘의 전망 ~ 가격 상승 가능 할까?",
    "date": "",
@@ -1200,20 +1214,6 @@
   {
    "id": "hy_H3T5jViw",
    "title": "부르지마",
-   "date": "",
-   "kind": "shorts",
-   "matched_ticker": null
-  },
-  {
-   "id": "YyfniXWUHqw",
-   "title": "캐나다달러 거래로 돈벌기",
-   "date": "",
-   "kind": "shorts",
-   "matched_ticker": "cad"
-  },
-  {
-   "id": "eHoEkP9vkCA",
-   "title": "하늘만보면",
    "date": "",
    "kind": "shorts",
    "matched_ticker": null
@@ -1632,6 +1632,20 @@
    "matched_ticker": null
   },
   {
+   "id": "YyfniXWUHqw",
+   "title": "캐나다달러 거래로 돈벌기",
+   "date": "",
+   "kind": "shorts",
+   "matched_ticker": "cad"
+  },
+  {
+   "id": "eHoEkP9vkCA",
+   "title": "하늘만보면",
+   "date": "",
+   "kind": "shorts",
+   "matched_ticker": null
+  },
+  {
    "id": "gU0UwS_veXU",
    "title": "마이크로소프트 추세",
    "date": "",
@@ -1903,20 +1917,6 @@
    "date": "",
    "kind": "shorts",
    "matched_ticker": "soy"
-  },
-  {
-   "id": "Q_0CwV6Auwk",
-   "title": "옥수수 결국 폭등 신호 떴다",
-   "date": "",
-   "kind": "shorts",
-   "matched_ticker": "corn"
-  },
-  {
-   "id": "wdLfhaLvEdI",
-   "title": "바다에누워",
-   "date": "",
-   "kind": "shorts",
-   "matched_ticker": null
   },
   {
    "id": "0gFyZGWhmwc",
@@ -2388,6 +2388,20 @@
    "matched_ticker": null
   },
   {
+   "id": "Q_0CwV6Auwk",
+   "title": "옥수수 결국 폭등 신호 떴다",
+   "date": "",
+   "kind": "shorts",
+   "matched_ticker": "corn"
+  },
+  {
+   "id": "wdLfhaLvEdI",
+   "title": "바다에누워",
+   "date": "",
+   "kind": "shorts",
+   "matched_ticker": null
+  },
+  {
    "id": "bQhG9cLsQlo",
    "title": "대두 가격 폭등",
    "date": "",
@@ -2585,20 +2599,6 @@
   },
   {
    "id": "syoxRIPFInk",
-   "title": "독도국제무역.com",
-   "date": "",
-   "kind": "shorts",
-   "matched_ticker": "dokdo"
-  },
-  {
-   "id": "v7oY6z3Wq40",
-   "title": "독도국제무역.com",
-   "date": "",
-   "kind": "shorts",
-   "matched_ticker": "dokdo"
-  },
-  {
-   "id": "jfzGvOM_6EU",
    "title": "독도국제무역.com",
    "date": "",
    "kind": "shorts",
@@ -3060,6 +3060,20 @@
    "matched_ticker": "dokdo"
   },
   {
+   "id": "v7oY6z3Wq40",
+   "title": "독도국제무역.com",
+   "date": "",
+   "kind": "shorts",
+   "matched_ticker": "dokdo"
+  },
+  {
+   "id": "jfzGvOM_6EU",
+   "title": "독도국제무역.com",
+   "date": "",
+   "kind": "shorts",
+   "matched_ticker": "dokdo"
+  },
+  {
    "id": "Ldk8QGrBq_4",
    "title": "독도국제무역.com",
    "date": "",
@@ -3320,13 +3334,6 @@
   },
   {
    "id": "01upNOiFqCU",
-   "title": "독도국제무역.com",
-   "date": "",
-   "kind": "shorts",
-   "matched_ticker": "dokdo"
-  },
-  {
-   "id": "7K58BRDXtMw",
    "title": "독도국제무역.com",
    "date": "",
    "kind": "shorts",
@@ -3683,6 +3690,13 @@
    "matched_ticker": "dokdo"
   },
   {
+   "id": "7K58BRDXtMw",
+   "title": "독도국제무역.com",
+   "date": "",
+   "kind": "shorts",
+   "matched_ticker": "dokdo"
+  },
+  {
    "id": "uk4fd-mBsvg",
    "title": "독도국제무역.com",
    "date": "",
@@ -3873,20 +3887,6 @@
   },
   {
    "id": "wottpzjBOyU",
-   "title": "독도국제무역.com",
-   "date": "",
-   "kind": "shorts",
-   "matched_ticker": "dokdo"
-  },
-  {
-   "id": "-XwDmrM9UiE",
-   "title": "독도국제무역.com",
-   "date": "",
-   "kind": "shorts",
-   "matched_ticker": "dokdo"
-  },
-  {
-   "id": "bKzmUQTUrvc",
    "title": "독도국제무역.com",
    "date": "",
    "kind": "shorts",
@@ -4111,6 +4111,20 @@
   },
   {
    "id": "9wOeX7DdlI8",
+   "title": "독도국제무역.com",
+   "date": "",
+   "kind": "shorts",
+   "matched_ticker": "dokdo"
+  },
+  {
+   "id": "-XwDmrM9UiE",
+   "title": "독도국제무역.com",
+   "date": "",
+   "kind": "shorts",
+   "matched_ticker": "dokdo"
+  },
+  {
+   "id": "bKzmUQTUrvc",
    "title": "독도국제무역.com",
    "date": "",
    "kind": "shorts",

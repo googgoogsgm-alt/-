@@ -8,7 +8,7 @@
       "url": "https://www.youtube.com/@%EC%9E%AC%EB%A1%B1%EB%91%A5%EC%9D%B4-r4y",
       "channel_id": "UCyicBXHBc9G3BFqokbRVUGA"
     },
-    "updated": "2026-11-22",
+    "updated": "2026-11-24",
     "stage": "2단계 · 온라인 실시간 연결 (Supabase)",
     "panels_per_ticker": 5,
     "realtime": {
@@ -19,7 +19,7 @@
     },
     "disclaimer": "전시된 정보는 계약 스펙·체크 포인트 정리이며, 실시간 시세나 매매 권유가 아닙니다.",
     "last_sync": "2026-11-21 13:44 KST",
-    "last_slot1_sync": "2026-11-22 15:18 KST",
+    "last_slot1_sync": "2026-11-24 09:34 KST",
     "slot1_auto": true
   },
   "zones": [
@@ -127,7 +127,7 @@
       "auto_slot": {
         "id": "vFeCy1PsEq0",
         "title": "유로화 오늘의 전망",
-        "updated": "2026-11-22",
+        "updated": "2026-11-24",
         "mode": "auto"
       }
     },
@@ -186,7 +186,7 @@
       "auto_slot": {
         "id": "aAcHsixywi8",
         "title": "스위스프랑 오늘의 전망",
-        "updated": "2026-11-22",
+        "updated": "2026-11-24",
         "mode": "auto"
       }
     },
@@ -243,9 +243,8 @@
       "auto_slot": {
         "id": "_-MaEK-dGMU",
         "title": "캐나다달러 오늘의 전망",
-        "updated": "2026-11-22",
-        "mode": "auto",
-        "previous": "1VtKo2UmzUo"
+        "updated": "2026-11-24",
+        "mode": "auto"
       }
     },
     {
@@ -301,9 +300,8 @@
       "auto_slot": {
         "id": "uHvjFMkv8mQ",
         "title": "호주달라 손절가 진입가로 올려 원금 보존",
-        "updated": "2026-11-22",
-        "mode": "auto",
-        "previous": "2SHVcsb33SI"
+        "updated": "2026-11-24",
+        "mode": "auto"
       }
     },
     {
@@ -335,7 +333,7 @@
       "auto_slot": {
         "id": "MT6zgFUzyg0",
         "title": "엔화 오늘의 전망 ~ 엔화급등 무슨일이?",
-        "updated": "2026-11-22",
+        "updated": "2026-11-24",
         "mode": "auto"
       }
     },
@@ -412,9 +410,8 @@
       "auto_slot": {
         "id": "UEMh2UQhaS8",
         "title": "S&P500 오늘의 전망 ~ 10년물 금리5%대",
-        "updated": "2026-11-22",
-        "mode": "auto",
-        "previous": "W3JgCkoHKoU"
+        "updated": "2026-11-24",
+        "mode": "auto"
       }
     },
     {
@@ -446,7 +443,7 @@
       "auto_slot": {
         "id": "G2qZ3KKZHZA",
         "title": "나스닥 매도중",
-        "updated": "2026-11-22",
+        "updated": "2026-11-24",
         "mode": "auto"
       }
     },
@@ -511,7 +508,7 @@
       "auto_slot": {
         "id": "YRSDkfAemdY",
         "title": "항생지수 오늘의 전망",
-        "updated": "2026-11-22",
+        "updated": "2026-11-24",
         "mode": "auto"
       }
     },
@@ -588,7 +585,7 @@
       "auto_slot": {
         "id": "tGeS_9vj3sI",
         "title": "미국채10년물 오늘의 전망",
-        "updated": "2026-11-04",
+        "updated": "2026-11-24",
         "mode": "auto"
       }
     },
@@ -705,9 +702,8 @@
       "auto_slot": {
         "id": "6RNO0cmUfLc",
         "title": "골드 오늘의 전망 ~ 앞으로 추가 상승 할까?",
-        "updated": "2026-11-22",
-        "mode": "auto",
-        "previous": "QsjR8opJsXc"
+        "updated": "2026-11-24",
+        "mode": "auto"
       }
     },
     {
@@ -861,8 +857,7 @@
         "id": "BaSe8o6IBV4",
         "title": "오일 오늘의 전망",
         "updated": "2026-11-10",
-        "mode": "auto",
-        "previous": "Hjfpv_UyF14"
+        "mode": "auto"
       }
     },
     {
@@ -914,7 +909,7 @@
       "auto_slot": {
         "id": "ZGN9l5jAnkg",
         "title": "천연가스 매매 수익 테스트",
-        "updated": "2026-11-22",
+        "updated": "2026-11-24",
         "mode": "auto"
       }
     },
@@ -987,7 +982,7 @@
       "auto_slot": {
         "id": "FqooNIPz-PI",
         "title": "밀 오늘의 전망",
-        "updated": "2026-11-22",
+        "updated": "2026-11-24",
         "mode": "auto"
       }
     },
@@ -1045,8 +1040,7 @@
         "id": "B6jXANCbsAY",
         "title": "대두 오늘의 전망",
         "updated": "2026-11-09",
-        "mode": "auto",
-        "previous": "bQhG9cLsQlo"
+        "mode": "auto"
       }
     },
     {
@@ -1122,9 +1116,8 @@
       "auto_slot": {
         "id": "4M84VL0_tsI",
         "title": "옥수수 오늘의 전망 ~ 가격 폭발 언제까지?",
-        "updated": "2026-11-22",
-        "mode": "auto",
-        "previous": "mWn_XC-gnNY"
+        "updated": "2026-11-24",
+        "mode": "auto"
       }
     },
     {
@@ -1168,7 +1161,7 @@
       "auto_slot": {
         "id": "4mrLrVKzWu8",
         "title": "돈육 매매 손익 테스트",
-        "updated": "2026-11-22",
+        "updated": "2026-11-24",
         "mode": "auto"
       }
     },
@@ -1231,10 +1224,10 @@
       ],
       "videos": [
         {
-          "id": "ffC3604a_ZQ",
-          "title": "독도국제무역.com 회의실 오픈",
+          "id": "PU96GbqXWVs",
+          "title": "독도국제무역 회사 방문 1.카카오툭 재롱둥이 프로필에서 2. 유튜브 재롱둥이 머니 쇼츠에서",
           "kind": "shorts",
-          "date": "2026-11-21"
+          "date": "2026-11-23"
         },
         {
           "id": "m-5rRiiWKOQ",
@@ -1262,11 +1255,11 @@
         }
       ],
       "auto_slot": {
-        "id": "ffC3604a_ZQ",
-        "title": "독도국제무역.com 회의실 오픈",
-        "updated": "2026-11-21",
+        "id": "PU96GbqXWVs",
+        "title": "독도국제무역 회사 방문 1.카카오툭 재롱둥이 프로필에서 2. 유튜브 재롱둥이 머니 쇼츠에서",
+        "updated": "2026-11-23",
         "mode": "auto",
-        "previous": "URMP0uyz448"
+        "previous": "ffC3604a_ZQ"
       }
     },
     {
