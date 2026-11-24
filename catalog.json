@@ -7,13 +7,20 @@
    "url": "https://www.youtube.com/@%EC%9E%AC%EB%A1%B1%EB%91%A5%EC%9D%B4-r4y",
    "channel_id": "UCyicBXHBc9G3BFqokbRVUGA"
   },
-  "generated": "2026-11-24 09:34 KST",
+  "generated": "2026-11-25 00:51 KST",
   "source": "live",
-  "total": 608,
+  "total": 609,
   "excluded_songs": 110,
   "note": "노래 쇼츠는 빼고 모았습니다. 편집 화면의 '전체 영상' 목록으로 쓰입니다."
  },
  "videos": [
+  {
+   "id": "Y2UmzF06BBk",
+   "title": "밀 오늘의 전망",
+   "date": "2026-11-24",
+   "kind": "shorts",
+   "matched_ticker": "wheat"
+  },
   {
    "id": "PU96GbqXWVs",
    "title": "독도국제무역 회사 방문 1.카카오툭 재롱둥이 프로필에서 2. 유튜브 재롱둥이 머니 쇼츠에서",
@@ -73,7 +80,7 @@
   {
    "id": "Vss7wNTxLck",
    "title": "독도버스내 독도국제무역.com에서 인턴사원을 모집합니다",
-   "date": "2026-11-07",
+   "date": "",
    "kind": "shorts",
    "matched_ticker": "recruit"
   },
@@ -412,13 +419,6 @@
    "date": "",
    "kind": "shorts",
    "matched_ticker": "oil"
-  },
-  {
-   "id": "gnPcvH2G2v0",
-   "title": "S&P500 오늘의 전망 ~ 지금 방향이 바뀐다?",
-   "date": "",
-   "kind": "shorts",
-   "matched_ticker": "es"
   },
   {
    "id": "GgXaKhZGvZw",
@@ -946,6 +946,13 @@
    "matched_ticker": null
   },
   {
+   "id": "gnPcvH2G2v0",
+   "title": "S&P500 오늘의 전망 ~ 지금 방향이 바뀐다?",
+   "date": "",
+   "kind": "shorts",
+   "matched_ticker": "es"
+  },
+  {
    "id": "4M84VL0_tsI",
    "title": "옥수수 오늘의 전망 ~ 가격 폭발 언제까지?",
    "date": "",
@@ -1210,13 +1217,6 @@
    "date": "",
    "kind": "shorts",
    "matched_ticker": "gold"
-  },
-  {
-   "id": "hy_H3T5jViw",
-   "title": "부르지마",
-   "date": "",
-   "kind": "shorts",
-   "matched_ticker": null
   },
   {
    "id": "8zel43hJZv0",
@@ -1632,6 +1632,13 @@
    "matched_ticker": null
   },
   {
+   "id": "hy_H3T5jViw",
+   "title": "부르지마",
+   "date": "",
+   "kind": "shorts",
+   "matched_ticker": null
+  },
+  {
    "id": "YyfniXWUHqw",
    "title": "캐나다달러 거래로 돈벌기",
    "date": "",
@@ -1910,13 +1917,6 @@
    "date": "",
    "kind": "shorts",
    "matched_ticker": null
-  },
-  {
-   "id": "uGxM_IVxt7c",
-   "title": "대두 거래로 돈벌기 ..   대두  떡상 언제까지",
-   "date": "",
-   "kind": "shorts",
-   "matched_ticker": "soy"
   },
   {
    "id": "0gFyZGWhmwc",
@@ -2388,6 +2388,13 @@
    "matched_ticker": null
   },
   {
+   "id": "uGxM_IVxt7c",
+   "title": "대두 거래로 돈벌기 ..   대두  떡상 언제까지",
+   "date": "",
+   "kind": "shorts",
+   "matched_ticker": "soy"
+  },
+  {
    "id": "Q_0CwV6Auwk",
    "title": "옥수수 결국 폭등 신호 떴다",
    "date": "",
@@ -2592,13 +2599,6 @@
   },
   {
    "id": "VuET1P8OKQQ",
-   "title": "독도국제무역.com",
-   "date": "",
-   "kind": "shorts",
-   "matched_ticker": "dokdo"
-  },
-  {
-   "id": "syoxRIPFInk",
    "title": "독도국제무역.com",
    "date": "",
    "kind": "shorts",
@@ -3060,6 +3060,13 @@
    "matched_ticker": "dokdo"
   },
   {
+   "id": "syoxRIPFInk",
+   "title": "독도국제무역.com",
+   "date": "",
+   "kind": "shorts",
+   "matched_ticker": "dokdo"
+  },
+  {
    "id": "v7oY6z3Wq40",
    "title": "독도국제무역.com",
    "date": "",
@@ -3333,13 +3340,6 @@
    "matched_ticker": "dokdo"
   },
   {
-   "id": "01upNOiFqCU",
-   "title": "독도국제무역.com",
-   "date": "",
-   "kind": "shorts",
-   "matched_ticker": "dokdo"
-  },
-  {
    "id": "vuT71IPi2AM",
    "title": "독도국제무역.com",
    "date": "",
@@ -3362,6 +3362,13 @@
   },
   {
    "id": "T2p_S85WeRA",
+   "title": "독도국제무역.com",
+   "date": "",
+   "kind": "shorts",
+   "matched_ticker": "dokdo"
+  },
+  {
+   "id": "01upNOiFqCU",
    "title": "독도국제무역.com",
    "date": "",
    "kind": "shorts",
