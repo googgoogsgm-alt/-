@@ -10752,11 +10752,11 @@
     h.fig.group.rotation.y = h.yaw;
     animatePickle(h.fig, dt, state.elapsed + 1.3, speed);
 
-    // 🩷 가까이 오면 먼저 인사한다 — 앉아서 기다리지만 않게 (25초 쿨다운)
+    // 🩷 가까이 오면 먼저 인사한다 — 앉아서 기다리지만 않게 (반경 5.5m · 15초 쿨다운)
     if (state.avatar && !h.fig.bubbleState) {
       var aP = state.avatar.position;
       var nearH = Math.hypot(aP.x - h.pos.x, aP.z - h.pos.z);
-      if (nearH < 3.8 && state.elapsed - (h.lastGreetAt == null ? -1e9 : h.lastGreetAt) > 25) {
+      if (nearH < 5.5 && state.elapsed - (h.lastGreetAt == null ? -1e9 : h.lastGreetAt) > 15) {
         h.lastGreetAt = state.elapsed;
         h.fig.parts.emote = { kind: 'wave', t: 0, dur: 2.2 };
         showBubble(h.fig, '희망이', HEEMANG.isChairman
@@ -10765,7 +10765,7 @@
       }
     }
 
-    // 방 피클 — 가까이 오면 그 방을 소개하며 손을 흔든다(피클마다 25초 쿨다운)
+    // 방 피클 — 문 앞 6.5m 부터 그 방을 소개하며 손을 흔든다(피클마다 12초 쿨다운 · 9.5m 밖으로 나가면 초기화)
     var avP = state.avatar ? state.avatar.position : null;
     for (var id in ROOM_PICKLES) {
       var it = ROOM_PICKLES[id];
@@ -10774,14 +10774,20 @@
         var rdx = avP.x - it.fig.group.position.x;
         var rdz = avP.z - it.fig.group.position.z;
         var rd = Math.hypot(rdx, rdz);
-        if (rd < 3.8 && !it.fig.bubbleState && state.elapsed - (it.lastGreetAt == null ? -1e9 : it.lastGreetAt) > 25) {
+        if (rd > 9.5) it.lastGreetAt = null;       // 멀어졌다 다시 오면 또 인사한다
+        if (rd < 6.5 && !it.fig.bubbleState && state.elapsed - (it.lastGreetAt == null ? -1e9 : it.lastGreetAt) > 12) {
           it.lastGreetAt = state.elapsed;
-          it.greetYaw = Math.atan2(rdx, rdz);
+          it.greetYaw = Math.atan2(rdx, rdz);      // 방문객 쪽으로 몸을 돌린다
           it.greetUntil = state.elapsed + 3.4;
           it.fig.parts.emote = { kind: 'wave', t: 0, dur: 2.2 };
-          showBubble(it.fig, '희망이', HEEMANG.isChairman
+          var doorLine = HEEMANG.isChairman
             ? '회장님! ' + it.short + ' 전시실입니다. 궁금하신 점 바로 말씀해 주세요!'
-            : '안녕하세요! ' + it.short + ' 전시실 안내 피클입니다. 무엇이든 물어보세요!');
+            : '안녕하세요! ' + it.short + ' 전시실 안내 피클입니다. 무엇이든 물어보세요!';
+          showBubble(it.fig, '희망이', doorLine);
+          // 말풍선과 동시에 짧은 인사 목소리 — 사람 목소리가 이미 나고 있으면 끼어들지 않는다
+          if (SPEAK.on && SPEAK.unlocked && !SPEAK.speaking) {
+            SPEAK.browserSay(cleanForSpeech(doorLine), 'heemang', ++SPEAK.seq, null);
+          }
         }
       }
       if (it.greetUntil && state.elapsed < it.greetUntil && it.greetYaw != null) {
@@ -12217,14 +12223,19 @@
       dmMicStart({ auto: true });
     }, 450);
   }
-  /* 답변을 목소리로 읽는다 — 연속 대화·말로 물은 경우에는 인사말 전체를, 아니면 첫 줄만 */
-  function sayReply(reply, who, fromVoice) {
+  /* 답변을 목소리로 읽는다 — 연속 대화·말로 물은 경우에는 인사말 전체를, 아니면 첫 줄만
+     extra.audio — 같은 응답으로 받은 목소리(audioBase64) : 말풍선과 동시에 0초 지연으로 난다
+     extra.preferNatural:false — 내장 즉답·문 앞 인사처럼 바로 소리가 나야 하는 말 */
+  function sayReply(reply, who, fromVoice, extra) {
     var text = String(reply || '');
     if (!text) return;
     var body = (fromVoice || DESK_CHAT.convo) ? text : text.split('\n')[0];
+    extra = extra || {};
     var started = SPEAK.say(body, who, {
       mode: fromVoice ? 'voice' : '',
-      onDone: function () { deskAutoListen(); }
+      onDone: function () { deskAutoListen(); },
+      audio: extra.audio || null,
+      preferNatural: extra.preferNatural !== false
     });
     // 목소리를 끈 상태·음성 미지원이면 기다리지 않고 바로 다시 듣는다(대기 중 터치 대기는 제외)
     if (!started && (!SPEAK.on || SPEAK.unlocked)) deskAutoListen();
@@ -12289,7 +12300,7 @@
         DESK_CHAT.mode = 'local';
         renderDeskLog();
         hostSay(who, inst.reply.split('\n')[0]);
-        sayReply(inst.reply, who, fromVoice);
+        sayReply(inst.reply, who, fromVoice, { preferNatural: false });   // 내장 즉답 — 말풍선과 동시에 바로 소리
         deskSetLatency(ms);
         return;
       }
@@ -12326,7 +12337,7 @@
         renderDeskLog();
         renderDeskBadge();
         hostSay(who, reply.split('\n')[0]);
-        sayReply(reply, who, fromVoice);
+        sayReply(reply, who, fromVoice, { audio: res && res.audio });   // 답변과 목소리가 한 응답으로 와서 동시에 난다
       };
       askDeskAI(who, q, histH, ctxH, fromVoice).then(finishH).catch(function () { finishH(null); });
       return;
@@ -12347,7 +12358,7 @@
         deskPush(who, 'host', res.reply, { moves: res.moves || null, provider: res.provider, model: res.model });
         renderDeskBadge();
         hostSay(who, res.reply);
-        sayReply(res.reply, who, fromVoice);   // 실시간 AI 답변도 목소리로
+        sayReply(res.reply, who, fromVoice, { audio: res.audio });   // 실시간 AI 답변도 말풍선·목소리 동시에
       } else {
         var local = localDeskAnswer(who, q);
         DESK_CHAT.mode = 'local';
@@ -12387,7 +12398,9 @@
     var mv = deskSanitizeMoves(d.moves);
     if (!mv && tokenMoves.length) mv = deskSanitizeMoves(tokenMoves);
     return { ok: true, reply: reply, provider: d.provider || '', model: d.model || '',
-             moves: mv, character: String(d.character || ''), live: Array.isArray(d.live) ? d.live : [] };
+             moves: mv, character: String(d.character || ''), live: Array.isArray(d.live) ? d.live : [],
+             // withTts 응답에 목소리가 함께 왔으면 그대로 넘겨 — /tts 를 또 부르지 않고 바로 재생
+             audio: d.audioBase64 ? { audioBase64: String(d.audioBase64), mimeType: String(d.mimeType || 'audio/wav') } : null };
   }
 
   /* Edge Function 한 번 호출 */
@@ -12417,7 +12430,8 @@
   }
 
   function askDeskAI(who, q, history, ctx, fromVoice) {
-    var body = { character: who, message: q, history: history, context: ctx };
+    // withTts — 답변과 목소리를 한 번에 받아 말풍선이 뜨는 순간 바로 재생한다(함수가 모르면 audioBase64 없이 답만 온다)
+    var body = { character: who, message: q, history: history, context: ctx, withTts: true };
     if (fromVoice) body.voiceMode = true;      // 짧고 자연스러운 구어체 답변을 요청
     if (who === 'heemang') {
       body.roomZone = DESK_CHAT.roomZone || '';
@@ -12873,7 +12887,7 @@
     /* 사람 목소리 상태 — 화면·검증(window.__gallery.desk.speakMode)이 함께 본다 */
     mode: 'idle',               // 'gemini-tts' | 'browser-tts' | 'idle'
     speaking: false, audio: null, seq: 0, guard: 0,
-    cache: [], CACHE_MAX: 20, TTS_TIMEOUT: 10000,   // Gemini TTS 실측 2.2~2.5초 · 느린 회선 여유 10초(대화 14초 한도 안)
+    cache: [], CACHE_MAX: 20, TTS_TIMEOUT: 2500,   // 단독 /tts 가 2.5초 안에 못 오면 브라우저 음성으로 바로 넘어간다(말풍선과 음성의 시차 제거)
     lastVoiceMode: '', lastEnd: '',
     init: function () {
       try { SPEAK.on = localStorage.getItem('mg_voice_on_v1') !== '0'; } catch (e) {}
@@ -12919,7 +12933,7 @@
     pick: function (who) {
       var ko = SPEAK.korean();
       if (!ko.length) return null;
-      var i, n, v, lua = (who || 'lua') === 'lua';
+      var i, n, v, lua = (who || 'lua') === 'lua' || who === 'heemang';  // 희망이도 밝은 여성 음성
       if (lua) {
         // 루아 — 여성 키워드에 맞는 음성 우선, 없으면 남성으로 보이지 않는 첫 음성
         for (i = 0; i < ko.length; i++) {
@@ -12954,8 +12968,9 @@
       return { voice: v, isMale: false, name: v.name || '' };
     },
 
-    /* ── 말하기 ───────────────────────────────────────────────────
+    /* ── 말하기 ──────────────────────────────────────────────────
        say(text, who, opts) — opts.onDone(끝나면), opts.preferNatural(false 면 기본 음성만),
+       opts.audio({audioBase64,mimeType} — 채팅 응답에 함께 온 목소리, /tts 다시 부르지 않음),
        opts.mode('voice' 면 연속 대화용 긴 문장도 끝까지). 어떤 경우든 직전 말은 즉시 끊는다. */
     say: function (text, who, opts) {
       opts = opts || {};
@@ -12974,10 +12989,15 @@
       var body = clean.slice(0, limit);
       SPEAK.lastVoiceMode = who || 'lua';
       SPEAK.speaking = true;
-      // 1순위 — Gemini 사람 목소리
+      // 0순위 — 채팅 응답에 목소리(audioBase64)가 함께 왔다 : 말풍선이 뜨는 순간 그대로 재생(0초 지연)
+      var pre = (opts.audio && opts.audio.audioBase64) ? opts.audio
+        : (opts.preferNatural !== false ? SPEAK.cached(who, body) : null);
+      if (pre && pre.audioBase64) {
+        SPEAK.remember(who, body, pre);         // 다음 같은 말은 바로 재생(캐시)
+        return SPEAK.play(pre.mimeType || 'audio/wav', pre.audioBase64, who, seq, onDone, body);
+      }
+      // 1순위 — Gemini 사람 목소리(별도 /tts · 2.5초 안에 못 오면 브라우저 음성)
       if (opts.preferNatural !== false && !isLocalFile() && deskEndpoint()) {
-        var hit = SPEAK.cached(who, body);
-        if (hit) return SPEAK.play(hit.mimeType, hit.audioBase64, who, seq, onDone, body);
         SPEAK.fetchVoice(body, who, seq, onDone);
         return true;
       }
@@ -13071,7 +13091,7 @@
         if (pv && pv.voice) u.voice = pv.voice;
         // 도현이 여자 목소리로 들리지 않게 — 기기에 남성 음성이 없으면 음정을 크게 낮춘다
         var pitch, rate;
-        if (who === 'lua') { pitch = 1.15; rate = 1.04; }          // 밝고 친근한 여성 톤
+        if (who === 'lua' || who === 'heemang') { pitch = 1.12; rate = 1.04; }   // 밝고 친근한 여성 톤(희망이 포함)
         else if (isMale) { pitch = 0.90; rate = 0.94; }            // 실제 남성 음성이 잡힌 경우
         else { pitch = 0.62; rate = 0.93; }                        // 여성 음성뿐 — 확실히 낮고 굵게
         u.pitch = pitch;

@@ -1,9 +1,9 @@
 /**
- * 독도국제무역 · 3D 전시관 AI (루아 · 도현 · 희망이)
+ * 독도국제무역 · 3D 전시관 AI (루아 · 도현 · 희망이)  — v8
  * ────────────────────────────────────────────────────────────────
  * Supabase Edge Function (Deno) — 단일 파일. 저장소에 함께 보관한다.
  *
- *  · 1순위  : Groq   (GROQ_API_KEY)     openai/gpt-oss-120b → qwen/qwen3.8-27b   (각 10초 타임아웃)
+ *  · 1순위  : Groq   (GROQ_API_KEY)     openai/gpt-oss-120b(reasoning_effort=low) → llama-3.3-70b-versatile → qwen/qwen3.8-27b   (각 10초 타임아웃)
  *  · 2순위  : Gemini (GEMINI_API_KEY)   gemini-3.6-flash → gemini-3.8-flash → gemini-4-hydrogen → gemini-3.5-flash-lite (각 14초)
  *  · 둘 다 없으면 { ok:false } 를 돌려주고, 전시관 화면은 내장 안내 모드로 매끄럽게 답한다.
  *
@@ -23,9 +23,12 @@
  *
  * 요청 (POST JSON)
  *   { character: 'lua' | 'dohyun' | 'heemang', message: '...', history: [{role,text}], context: {...},
- *     roomZone?: 'fx'|'metals'|'index'|'rates'|'energy'|'ags', isChairman?: boolean, visitorName?: string }
+ *     roomZone?: 'fx'|'metals'|'index'|'rates'|'energy'|'ags', isChairman?: boolean, visitorName?: string,
+ *     voiceMode?: true, withTts?: true }
+ *   withTts:true — 답변과 목소리를 한 번에(3.2초 안). 말풍선과 음성이 0초 지연으로 함께 나간다.
  * 응답 (JSON)
  *   { ok:true, provider:'groq'|'gemini', model:'...', reply:'...', character:'lua', moves:[{zone,ticker,label}], live:['weather','news'] }
+ *   withTts 요청이면 같은 응답에 { audioBase64, mimeType, ttsModel, ttsMs } 가 함께 온다(실패해도 답변은 ok:true).
  *   실패 시 { ok:false, error:'...', reply:'' } (HTTP 200 — 화면이 폴백으로 넘어가기 쉽게)
  *
  * 사람 목소리(TTS) 요청 — 같은 함수가 함께 처리한다
@@ -75,14 +78,29 @@ const GEMINI_MODELS = [
 ];
 const GROQ_MODELS = [
   Deno.env.get("GROQ_MODEL_1") || "openai/gpt-oss-120b",
-  Deno.env.get("GROQ_MODEL_2") || "qwen/qwen3.8-27b",
+  Deno.env.get("GROQ_MODEL_2") || "llama-3.3-70b-versatile",
+  Deno.env.get("GROQ_MODEL_3") || "qwen/qwen3.8-27b",
 ];
+
+/* 모델별 추론 강도 — Groq 는 모델마다 허용 값이 다르고, 지원하지 않는 모델에 보내면 400 이다.
+   · openai/gpt-oss-* : low | medium | high 만 허용(기본 medium) → low 로 추론 지연을 0.5~0.9초대로 줄인다.
+   · qwen/qwen3.8-27b : none | default | low | medium | high  (기본 none)
+   · llama-3.3-70b-versatile 등 일반 모델 : reasoning 계열 파라미터를 아예 보내지 않는다. */
+function groqTuning(model: string): Record<string, unknown> {
+  const m = String(model || "").toLowerCase();
+  if (/gpt-oss|gpt_oss/.test(m)) return { reasoning_effort: "low", reasoning_format: "hidden" };
+  if (/qwen3\.8|qwen\/qwen3/.test(m)) return { reasoning_effort: "low" };
+  return {};
+}
 
 // 무한 대기 방지 — 1순위 Groq 는 짧게 끊고, 보조 Gemini 는 조금 더 준다.
 const GROQ_TIMEOUT_MS = 10000;
 const GEMINI_TIMEOUT_MS = 14000;
 // 외부 조회는 목소리 대화의 흐름을 끊지 않도록 짧게 — 늦으면 그 항목만 버리고 답한다.
-const LIVE_TIMEOUT_MS = 2800;
+const LIVE_TIMEOUT_MS = 1800;
+// 채팅 답변과 함께 목소리를 만들 때의 전체 한도 — 넘으면 목소리만 포기하고 답변은 그대로 나간다.
+const INLINE_TTS_TIMEOUT_MS = 3200;
+const INLINE_TTS_MAX_CHARS = 180;
 
 const ZONE_LABEL: Record<string, string> = {
   hall: "중앙홀",
@@ -191,7 +209,49 @@ const VOICE_RULES = `[음성 대화 모드 — 방문객이 지금 목소리로 
 · 이동 안내가 필요하면 답변 맨 끝에 <<MOVE:구역ID>> 토큰만 붙인다(화면이 버튼으로 바꾸고, 읽히지 않는다).`;
 
 /* ── 공용 도우미 ──────────────────────────────────────────── */
+/* 모든 캐릭터 공통 — '유능한 비서' 수준의 답변 역량(사용자 개인정보·전화번호·생일·내부 규칙은 넣지 않는다) */
+const ANSWER_MASTERY = `[답변 역량 — 유능한 비서 수준]
+· 답변 구조: 결론을 첫 문장에 또박또박 말한다. 이어서 핵심 근거(수치·원인·출처)와 실전 기준을 2~4문장으로 제시한다. 인사치레·장황한 수식어·'개요·요약·결론' 같은 머리말은 넣지 않는다. 소리 내어 들었을 때 바로 이해되는 문장으로 쓴다.
+· 국제상품 전문 프레임: 국제상품(해외선물) 질문은 1~6개월 스윙 관점으로 답한다. 차트(지지·저항·추세) + 거시(DXY·미국 10년물 금리·VIX·연준) + 수급(COT·OI) 세 가지를 함께 보고, 진입을 말할 때는 손절·무효화 기준선을 먼저 고정한다. 예측 적중률이 55% 미만이면 관망을 권한다. '해외선물' 대신 '국제상품'이라 부르고 매매 권유·수익 보장은 하지 않는다.
+· 전 분야 일반 질문: 시사·경제·과학·IT·생활·역사 등 어떤 질문이 와도 핵심 원리를 쉬운 비유와 정확한 사실로 설명한다. [실시간 외부 검색 결과]가 있으면 그 수치·출처·시각을 정확히 인용하고, 확인되지 않은 사실은 지어내지 않고 "확인되지 않았습니다"라고 구분해 말한다.
+· 모르는 것은 모른다고 먼저 밝히고, 확인 경로(실시간 검색·뉴스 TV·해당 전시실)를 한 마디 붙인다.`;
+
 type ChatTurn = { role: "user" | "assistant"; text: string };
+
+type PromptOpts = {
+  character: string;
+  voiceMode: boolean;
+  isChairman: boolean;
+  visitorName: string;
+  roomZone: string;
+  nowLabel: string;
+  liveBlock: string;
+  context: unknown;
+  message: string;
+};
+
+/** 루아·도현·희망이 공통 시스템 프롬프트 — 페르소나 + 음성 규칙 + 답변 역량 + 실시간 자료 + 전시관 데이터. */
+function buildSystemPrompt(o: PromptOpts): string {
+  const liveHint = o.liveBlock
+    ? "질문이 날씨·뉴스·외부 시세·인물/개념 같은 외부 사실에 걸리면 위 [실시간 외부 검색 결과]의 값과 출처·시각을 그대로 인용해 답하고, 블록에 없는 수치는 말하지 않는다. "
+    : "";
+  const chairHint = o.character === "heemang"
+    ? (o.isChairman
+      ? "지금 말하는 사람은 회장님이므로 '회장님'이라고 부른다. "
+      : "지금 말하는 사람은 회장님이 아니므로 '회장님'은 회사 주인을 가리킬 때만 쓰고, 말하는 사람은 방문자님·이름님으로 부른다. ")
+    : "";
+  return `${PROMPTS[o.character]}
+${o.voiceMode ? "\n" + VOICE_RULES + "\n" : ""}${o.character === "heemang" ? "\n" + heemangRoleBlock(o.isChairman, o.visitorName, o.roomZone) + "\n" : ""}
+${ANSWER_MASTERY}
+[지금 시각] ${o.nowLabel} — '오늘·어제·내일·이번 주' 같은 날짜 표현은 이 시각을 기준으로 센다.
+${o.liveBlock ? "\n" + o.liveBlock + "\n" : ""}
+[전시관 실시간 데이터 — 이 값만 사실로 인용한다]
+${contextBlock(o.context, o.liveBlock ? 5000 : 8000)}
+
+[답변 요청]
+${o.character === "heemang" ? "회장님 질문" : "방문객 질문"}: ${o.message}
+네 캐릭터 말투로 친절하고 세련되게 답한다. ${chairHint}${liveHint}전시관 안내·시세·종목 수치·일정은 위 데이터와 전시관 지식에 있는 값만 쓰고, 일반 대화·상식 질문은 네가 아는 만큼 자연스럽게 답한다.`;
+}
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -271,9 +331,10 @@ function extractMoves(reply: string, message: string): { text: string; moves: Ar
 }
 
 /* ── Gemini TTS — 진짜 사람 같은 한국어 목소리 ──────────────
-   요청: { action: "tts", character: "lua"|"dohyun", text: "..." }
-   응답: { ok:true, provider:"gemini-tts", model, voice, mimeType, audioBase64 }
-   키 없음·오류·타임아웃도 HTTP 200 으로 { ok:false, ... } — 화면은 조용히 기본 음성으로 폴백한다. */
+   synthesizeTts(geminiKey, character, text, {maxChars, timeoutMs}) 하나로 모았다.
+   · action:'tts' 요청  → maxChars 300 · timeoutMs 12000
+   · withTts 채팅 요청 → maxChars 180 · timeoutMs 3200 (답변을 막지 않는다)
+   응답: { ok:true, audioBase64, mimeType, model, voice } / 실패 { ok:false, error, status, detail } */
 const TTS_MODELS = [
   Deno.env.get("GEMINI_TTS_MODEL_1") || "gemini-3.8-flash-lite-tts",
   Deno.env.get("GEMINI_TTS_MODEL_2") || "gemini-3.8-flash-tts",
@@ -314,7 +375,7 @@ function speechText(raw: string): string {
   return s;
 }
 
-/** Gemini 3.8 TTS 호출 한 번. 실패는 status·detail 을 달아 throw. */
+/** Gemini TTS 호출 한 번. 실패는 status·detail 을 달아 throw. timeoutMs 로 이 시도 하나만 끊는다. */
 async function ttsTry(
   key: string,
   model: string,
@@ -322,13 +383,15 @@ async function ttsTry(
   style: string,
   text: string,
   nested: boolean,
+  timeoutMs = 12000,
 ): Promise<{ audioBase64: string; mimeType: string }> {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
   // 공식 규격은 speechConfig.voiceConfig.prebuiltVoiceConfig.voiceName 이다.
   // 계획대로 "voice" 부터 시도하고, HTTP 400(필드 불일치)이면 중첩 형태로 한 번 더 시도한다.
   const voiceConfig = nested ? { prebuiltVoiceConfig: { voiceName: voice } } : { voice };
+  const wait = Math.max(400, timeoutMs);
   const ctrl = new AbortController();
-  const timer = setTimeout(() => { try { ctrl.abort(); } catch (_e) { /* noop */ } }, 12000);
+  const timer = setTimeout(() => { try { ctrl.abort(); } catch (_e) { /* noop */ } }, wait);
   try {
     const res = await fetch(url, {
       method: "POST",
@@ -369,44 +432,73 @@ async function ttsTry(
     }
     const why = data?.promptFeedback?.blockReason || data?.candidates?.[0]?.finishReason || "오디오 없음";
     throw new Error(`tts ${model} ${why}`);
+  } catch (e) {
+    // AbortError(DOMException)는 message 가 읽기 전용이라 새 Error 로 감싸 던진다.
+    if (ctrl.signal.aborted || (e as Error)?.name === "AbortError") {
+      const err = new Error(`tts ${model} 시간 초과(${wait}ms)`) as Error & { status?: number };
+      err.status = 0;
+      throw err;
+    }
+    throw e;
   } finally {
     clearTimeout(timer);
   }
 }
 
-/** action:"tts" 요청 처리 — 대화 생성 대신 사람 목소리(WAV)를 돌려준다. */
-async function handleTts(body: Record<string, unknown>): Promise<Response> {
-  const rawCh = String(body.character || "lua").toLowerCase();
-  const character = rawCh === "dohyun" ? "dohyun" : (rawCh === "heemang" ? "heemang" : "lua");
-  const cfg = TTS_VOICE[character];
-  const text = speechText(String(body.text || ""));
-  if (!text) return json({ ok: false, error: "empty-text", status: 400, character });
-  const key = Deno.env.get("GEMINI_API_KEY") || "";
-  if (!key) return json({ ok: false, error: "no-key", status: 0, character });
+/** 목소리 만들기 — 단독 action:'tts' 요청과 withTts 채팅이 같은 규칙을 쓴다.
+    전체 데드라인(timeoutMs)을 지키며 모델·요청형태를 차례로 시도하고, 실패는 값으로 돌려준다(throw 없음). */
+type TtsOut = { ok: boolean; audioBase64?: string; mimeType?: string; model?: string; voice?: string; error?: string; status?: number; detail?: string };
 
+async function synthesizeTts(
+  key: string,
+  character: "lua" | "dohyun" | "heemang",
+  text: string,
+  opts: { maxChars?: number; timeoutMs?: number } = {},
+): Promise<TtsOut> {
+  const cfg = TTS_VOICE[character];
+  const maxChars = Math.max(20, Math.min(300, opts.maxChars || 300));
+  let clean = speechText(String(text || ""));
+  if (clean.length > maxChars) clean = clean.slice(0, maxChars).replace(/[\s,.;:]+$/, "");
+  if (!clean) return { ok: false, error: "empty-text", status: 400 };
+  if (!key) return { ok: false, error: "no-key", status: 0 };
+  const deadline = Date.now() + Math.max(600, opts.timeoutMs || 12000);
   const errors: string[] = [];
   let lastStatus = 0;
   for (const model of TTS_MODELS) {
     for (const nested of [false, true]) {
+      const left = deadline - Date.now();
+      if (left < 350) break;      // 남은 시간이 없으면 더 기다리지 않는다(답변은 그대로)
       try {
-        const out = await ttsTry(key, model, cfg.voice, cfg.style, text, nested);
-        return json({
-          ok: true, provider: "gemini-tts", model,
-          voice: cfg.voice, mimeType: out.mimeType, audioBase64: out.audioBase64, character,
-        });
+        const out = await ttsTry(key, model, cfg.voice, cfg.style, clean, nested, left);
+        return { ok: true, audioBase64: out.audioBase64, mimeType: out.mimeType, model, voice: cfg.voice };
       } catch (e) {
         const err = e as Error & { status?: number; detail?: string };
         lastStatus = err.status || lastStatus;
         errors.push(`${err.message}${err.detail ? " · " + err.detail : ""}`);
         console.warn(`[frontdesk-chat] tts ${model} 실패: ${err.message}${err.status ? " (HTTP " + err.status + ")" : ""}`);
         if (err.status === 400) continue;      // 필드명 불일치 → 다른 형태로 한 번 더
-        break;                                 // 그 밖의 오류(404·429 등) → 다음 모델로
+        break;                                 // 그 밖의 오류(404·429·시간초과) → 다음 모델로
       }
     }
   }
+  return { ok: false, error: "tts-failed", status: lastStatus, detail: errors.join(" | ").slice(0, 400) };
+}
+
+/** action:"tts" 요청 처리 — 대화 생성 대신 사람 목소리(WAV)를 돌려준다. */
+async function handleTts(body: Record<string, unknown>): Promise<Response> {
+  const rawCh = String(body.character || "lua").toLowerCase();
+  const character = rawCh === "dohyun" ? "dohyun" : (rawCh === "heemang" ? "heemang" : "lua");
+  const key = Deno.env.get("GEMINI_API_KEY") || "";
+  const out = await synthesizeTts(key, character, String(body.text || ""), { maxChars: 300, timeoutMs: 12000 });
+  if (!out.ok) {
+    return json({
+      ok: false, error: out.error || "tts-failed", status: out.status || 0, character,
+      detail: String(out.detail || "").replace(/key=[^\s&]+/gi, "key=***").slice(0, 400),
+    });
+  }
   return json({
-    ok: false, error: "tts-failed", status: lastStatus, character,
-    detail: errors.join(" | ").replace(/key=[^\s&]+/gi, "key=***").slice(0, 400),
+    ok: true, provider: "gemini-tts", model: out.model, voice: out.voice,
+    mimeType: out.mimeType, audioBase64: out.audioBase64, character,
   });
 }
 
@@ -1105,7 +1197,7 @@ async function liveWebBlock(message: string): Promise<string> {
         "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S731N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0 Mobile Safari/537.36",
         "Accept-Language": "ko-KR,ko;q=0.9",
       },
-    }, 3600, "naver web");
+    }, LIVE_TIMEOUT_MS, "naver web");
     if (!r.ok || !r.raw) return "";
     let body = r.raw.replace(/<(script|style|svg|noscript|header|footer|nav)[^>]*>[\s\S]*?<\/\1>/gi, " ");
     const mpIdx = body.indexOf('id="main_pack"');
@@ -1270,6 +1362,8 @@ async function askGemini(
 }
 
 /* ── Groq (OpenAI 호환) ──────────────────────────────────── */
+/** Groq 호출 한 번 — 모델별 추론 강도(groqTuning)를 붙이고,
+    그 파라미터를 거부(400)하면 같은 모델을 파라미터 없이 한 번 더 시도한다. */
 async function askGroq(
   key: string,
   model: string,
@@ -1282,27 +1376,41 @@ async function askGroq(
     ...history.map((h) => ({ role: h.role, content: h.text })),
     { role: "user", content: message },
   ];
-  const res = await fetchTextWithTimeout("https://api.groq.com/openai/v1/chat/completions", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ model, messages, temperature: 0.65, max_tokens: 1024, top_p: 0.95 }),
-  }, GROQ_TIMEOUT_MS, `groq ${model}`);
-  const raw = res.raw;
-  if (!res.ok) {
-    const err = new Error(`groq ${model} HTTP ${res.status}`) as Error & { status?: number; detail?: string };
-    err.status = res.status;
-    err.detail = raw.slice(0, 300);
-    throw err;
+  const base: Record<string, unknown> = { model, messages, temperature: 0.65, max_tokens: 1024, top_p: 0.95 };
+  const tuning = groqTuning(model);
+  const attempts: Array<Record<string, unknown>> = Object.keys(tuning).length ? [tuning, {}] : [{}];
+  let lastErr: (Error & { status?: number; detail?: string }) | null = null;
+
+  for (const extra of attempts) {
+    const res = await fetchTextWithTimeout("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ ...base, ...extra }),
+    }, GROQ_TIMEOUT_MS, `groq ${model}`);
+    const raw = res.raw;
+    if (!res.ok) {
+      const err = new Error(`groq ${model} HTTP ${res.status}`) as Error & { status?: number; detail?: string };
+      err.status = res.status;
+      err.detail = raw.slice(0, 300);
+      lastErr = err;
+      // 추론 파라미터가 원인인 400 → 파라미터를 빼고 같은 모델로 한 번 더(모델이 거부해도 답은 나가게)
+      if (res.status === 400 && Object.keys(extra).length) {
+        console.warn(`[frontdesk-chat] groq ${model} 추론 파라미터 거부(400) → 파라미터 없이 재시도`);
+        continue;
+      }
+      throw err;
+    }
+    let data: any;
+    try {
+      data = JSON.parse(raw);
+    } catch {
+      throw new Error(`groq ${model} 응답을 읽지 못했습니다`);
+    }
+    const text = String(data?.choices?.[0]?.message?.content || "").trim();
+    if (!text) throw new Error(`groq ${model} 빈 응답`);
+    return text;
   }
-  let data: any;
-  try {
-    data = JSON.parse(raw);
-  } catch {
-    throw new Error(`groq ${model} 응답을 읽지 못했습니다`);
-  }
-  const text = String(data?.choices?.[0]?.message?.content || "").trim();
-  if (!text) throw new Error(`groq ${model} 빈 응답`);
-  return text;
+  throw lastErr || new Error(`groq ${model} 실패`);
 }
 
 /* ── 핸들러 ──────────────────────────────────────────────── */
@@ -1338,20 +1446,34 @@ Deno.serve(async (req: Request) => {
   const live = await fetchExternalLive(message);
   const now = kstNow();
 
-  const system = `${PROMPTS[character]}
-${voiceMode ? "\n" + VOICE_RULES + "\n" : ""}${character === "heemang" ? "\n" + heemangRoleBlock(isChairman, visitorName, roomZone) + "\n" : ""}
-[지금 시각] ${now.label} — '오늘·어제·내일·이번 주' 같은 날짜 표현은 이 시각을 기준으로 센다.
-${live.block ? "\n" + live.block + "\n" : ""}
-[전시관 실시간 데이터 — 이 값만 사실로 인용한다]
-${contextBlock(body.context, live.block ? 5000 : 8000)}
-
-[답변 요청]
-${character === "heemang" ? "회장님 질문" : "방문객 질문"}: ${message}
-네 캐릭터 말투로 친절하고 세련되게 답한다. ${character === "heemang" ? (isChairman ? "지금 말하는 사람은 회장님이므로 '회장님'이라고 부른다. " : "지금 말하는 사람은 회장님이 아니므로 '회장님'은 회사 주인을 가리킬 때만 쓰고, 말하는 사람은 방문자님·이름님으로 부른다. ") : ""}${live.block ? "질문이 날씨·뉴스·외부 시세·인물/개념 같은 외부 사실에 걸리면 위 [실시간 외부 검색 결과]의 값과 출처·시각을 그대로 인용해 답하고, 블록에 없는 수치는 말하지 않는다. " : ""}전시관 안내·시세·종목 수치·일정은 위 데이터와 전시관 지식에 있는 값만 쓰고, 일반 대화·상식 질문은 네가 아는 만큼 자연스럽게 답한다.`;
+  const system = buildSystemPrompt({
+    character, voiceMode, isChairman, visitorName, roomZone,
+    nowLabel: now.label, liveBlock: live.block, context: body.context, message,
+  });
 
   const geminiKey = Deno.env.get("GEMINI_API_KEY") || "";
   const groqKey = Deno.env.get("GROQ_API_KEY") || "";
   const errors: string[] = [];
+
+  // withTts:true — 답변과 목소리를 한 응답으로 돌려준다(최대 180자 · 3.2초).
+  // 목소리가 실패·초과해도 답변은 ok:true 그대로 나가고, 화면은 /tts 나 브라우저 음성으로 넘어간다.
+  const wantTts = body.withTts === true || body.withTts === "true" || body.withTts === 1;
+  const answer = async (payload: Record<string, unknown>, reply: string): Promise<Response> => {
+    if (!wantTts) return json(payload);
+    const t0 = Date.now();
+    const tts = await synthesizeTts(geminiKey, character, reply, {
+      maxChars: INLINE_TTS_MAX_CHARS, timeoutMs: INLINE_TTS_TIMEOUT_MS,
+    });
+    payload.ttsMs = Date.now() - t0;
+    if (tts.ok) {
+      payload.audioBase64 = tts.audioBase64;
+      payload.mimeType = tts.mimeType || "audio/wav";
+      payload.ttsModel = tts.model || "";
+    } else {
+      payload.ttsError = tts.error || "tts-failed";
+    }
+    return json(payload);
+  };
 
   // 1순위 Groq — 빠르고 무료 한도가 넉넉하다. 모델을 차례로 시도(429·오류는 다음 모델).
   if (groqKey) {
@@ -1359,7 +1481,7 @@ ${character === "heemang" ? "회장님 질문" : "방문객 질문"}: ${message}
       try {
         const text = await askGroq(groqKey, model, system, history, message);
         const { text: reply, moves } = extractMoves(text, message);
-        return json({ ok: true, provider: "groq", model, reply, character, moves, live: live.sources });
+        return await answer({ ok: true, provider: "groq", model, reply, character, moves, live: live.sources }, reply);
       } catch (e) {
         const err = e as Error & { status?: number; detail?: string };
         errors.push(`${err.message}${err.detail ? " · " + err.detail : ""}`);
@@ -1380,12 +1502,12 @@ ${character === "heemang" ? "회장님 질문" : "방문객 질문"}: ${message}
         const text = await askGemini(geminiKey, model, system, history, message, useGSearch);
         const { text: reply, moves } = extractMoves(text, message);
         console.log(`[frontdesk-chat] groq 실패 → gemini ${model} 로 답변 (groq 오류 ${errors.length}건)`);
-        return json({
+        return await answer({
           ok: true, provider: "gemini", model, reply, character, moves, live: live.sources,
           // Groq 단계에서 넘어왔다는 표시(키 값 없음 · 상태코드/모델명 수준만)
           fallbackFrom: errors.length ? "groq" : undefined,
           errors: errors.slice(0, 3).map((e) => e.slice(0, 140)),
-        });
+        }, reply);
       } catch (e) {
         const err = e as Error & { status?: number; detail?: string };
         errors.push(`${err.message}${err.detail ? " · " + err.detail : ""}`);
