@@ -12430,8 +12430,10 @@
   }
 
   function askDeskAI(who, q, history, ctx, fromVoice) {
-    // withTts — 답변과 목소리를 한 번에 받아 말풍선이 뜨는 순간 바로 재생한다(함수가 모르면 audioBase64 없이 답만 온다)
-    var body = { character: who, message: q, history: history, context: ctx, withTts: true };
+    // withTts — 답변과 목소리를 한 번에 받아 말풍선이 뜨는 순간 바로 재생한다(함수가 모르면 audioBase64 없이 답만 온다).
+    // 목소리를 꺼 뒀거나 아직 잠금 해제 전이면 목소리 생성 한도(TTS quota)를 쓰지 않는다.
+    var body = { character: who, message: q, history: history, context: ctx,
+                 withTts: !!(SPEAK.on && SPEAK.unlocked) };
     if (fromVoice) body.voiceMode = true;      // 짧고 자연스러운 구어체 답변을 요청
     if (who === 'heemang') {
       body.roomZone = DESK_CHAT.roomZone || '';
