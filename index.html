@@ -12989,9 +12989,8 @@
       var body = clean.slice(0, limit);
       SPEAK.lastVoiceMode = who || 'lua';
       SPEAK.speaking = true;
-      // 0순위 — 채팅 응답에 목소리(audioBase64)가 함께 왔다 : 말풍선이 뜨는 순간 그대로 재생(0초 지연)
-      var pre = (opts.audio && opts.audio.audioBase64) ? opts.audio
-        : (opts.preferNatural !== false ? SPEAK.cached(who, body) : null);
+      // 0순위 — 채팅 응답에 목소리(audioBase64)가 함께 왔거나, 같은 문장의 목소리가 캐시에 있으면 바로 재생(0초 지연)
+      var pre = (opts.audio && opts.audio.audioBase64) ? opts.audio : SPEAK.cached(who, body);
       if (pre && pre.audioBase64) {
         SPEAK.remember(who, body, pre);         // 다음 같은 말은 바로 재생(캐시)
         return SPEAK.play(pre.mimeType || 'audio/wav', pre.audioBase64, who, seq, onDone, body);
