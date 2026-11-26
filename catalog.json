@@ -7,13 +7,27 @@
    "url": "https://www.youtube.com/@%EC%9E%AC%EB%A1%B1%EB%91%A5%EC%9D%B4-r4y",
    "channel_id": "UCyicBXHBc9G3BFqokbRVUGA"
   },
-  "generated": "2026-11-27 01:41 KST",
+  "generated": "2026-11-27 03:01 KST",
   "source": "live",
-  "total": 611,
+  "total": 612,
   "excluded_songs": 110,
   "note": "노래 쇼츠는 빼고 모았습니다. 편집 화면의 '전체 영상' 목록으로 쓰입니다."
  },
  "videos": [
+  {
+   "id": "aTsztLxVGe8",
+   "title": "오일 오늘의 전망",
+   "date": "2026-11-26",
+   "kind": "shorts",
+   "matched_ticker": "oil"
+  },
+  {
+   "id": "DN4C0u8TG18",
+   "title": "사랑했어요",
+   "date": "2026-11-26",
+   "kind": "shorts",
+   "matched_ticker": null
+  },
   {
    "id": "pmBwQSPiw2w",
    "title": "미국채10년물 오늘의 전망",
@@ -80,16 +94,9 @@
   {
    "id": "Vnam4KTru1E",
    "title": "독도국제무역 홈페이지 오픈 국제 상품 가격 제공",
-   "date": "2026-11-09",
-   "kind": "shorts",
-   "matched_ticker": "dokdo"
-  },
-  {
-   "id": "DN4C0u8TG18",
-   "title": "사랑했어요",
    "date": "",
    "kind": "shorts",
-   "matched_ticker": null
+   "matched_ticker": "dokdo"
   },
   {
    "id": "Vss7wNTxLck",
@@ -426,13 +433,6 @@
    "date": "",
    "kind": "shorts",
    "matched_ticker": null
-  },
-  {
-   "id": "z8qcPxCjOYk",
-   "title": "오일 오늘의 전망 ~ 국제유가 100달러 다시가나?",
-   "date": "",
-   "kind": "shorts",
-   "matched_ticker": "oil"
   },
   {
    "id": "GgXaKhZGvZw",
@@ -960,6 +960,13 @@
    "matched_ticker": null
   },
   {
+   "id": "z8qcPxCjOYk",
+   "title": "오일 오늘의 전망 ~ 국제유가 100달러 다시가나?",
+   "date": "",
+   "kind": "shorts",
+   "matched_ticker": "oil"
+  },
+  {
    "id": "gnPcvH2G2v0",
    "title": "S&P500 오늘의 전망 ~ 지금 방향이 바뀐다?",
    "date": "",
@@ -1210,13 +1217,6 @@
    "date": "",
    "kind": "shorts",
    "matched_ticker": null
-  },
-  {
-   "id": "-WOk4jpti_s",
-   "title": "돈육 추세 오늘의 전망",
-   "date": "",
-   "kind": "shorts",
-   "matched_ticker": "hogs"
   },
   {
    "id": "8zel43hJZv0",
@@ -1630,6 +1630,13 @@
    "date": "",
    "kind": "shorts",
    "matched_ticker": null
+  },
+  {
+   "id": "-WOk4jpti_s",
+   "title": "돈육 추세 오늘의 전망",
+   "date": "",
+   "kind": "shorts",
+   "matched_ticker": "hogs"
   },
   {
    "id": "W39GEpdwlDI",
@@ -2598,13 +2605,6 @@
    "matched_ticker": "dokdo"
   },
   {
-   "id": "1fZ7OspUNU0",
-   "title": "독도국제무역.com",
-   "date": "",
-   "kind": "shorts",
-   "matched_ticker": "dokdo"
-  },
-  {
    "id": "lKiOlhdzBHo",
    "title": "독도국제무역.com",
    "date": "",
@@ -3054,6 +3054,13 @@
   },
   {
    "id": "uanpXctfW-M",
+   "title": "독도국제무역.com",
+   "date": "",
+   "kind": "shorts",
+   "matched_ticker": "dokdo"
+  },
+  {
+   "id": "1fZ7OspUNU0",
    "title": "독도국제무역.com",
    "date": "",
    "kind": "shorts",
@@ -3900,13 +3907,6 @@
    "matched_ticker": "dokdo"
   },
   {
-   "id": "6H6VmGpMGT0",
-   "title": "독도국제무역.com",
-   "date": "",
-   "kind": "shorts",
-   "matched_ticker": "dokdo"
-  },
-  {
    "id": "c4nY3Iy9rrk",
    "title": "독도국제무역.com",
    "date": "",
@@ -4125,6 +4125,13 @@
   },
   {
    "id": "9wOeX7DdlI8",
+   "title": "독도국제무역.com",
+   "date": "",
+   "kind": "shorts",
+   "matched_ticker": "dokdo"
+  },
+  {
+   "id": "6H6VmGpMGT0",
    "title": "독도국제무역.com",
    "date": "",
    "kind": "shorts",
