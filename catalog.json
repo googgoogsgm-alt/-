@@ -7,9 +7,9 @@
    "url": "https://www.youtube.com/@%EC%9E%AC%EB%A1%B1%EB%91%A5%EC%9D%B4-r4y",
    "channel_id": "UCyicBXHBc9G3BFqokbRVUGA"
   },
-  "generated": "2026-11-26 09:40 KST",
+  "generated": "2026-11-27 01:41 KST",
   "source": "live",
-  "total": 610,
+  "total": 611,
   "excluded_songs": 110,
   "note": "노래 쇼츠는 빼고 모았습니다. 편집 화면의 '전체 영상' 목록으로 쓰입니다."
  },
@@ -83,6 +83,13 @@
    "date": "2026-11-09",
    "kind": "shorts",
    "matched_ticker": "dokdo"
+  },
+  {
+   "id": "DN4C0u8TG18",
+   "title": "사랑했어요",
+   "date": "",
+   "kind": "shorts",
+   "matched_ticker": null
   },
   {
    "id": "Vss7wNTxLck",
@@ -1212,13 +1219,6 @@
    "matched_ticker": "hogs"
   },
   {
-   "id": "W39GEpdwlDI",
-   "title": "비트코인 오늘 전망",
-   "date": "",
-   "kind": "shorts",
-   "matched_ticker": null
-  },
-  {
    "id": "8zel43hJZv0",
    "title": "독도국제무역.com",
    "date": "",
@@ -1632,6 +1632,13 @@
    "matched_ticker": null
   },
   {
+   "id": "W39GEpdwlDI",
+   "title": "비트코인 오늘 전망",
+   "date": "",
+   "kind": "shorts",
+   "matched_ticker": null
+  },
+  {
    "id": "ySxDDUkCcww",
    "title": "골드 사랑하는 이에 손가락 보석이 되고 거래시 돈이 벌린다",
    "date": "",
@@ -1917,13 +1924,6 @@
    "date": "",
    "kind": "shorts",
    "matched_ticker": "cad"
-  },
-  {
-   "id": "VRpl4XBzuug",
-   "title": "비트코인,판이 바뀐다",
-   "date": "",
-   "kind": "shorts",
-   "matched_ticker": null
   },
   {
    "id": "0gFyZGWhmwc",
@@ -2395,6 +2395,13 @@
    "matched_ticker": null
   },
   {
+   "id": "VRpl4XBzuug",
+   "title": "비트코인,판이 바뀐다",
+   "date": "",
+   "kind": "shorts",
+   "matched_ticker": null
+  },
+  {
    "id": "uGxM_IVxt7c",
    "title": "대두 거래로 돈벌기 ..   대두  떡상 언제까지",
    "date": "",
@@ -2592,13 +2599,6 @@
   },
   {
    "id": "1fZ7OspUNU0",
-   "title": "독도국제무역.com",
-   "date": "",
-   "kind": "shorts",
-   "matched_ticker": "dokdo"
-  },
-  {
-   "id": "ThxpWDajnvs",
    "title": "독도국제무역.com",
    "date": "",
    "kind": "shorts",
@@ -3060,6 +3060,13 @@
    "matched_ticker": "dokdo"
   },
   {
+   "id": "ThxpWDajnvs",
+   "title": "독도국제무역.com",
+   "date": "",
+   "kind": "shorts",
+   "matched_ticker": "dokdo"
+  },
+  {
    "id": "VuET1P8OKQQ",
    "title": "독도국제무역.com",
    "date": "",
@@ -3327,13 +3334,6 @@
   },
   {
    "id": "dbkOaq88MaY",
-   "title": "독도국제무역.com",
-   "date": "",
-   "kind": "shorts",
-   "matched_ticker": "dokdo"
-  },
-  {
-   "id": "Xuh4sCTBTCI",
    "title": "독도국제무역.com",
    "date": "",
    "kind": "shorts",
@@ -3698,6 +3698,13 @@
   },
   {
    "id": "ZpMxh7-6MUc",
+   "title": "독도국제무역.com",
+   "date": "",
+   "kind": "shorts",
+   "matched_ticker": "dokdo"
+  },
+  {
+   "id": "Xuh4sCTBTCI",
    "title": "독도국제무역.com",
    "date": "",
    "kind": "shorts",
