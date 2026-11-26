@@ -205,6 +205,11 @@
 
   /* ── 방명록 ─────────────────────────────── */
   .gb-form{display:grid;gap:8px;margin-top:6px}
+  .gb-form .gb-split{display:grid;grid-template-columns:1fr 1.25fr;gap:8px}
+  .gb-item .contact{display:inline-block;margin:7px 0 0;padding:3px 9px;border-radius:999px;
+    background:#fdf3d3;border:1px solid #e8d69b;color:#7a5c0d;font-size:11.5px;font-weight:800;
+    max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  @media (max-width:520px){.gb-form .gb-split{grid-template-columns:1fr}}
   .gb-form input,.gb-form textarea{width:100%;font-family:inherit;font-size:13.5px;color:var(--ink);
     background:#fff;border:1.5px solid var(--line);border-radius:11px;padding:10px 12px;outline:none}
   .gb-form textarea{min-height:64px;resize:vertical}
@@ -1026,7 +1031,7 @@
 <div id="fabs">
   <button class="fab" id="btn-sit" style="display:none"><span class="ico">🪑</span><span id="sit-label">앉기</span></button>
   <button class="fab" id="btn-view"><span class="ico">👁</span><span id="view-label">1인칭</span></button>
-  <button class="fab" id="btn-gb"><span class="ico">✍️</span>방명록</button>
+  <button class="fab" id="btn-gb"><span class="ico">📌</span>메모판</button>
   <div id="greet" style="display:none">
     <button type="button" class="fab greet" id="btn-wave" title="손 흔들어 인사" aria-label="손 흔들어 인사"><span class="ico">👋</span>손흔들기</button>
     <button type="button" class="fab greet" id="btn-bow" title="꾸벅 인사" aria-label="꾸벅 인사"><span class="ico">🙇</span>인사</button>
@@ -1293,17 +1298,20 @@
   <div class="sheet small">
     <button class="x" id="g-close" aria-label="닫기">✕</button>
     <div class="head">
-      <span class="chip" style="background:#2b3a55">안내데스크</span>
-      <h2>방명록 · 정보 게시판</h2>
-      <p class="sub">방문한 모든 사람들이 함께 보고 남기는 공유 방명록입니다.</p>
+      <span class="chip" style="background:#c9a227;color:#241c00">📌 공유 메모판</span>
+      <h2>📌 방문자 메모판</h2>
+      <p class="sub">방문한 사람들이 서로 메모와 연락처를 남기는 공유 메모판입니다.</p>
     </div>
     <form class="gb-form" id="g-form">
-      <input id="g-name" maxlength="20" placeholder="이름 (예: 홍길동)" autocomplete="name">
-      <textarea id="g-text" maxlength="300" placeholder="남기고 싶은 말이나 국제 상품 가격 정보를 적어 주세요."></textarea>
-      <button type="submit">방명록 남기기</button>
+      <div class="gb-split">
+        <input id="g-name" maxlength="20" placeholder="이름 (예: 홍길동)" autocomplete="name">
+        <input id="g-contact" maxlength="60" placeholder="연락처 (선택) · 카톡 ID · 전화번호 · 이메일" autocomplete="off">
+      </div>
+      <textarea id="g-text" maxlength="300" placeholder="서로에게 남길 메모를 적어 주세요. (예: 국제상품 문의는 카톡 주세요)"></textarea>
+      <button type="submit">메모 남기기</button>
     </form>
     <ul class="gb-list" id="g-list"></ul>
-    <p class="note">방명록은 서버(Supabase)에 저장되어 방문자 모두가 함께 봅니다. 서버 SQL 적용 전에는 이 기기(브라우저)에만 임시 저장됩니다.</p>
+    <p class="note">메모는 서버(Supabase)에 저장되어 방문자 모두가 남동쪽 3D 메모판과 이 목록에서 함께 봅니다. 서버 연결 전에는 이 기기(브라우저)에만 임시 저장됩니다.</p>
     <p class="note" id="g-status" style="color:#8a6d1f"></p>
   </div>
 </div>
@@ -1948,42 +1956,203 @@
     return tex;
   }
 
-  function makeKioskTexture() {
-    var W = 1024, H = 640;
-    var cv = document.createElement('canvas'); cv.width = W; cv.height = H;
-    var ctx = cv.getContext('2d');
+  /* ── 📌 남동쪽 양면 공유 메모판 ──────────────────────────────
+     원형 받침대 위 판(plate)의 앞면·뒷면에 같은 화면을 그린다. 어느 쪽에서 봐도
+     빈 판이 아니라 최신 메모(이름 · 연락처 · 내용)가 보이고, 새 메모가 올라오면
+     renderGuestbook() 이 이 캔버스를 다시 그려 두 면의 텍스처를 함께 갱신한다. */
+  var KIOSK_BOARD = { canvas: null, tex: null, W: 1024, H: 640, notes: 3 };
+
+  /* 한글은 띄어쓰기가 드물게 길어서 글자 단위로 줄을 나누고, 마지막 줄은 …로 줄인다 */
+  function gbWrapLines(ctx, text, maxW, maxLines) {
+    var s = String(text == null ? '' : text).replace(/\s+/g, ' ').trim();
+    var lines = [], line = '';
+    for (var i = 0; i < s.length; i++) {
+      var ch = s.charAt(i), t = line + ch;
+      if (line && ctx.measureText(t).width > maxW) {
+        if (maxLines && lines.length >= maxLines - 1) {
+          var cut = line;
+          while (cut.length > 1 && ctx.measureText(cut + '…').width > maxW) cut = cut.slice(0, -1);
+          lines.push(cut + '…');
+          return lines;
+        }
+        lines.push(line); line = ch;
+      } else { line = t; }
+    }
+    if (line) lines.push(line);
+    return lines.slice(0, maxLines || lines.length);
+  }
+  function gbFitText(ctx, text, maxW) {
+    var s = String(text == null ? '' : text);
+    if (ctx.measureText(s).width <= maxW) return s;
+    while (s.length > 1 && ctx.measureText(s + '…').width > maxW) s = s.slice(0, -1);
+    return s + '…';
+  }
+
+  /* 메모판에 걸 최신 메모 — 서버(또는 이 기기 임시 기록)에서 같은 글은 한 번만 */
+  function kioskBoardNotes() {
+    var raw = [];
+    try {
+      raw = (typeof GB_STATE !== 'undefined' && GB_STATE && GB_STATE.items && GB_STATE.items.length)
+        ? GB_STATE.items
+        : (typeof gbLocalList === 'function' ? gbLocalList() : []);
+    } catch (e) { raw = []; }
+    var notes = [], seen = {};
+    for (var i = 0; i < raw.length && notes.length < KIOSK_BOARD.notes; i++) {
+      var it = (typeof gbNorm === 'function') ? gbNorm(raw[i])
+        : { name: raw[i].name, text: raw[i].message, at: '' };
+      var sp = (typeof gbSplitContact === 'function') ? gbSplitContact(it.text)
+        : { contact: '', text: it.text };
+      if (!sp.text) continue;
+      var key = (it.name || '') + '|' + sp.text;
+      if (seen[key]) continue;
+      seen[key] = 1;
+      notes.push({ name: it.name || '방문자', contact: sp.contact || '', text: sp.text, at: it.at || '' });
+    }
+    return notes;
+  }
+
+  function paintKioskBoard(cv, notes) {
+    var W = cv.width, H = cv.height, ctx = cv.getContext('2d');
     var g = ctx.createLinearGradient(0, 0, W, H);
-    g.addColorStop(0, '#111c30'); g.addColorStop(1, '#1d2f4d');
+    g.addColorStop(0, '#101b2d'); g.addColorStop(1, '#1e304d');
     ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-    ctx.fillStyle = 'rgba(201,162,39,.18)';
-    ctx.beginPath(); ctx.arc(880, 90, 220, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(201,162,39,.16)';
+    ctx.beginPath(); ctx.arc(930, 40, 240, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#c9a227'; ctx.fillRect(0, 0, W, 7);
+
+    /* 제목 줄 — 압정 아이콘 + 제목 + 오른쪽 LIVE 표시 */
+    ctx.save();
+    ctx.fillStyle = '#e0533f';
+    ctx.beginPath(); ctx.arc(80, 108, 17, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.75)';
+    ctx.beginPath(); ctx.arc(74, 102, 6, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = '#c9a227';
-    ctx.font = '800 24px ' + fontOf();
-    ctx.fillText('DOKDO INTERNATIONAL TRADE', 62, 92);
+    ctx.beginPath(); ctx.moveTo(80, 126); ctx.lineTo(72, 150); ctx.lineTo(90, 148); ctx.closePath(); ctx.fill();
+    ctx.restore();
+
     ctx.fillStyle = '#ffffff';
-    ctx.font = '800 58px ' + fontOf();
-    ctx.fillText('독도국제무역 안내데스크', 58, 176);
+    ctx.font = '800 48px ' + fontOf();
+    ctx.fillText('방문자 메모판', 112, 126);
     ctx.fillStyle = '#b9c8e0';
-    ctx.font = '600 28px ' + fontOf();
-    ctx.fillText('방명록 · 정보 게시판 · 국제 상품 가격 안내', 62, 230);
-    ctx.strokeStyle = 'rgba(255,255,255,.16)'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(62, 274); ctx.lineTo(962, 274); ctx.stroke();
-    var rows = [
-      ['01', '문 6개 너머 전시실마다 종목별 쇼츠 판넬 5칸이 걸려 있습니다'],
-      ['02', '판넬을 누르면 그 쇼츠가 바로 열립니다'],
-      ['03', '방명록은 방문한 모든 사람이 함께 보고 남깁니다']
-    ];
-    ctx.font = '600 25px ' + fontOf();
-    rows.forEach(function (r, i) {
-      var y = 344 + i * 60;
+    ctx.font = '600 23px ' + fontOf();
+    ctx.fillText('서로 연락 남기기 · 이름 · 연락처 · 한마디', 114, 164);
+
+    var liveOn = !!(typeof GB_STATE !== 'undefined' && GB_STATE && GB_STATE.mode === 'server');
+    var chipTxt = liveOn ? '● 공유 메모판 · 함께 봄' : '● 이 기기 임시 메모';
+    ctx.font = '700 19px ' + fontOf();
+    var chipW = ctx.measureText(chipTxt).width + 34;
+    ctx.fillStyle = liveOn ? 'rgba(63,155,95,.22)' : 'rgba(201,162,39,.20)';
+    roundRect(ctx, W - 56 - chipW, 88, chipW, 38, 19); ctx.fill();
+    ctx.fillStyle = liveOn ? '#8fe0b0' : '#e6cd83';
+    ctx.fillText(chipTxt, W - 56 - chipW + 17, 114);
+
+    ctx.strokeStyle = 'rgba(255,255,255,.14)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(56, 190); ctx.lineTo(W - 56, 190); ctx.stroke();
+
+    /* 포스트잇 카드 3장 */
+    var top = 214, ch = 330, gap = 22;
+    var cw = (W - 112 - gap * 2) / 3;
+    var tones = [['#fdf6df', '#eadcb0'], ['#eef7f1', '#cfe6d8'], ['#fdeef0', '#f0d3d8']];
+    for (var i = 0; i < KIOSK_BOARD.notes; i++) {
+      var x = 56 + i * (cw + gap), y = top;
+      var note = notes[i] || null;
+      var tone = tones[i % tones.length];
+      ctx.save();
+      ctx.fillStyle = 'rgba(0,0,0,.28)';
+      roundRect(ctx, x + 3, y + 6, cw, ch, 18); ctx.fill();
+      ctx.fillStyle = note ? tone[0] : 'rgba(255,255,255,.06)';
+      roundRect(ctx, x, y, cw, ch, 18); ctx.fill();
+      ctx.strokeStyle = note ? tone[1] : 'rgba(255,255,255,.22)';
+      ctx.lineWidth = 2;
+      if (!note) ctx.setLineDash([9, 8]);
+      roundRect(ctx, x + 1, y + 1, cw - 2, ch - 2, 17); ctx.stroke();
+      ctx.setLineDash([]);
+
+      if (!note) {
+        ctx.fillStyle = 'rgba(255,255,255,.55)';
+        ctx.textAlign = 'center';
+        ctx.font = '700 22px ' + fontOf();
+        ctx.fillText('빈 자리', x + cw / 2, y + ch / 2 - 8);
+        ctx.font = '600 18px ' + fontOf();
+        ctx.fillText('첫 메모를 남겨 주세요', x + cw / 2, y + ch / 2 + 26);
+        ctx.textAlign = 'left';
+        ctx.restore();
+        continue;
+      }
+
+      var pad = 20, innerW = cw - pad * 2;
+      /* 압정 */
       ctx.fillStyle = '#c9a227';
-      ctx.fillText(r[0], 64, y);
-      ctx.fillStyle = '#e7eefa';
-      ctx.fillText(r[1], 122, y);
-    });
-    ctx.fillStyle = 'rgba(255,255,255,.55)';
-    ctx.font = '700 21px ' + fontOf();
-    ctx.fillText('화면을 누르거나 E 키로 참여하세요', 62, 588);
+      ctx.beginPath(); ctx.arc(x + pad + 4, y + 28, 6.5, 0, Math.PI * 2); ctx.fill();
+      /* 이름 — 긴 이름은 카드 폭에 맞춰 자동으로 줄인다 */
+      ctx.fillStyle = '#1f2a3c';
+      var nameW = innerW - 30, nameSize = 21;
+      do {
+        ctx.font = '800 ' + nameSize + 'px ' + fontOf();
+        if (ctx.measureText(note.name).width <= nameW || nameSize <= 15) break;
+        nameSize -= 1;
+      } while (true);
+      ctx.font = '800 ' + nameSize + 'px ' + fontOf();
+      ctx.fillText(gbFitText(ctx, note.name, nameW), x + pad + 18, y + 36);
+      /* 연락처 배지 */
+      ctx.font = '800 16px ' + fontOf();
+      var badgeTxt = note.contact ? ('☎ ' + note.contact) : '연락처 미기재';
+      badgeTxt = gbFitText(ctx, badgeTxt, innerW - 26);
+      var bw = Math.min(innerW, ctx.measureText(badgeTxt).width + 24);
+      ctx.fillStyle = note.contact ? '#f6e3a8' : 'rgba(31,42,60,.08)';
+      roundRect(ctx, x + pad, y + 52, bw, 32, 16); ctx.fill();
+      if (note.contact) { ctx.strokeStyle = '#e2cb8b'; ctx.lineWidth = 1.5; roundRect(ctx, x + pad, y + 52, bw, 32, 16); ctx.stroke(); }
+      ctx.fillStyle = note.contact ? '#6b4e00' : 'rgba(31,42,60,.45)';
+      ctx.fillText(badgeTxt, x + pad + 12, y + 74);
+      /* 메모 본문 — 매모지처럼 가로 줄을 그어 아래 빈 자리도 글로 채운다 */
+      var bodyTop = y + 104, lineH = 27, maxLines = 7;
+      ctx.strokeStyle = 'rgba(31,42,60,.10)'; ctx.lineWidth = 1.5;
+      for (var rl = 0; rl < maxLines - 1; rl++) {
+        var ly = bodyTop + 18 + rl * lineH;
+        if (ly > y + ch - 34) break;
+        ctx.beginPath(); ctx.moveTo(x + pad, ly); ctx.lineTo(x + cw - pad, ly); ctx.stroke();
+      }
+      ctx.font = '600 19px ' + fontOf();
+      ctx.fillStyle = '#26313f';
+      var lines = gbWrapLines(ctx, note.text, innerW, maxLines);
+      for (var li = 0; li < lines.length; li++) ctx.fillText(lines[li], x + pad, bodyTop + 12 + li * lineH);
+      /* 시각 — 카드 아래 오른쪽 */
+      if (note.at) {
+        ctx.font = '700 15px ' + fontOf();
+        ctx.fillStyle = '#8a94a4';
+        ctx.textAlign = 'right';
+        ctx.fillText(note.at, x + cw - pad, y + ch - 14);
+        ctx.textAlign = 'left';
+      }
+      ctx.restore();
+    }
+
+    /* 아래 안내 */
+    ctx.fillStyle = 'rgba(255,255,255,.62)';
+    ctx.font = '700 20px ' + fontOf();
+    ctx.fillText('판을 누르면 메모판이 열립니다 · 이름과 연락처를 남겨 서로 이어지세요', 56, 600);
+    ctx.textAlign = 'right';
+    ctx.fillStyle = 'rgba(201,162,39,.85)';
+    ctx.fillText('DOKDO INTERNATIONAL TRADE', W - 56, 600);
+    ctx.textAlign = 'left';
+    return cv;
+  }
+
+  function refreshKioskBoard() {
+    var cv = KIOSK_BOARD.canvas;
+    if (!cv) return false;
+    try {
+      paintKioskBoard(cv, kioskBoardNotes());
+      if (KIOSK_BOARD.tex) KIOSK_BOARD.tex.needsUpdate = true;
+      return true;
+    } catch (e) { return false; }
+  }
+
+  /* 옛 이름(다른 곳에서 부를 수 있음) — 초기 화면용 텍스처 */
+  function makeKioskTexture() {
+    var cv = document.createElement('canvas');
+    cv.width = KIOSK_BOARD.W; cv.height = KIOSK_BOARD.H;
+    paintKioskBoard(cv, kioskBoardNotes());
     var tex = new THREE.CanvasTexture(cv);
     tex.encoding = THREE.sRGBEncoding; tex.anisotropy = maxAniso;
     return tex;
@@ -3614,15 +3783,33 @@
       new THREE.MeshStandardMaterial({ color: 0x27354f, roughness: 0.35, metalness: 0.4 }));
     top.position.y = 0.96; g.add(top);
 
-    var screen = new THREE.Mesh(new THREE.PlaneGeometry(2.7, 1.69),
-      new THREE.MeshBasicMaterial({ map: makeKioskTexture() }));
-    screen.position.set(0, 1.98, 0);
-    screen.userData.hit = { kind: 'guestbook' };
-    g.add(screen);
+    /* 📌 양면 메모판 — 앞면(screen)·뒷면(backScreen)에 같은 캔버스를 그린 판을 세운다.
+       한 텐스처를 같이 쓰서, 메모가 갱신되면 두 면이 동시에 바뀐다. */
+    var boardCv = document.createElement('canvas');
+    boardCv.width = KIOSK_BOARD.W; boardCv.height = KIOSK_BOARD.H;
+    paintKioskBoard(boardCv, kioskBoardNotes());
+    var boardTex = new THREE.CanvasTexture(boardCv);
+    boardTex.encoding = THREE.sRGBEncoding; boardTex.anisotropy = maxAniso;
+    KIOSK_BOARD.canvas = boardCv; KIOSK_BOARD.tex = boardTex;
 
     var frame = new THREE.Mesh(new THREE.BoxGeometry(2.85, 1.84, 0.08), MAT.dark);
     frame.position.set(0, 1.98, -0.05);
+    frame.userData.hit = { kind: 'guestbook' };
     g.add(frame);
+
+    var screen = new THREE.Mesh(new THREE.PlaneGeometry(2.72, 1.70),
+      new THREE.MeshBasicMaterial({ map: boardTex }));
+    screen.position.set(0, 1.98, 0.002);
+    screen.userData.hit = { kind: 'guestbook' };
+    g.add(screen);
+
+    var backScreen = new THREE.Mesh(new THREE.PlaneGeometry(2.72, 1.70),
+      new THREE.MeshBasicMaterial({ map: boardTex }));
+    backScreen.position.set(0, 1.98, -0.10);
+    backScreen.rotation.y = Math.PI;
+    backScreen.userData.hit = { kind: 'guestbook' };
+    g.add(backScreen);
+
     [-0.55, 0.55].forEach(function (x) {
       var pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.95, 12), MAT.gold);
       pole.position.set(x, 1.47, -0.12);
@@ -3632,7 +3819,8 @@
     g.userData = { type: 'guestbook' };
     state.kiosk = g;
     state.kioskScreen = screen;
-    state.pickable.push(screen);
+    state.kioskBack = backScreen;
+    state.pickable.push(screen, backScreen, frame);
     state.colliders.push({ type: 'circle', x: 10.9, z: 10.9, r: 1.75 });
   }
 
@@ -8951,6 +9139,20 @@
     el.textContent = text || '';
     el.style.color = tone === 'wait' ? '#b42318' : (tone === 'ok' ? '#1c7a45' : '#8a6d1f');
   }
+  /* 연락처는 DB 스키마(name·message)를 그대로 쓰기 위해 message 안에
+     `[연락처: 카톡 abc]` 첫 줄로 합쳐 저장한다(기존 방명록 글과 100% 호환). */
+  var GB_CONTACT_RE = /\[\s*연락처\s*:\s*([^\]\n]*)\]\s*/;
+  function gbSplitContact(text) {
+    var t = String(text == null ? '' : text);
+    var m = t.match(GB_CONTACT_RE);
+    if (!m) return { contact: '', text: t.trim() };
+    return { contact: String(m[1] || '').trim(), text: t.replace(GB_CONTACT_RE, '').trim() };
+  }
+  function gbWithContact(text, contact) {
+    var body = String(text == null ? '' : text).trim();
+    var c = String(contact == null ? '' : contact).replace(/[\[\]\n]/g, ' ').trim().slice(0, 60);
+    return c ? ('[연락처: ' + c + ']\n' + body) : body;
+  }
   /* 서버 행(created_at)과 로컬 항목(at)을 같은 모양으로 */
   function gbNorm(it) {
     return { name: it.name || '방문자', text: it.message != null ? it.message : (it.text || ''),
@@ -8959,37 +9161,48 @@
   function renderGuestbook(list) {
     var rows = list || GB_STATE.items || gbLocalList();
     var ul = $('g-list');
-    if (!ul) return;
-    ul.innerHTML = '';
-    if (!rows.length) {
-      var p = document.createElement('li');
-      p.className = 'gb-empty';
-      p.textContent = '아직 남긴 글이 없습니다. 첫 번째 방문자가 되어 보세요!';
-      ul.appendChild(p);
-      return;
+    if (ul) {
+      ul.innerHTML = '';
+      if (!rows.length) {
+        var p = document.createElement('li');
+        p.className = 'gb-empty';
+        p.textContent = '아직 남긴 메모가 없습니다. 첫 번째 방문자가 되어 보세요!';
+        ul.appendChild(p);
+      } else {
+        rows.forEach(function (raw) {
+          var it = gbNorm(raw);
+          var sp = gbSplitContact(it.text);
+          var li = document.createElement('li');
+          li.className = 'gb-item';
+          var who = document.createElement('div');
+          who.className = 'who';
+          var name = document.createElement('span');
+          name.textContent = it.name;
+          var time = document.createElement('time');
+          time.textContent = it.at;
+          who.appendChild(name); who.appendChild(time);
+          li.appendChild(who);
+          if (sp.contact) {
+            var badge = document.createElement('span');
+            badge.className = 'contact';
+            badge.textContent = '☎ ' + sp.contact;
+            li.appendChild(badge);
+          }
+          var msg = document.createElement('p');
+          msg.textContent = sp.text;
+          li.appendChild(msg);
+          ul.appendChild(li);
+        });
+      }
     }
-    rows.forEach(function (raw) {
-      var it = gbNorm(raw);
-      var li = document.createElement('li');
-      li.className = 'gb-item';
-      var who = document.createElement('div');
-      who.className = 'who';
-      var name = document.createElement('span');
-      name.textContent = it.name;
-      var time = document.createElement('time');
-      time.textContent = it.at;
-      who.appendChild(name); who.appendChild(time);
-      var msg = document.createElement('p');
-      msg.textContent = it.text;
-      li.appendChild(who); li.appendChild(msg);
-      ul.appendChild(li);
-    });
+    // 📌 3D 양면 메모판도 같이 다시 그린다(앞면·뒷면 동시 갱신)
+    refreshKioskBoard();
   }
   function gbUseLocal(tone) {
     GB_STATE.mode = 'local';
     GB_STATE.items = gbLocalList();
     renderGuestbook(GB_STATE.items);
-    if (tone === 'wait') gbStatus('서버 방명록 SQL 적용 대기 중 — 임시 로컬 저장', 'wait');
+    if (tone === 'wait') gbStatus('서버 메모판 SQL 적용 대기 중 — 임시 로컬 저장', 'wait');
     else if (tone === 'off') gbStatus('서버 연결 안 됨 — 임시 로컬 저장', 'wait');
     return false;
   }
@@ -9009,7 +9222,7 @@
         GB_STATE.wait = false;
         GB_STATE.items = Array.isArray(rows) ? rows : [];
         renderGuestbook(GB_STATE.items);
-        gbStatus('공유 방명록 · 방문한 모든 사람이 함께 봅니다 · ' + GB_STATE.items.length + '건', 'ok');
+        gbStatus('공유 메모판 · 방문한 모든 사람이 함께 봅니다 · ' + GB_STATE.items.length + '건', 'ok');
         return true;
       })
       .catch(function (e) {
@@ -9024,15 +9237,18 @@
     reloadGuestbook();
     setTimeout(function () { var n = $('g-name'); if (n) n.focus(); }, 120);
   }
-  function submitGuestbook(name, text) {
+  function submitGuestbook(name, text, contact) {
     if (GB_STATE.busy) return Promise.resolve(false);
     var cleanName = String(name || '').trim().slice(0, 20) || '방문자';
     var cleanText = String(text || '').trim().slice(0, 300);
-    if (!cleanText) { toast('내용을 적어 주세요'); return Promise.resolve(false); }
+    var cleanContact = String(contact == null ? '' : contact).replace(/[\[\]\n]/g, ' ').trim().slice(0, 60);
+    if (!cleanText) { toast('메모 내용을 적어 주세요'); return Promise.resolve(false); }
+    // 연락처는 기존 스키마(name·message)를 그대로 쓰기 위해 message 첫 줄에 합쳐 저장한다
+    var payload = gbWithContact(cleanText, cleanContact);
 
     function addLocal() {
       var list = gbLocalList();
-      list.unshift({ name: cleanName, text: cleanText, at: gbTimeText(new Date()) });
+      list.unshift({ name: cleanName, text: payload, at: gbTimeText(new Date()) });
       gbLocalSave(list);
       GB_STATE.mode = 'local';
       GB_STATE.items = list;
@@ -9044,10 +9260,10 @@
       addLocal();
       gbStatus('서버 미설정 — 이 기기에만 임시 저장');
       GB_STATE.busy = false;
-      toast('방명록에 남겼습니다');
+      toast('메모를 남겼습니다');
       return Promise.resolve(true);
     }
-    return PANELS.rest('rpc/add_guestbook_entry', { method: 'POST', body: { p_name: cleanName, p_message: cleanText } })
+    return PANELS.rest('rpc/add_guestbook_entry', { method: 'POST', body: { p_name: cleanName, p_message: payload } })
       .then(function (res) {
         if (res && res.ok === false) throw new Error('rejected');
         return reloadGuestbook();
@@ -9055,7 +9271,7 @@
       .then(function () {
         GB_STATE.busy = false;
         REALTIME.send({ type: 'guestbook', id: REALTIME.id(), name: cleanName });
-        toast('방명록에 남겼습니다');
+        toast('메모를 남겼습니다');
         return true;
       })
       .catch(function (e) {
@@ -9064,7 +9280,7 @@
         GB_STATE.wait = gbIsMissing(e);
         gbUseLocal(GB_STATE.wait ? 'wait' : 'off');
         GB_STATE.busy = false;
-        toast('방명록에 남겼습니다(이 기기 임시 저장)');
+        toast('메모를 남겼습니다(이 기기 임시 저장)');
         return true;
       });
   }
@@ -9667,8 +9883,8 @@
         setTimeout(function () { greetMe(replyKind, { reply: true }); }, 700);
       }
     } else if (msg.type === 'guestbook') {
-      // 다른 방문자가 방명록에 글을 남김 — 열려 있으면 바로 새로 읽어 온다
-      if (!$('gbook').classList.contains('hidden')) reloadGuestbook();
+      // 다른 방문자가 메모를 남김 — 모달이 닫혀 있어도 3D 메모판을 바로 새로 그린다
+      reloadGuestbook();
     } else if (msg.type === 'state') {
       ensureVisitor(msg);
     } else if (msg.type === 'hello') {
@@ -10294,10 +10510,11 @@
     $('g-form').addEventListener('submit', function (e) {
       e.preventDefault();
       var name = $('g-name').value.trim() || '방문자';
+      var contact = $('g-contact').value.trim();
       var text = $('g-text').value.trim();
-      if (!text) { toast('내용을 적어 주세요'); return; }
-      submitGuestbook(name, text).then(function (ok) {
-        if (ok) $('g-text').value = '';
+      if (!text) { toast('메모 내용을 적어 주세요'); return; }
+      submitGuestbook(name, text, contact).then(function (ok) {
+        if (ok) { $('g-text').value = ''; $('g-contact').value = ''; }
       });
     });
 
@@ -10400,12 +10617,7 @@
       updateCamera(dt);
       updateNearHint();
       updateSitHint();
-      if (state.kiosk && state.kioskScreen) {
-        state.kioskScreen.rotation.y = Math.atan2(
-          state.camera.position.x - state.kiosk.position.x,
-          state.camera.position.z - state.kiosk.position.z
-        );
-      }
+      // 📌 메모판은 앞·뒤 양면이 각자의 방향을 향해 서 있는 물리 판이므로 돌리지 않는다
     }
     if (modalOpen && state.elapsed - state.lastRender < 0.2) return;
     state.lastRender = state.elapsed;
@@ -11868,7 +12080,7 @@
       gallery: {
         name: '독도국제무역.com 국제상품 3D 전시관',
         channel: '@재롱둥이-r4y',
-        layout: '중앙홀(뉴스 TV·방명록 키오스크·안내데스크·프런트데스크) + 전시실 6개 + 2층 회의실(직원 전용)',
+        layout: '중앙홀(뉴스 TV·양면 방문자 메모판·안내데스크·프런트데스크) + 전시실 6개 + 2층 회의실(직원 전용)',
         exhibits: '종목 ' + allTickers.length + '개 · 부스마다 쇼츠 판넬 5칸(#1 자동 최신, #2~#5 직접 등록)',
         indicators: 'MACD 12·130·9 / CCI 90 ±100 / OI / COT / 만기·롤오버 / 1~6개월 스윙',
         doctrine: '독도국제무역.com — 정확한 정보와 신뢰가 1순위. 확인된 값만 수치로 말한다.'
@@ -12616,7 +12828,7 @@
         '이동 — WASD 또는 왼쪽 아래 조이스틱, 시점은 마우스·손가락 드래그',
         '판넬 열기 — 판넬을 클릭하거나 E (안내 알약이 뜨면 탭)',
         '확대·축소 — 두 손가락 핀치(데스크톱은 Ctrl+휠)',
-        '방명록 — 오른쪽 ✍️ 방명록(남동쪽 키오스크도 같은 창)',
+        '메모판 — 오른쪽 📌 메모판(남동쪽 양면 판을 눌러도 같은 창) · 이름·연락처·메모를 남기면 서로 연락할 수 있습니다',
         '다른 방문자 — 💬 채팅·🎙️ 음성방 (같은 주소로 들어온 방문자끼리)',
         '안내 — 이 프런트데스크에 말 걸면 종목·쇼츠·지표를 바로 알려 드려요'
       ];
@@ -14133,6 +14345,8 @@
       }
       updateCamera(1);
       initChat((meta && meta.realtime) || window.GALLERY_REALTIME || null);
+      // 📌 남동쪽 양면 메모판 — 입장하자마자 서버의 최신 메모를 판에 걸어 둔다(모달은 닫힌 채)
+      reloadGuestbook();
       // Supabase가 설정돼 있으면 저장된 2~5번 판넬을 읽어 3D 판넬에 합칩니다(1번은 그대로).
       PANELS.loadRemote().then(function (ok) {
         if (ok) PANELS.refreshAll();
@@ -14242,7 +14456,12 @@
         panelLabels: function () { return state.panelLabels; },
         guestbook: {
           state: GB_STATE, reload: reloadGuestbook, submit: submitGuestbook,
-          render: renderGuestbook, local: gbLocalList, missing: gbIsMissing
+          render: renderGuestbook, local: gbLocalList, missing: gbIsMissing,
+          split: gbSplitContact, withContact: gbWithContact,
+          notes: kioskBoardNotes, refreshBoard: refreshKioskBoard,
+          board: function () {
+            return { canvas: !!KIOSK_BOARD.canvas, tex: !!KIOSK_BOARD.tex, notes: kioskBoardNotes() };
+          }
         },
         newsState: function (id) {
           var tv = id ? tvById(id) : activeTv();
