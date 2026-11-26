@@ -2069,12 +2069,13 @@
       ctx.setLineDash([]);
 
       if (!note) {
+        var waiting = !!(typeof GB_STATE !== 'undefined' && GB_STATE && !GB_STATE.loaded);
         ctx.fillStyle = 'rgba(255,255,255,.55)';
         ctx.textAlign = 'center';
         ctx.font = '700 22px ' + fontOf();
-        ctx.fillText('빈 자리', x + cw / 2, y + ch / 2 - 8);
+        ctx.fillText(waiting ? '불러오는 중 …' : '빈 자리', x + cw / 2, y + ch / 2 - 8);
         ctx.font = '600 18px ' + fontOf();
-        ctx.fillText('첫 메모를 남겨 주세요', x + cw / 2, y + ch / 2 + 26);
+        ctx.fillText(waiting ? '메모를 가져오고 있습니다' : '첫 메모를 남겨 주세요', x + cw / 2, y + ch / 2 + 26);
         ctx.textAlign = 'left';
         ctx.restore();
         continue;
@@ -9111,7 +9112,7 @@
   var GB_LIMIT = 60;
   /* mode: 'server' = Supabase 공유 방명록 / 'local' = 이 기기 임시 저장
      wait: true → DB 에 gallery_guestbook 표가 아직 없음(SQL 적용 대기) */
-  var GB_STATE = { mode: 'local', items: [], busy: false, wait: false };
+  var GB_STATE = { mode: 'local', items: [], busy: false, wait: false, loaded: false };
 
   function gbCfg() {
     try { return PANELS && PANELS.cfg ? PANELS.cfg() : null; } catch (e) { return null; }
@@ -9200,6 +9201,7 @@
   }
   function gbUseLocal(tone) {
     GB_STATE.mode = 'local';
+    GB_STATE.loaded = true;
     GB_STATE.items = gbLocalList();
     renderGuestbook(GB_STATE.items);
     if (tone === 'wait') gbStatus('서버 메모판 SQL 적용 대기 중 — 임시 로컬 저장', 'wait');
@@ -9220,6 +9222,7 @@
       .then(function (rows) {
         GB_STATE.mode = 'server';
         GB_STATE.wait = false;
+        GB_STATE.loaded = true;
         GB_STATE.items = Array.isArray(rows) ? rows : [];
         renderGuestbook(GB_STATE.items);
         gbStatus('공유 메모판 · 방문한 모든 사람이 함께 봅니다 · ' + GB_STATE.items.length + '건', 'ok');
@@ -14347,6 +14350,8 @@
       initChat((meta && meta.realtime) || window.GALLERY_REALTIME || null);
       // 📌 남동쪽 양면 메모판 — 입장하자마자 서버의 최신 메모를 판에 걸어 둔다(모달은 닫힌 채)
       reloadGuestbook();
+      // 다른 기기의 새 메모는 실시간 신호로도 받지만, 신호가 유실돼도 판이 낡지 않게 90초에 한 번은 다시 읽는다
+      setInterval(function () { if (!document.hidden) reloadGuestbook(); }, 90000);
       // Supabase가 설정돼 있으면 저장된 2~5번 판넬을 읽어 3D 판넬에 합칩니다(1번은 그대로).
       PANELS.loadRemote().then(function (ok) {
         if (ok) PANELS.refreshAll();
