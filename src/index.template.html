@@ -10547,13 +10547,15 @@
         if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') { e.preventDefault(); karaokeGotoSearch(); }
       });
     }
-    /* 떠 있는 마이크 단추는 선곡 목록까지 내려갔을 때만 보인다(맨 위에서는 마이크 카드가 그 역할을 한다) */
+    /* 떠 있는 마이크 단추는 마이크 카드가 화면 밖으로 사라졌을 때만 보인다(맨 위에서는 카드가 그 역할을 한다) */
     var krSheetEl = document.querySelector('#karaokeModal .kr-sheet');
     if (krSheetEl) {
       krSheetEl.addEventListener('scroll', function () {
         var fab = $('kr-micfab');
         if (!fab) return;
-        fab.classList.toggle('show', krSheetEl.scrollTop > 150);
+        var mc = document.querySelector('#karaokeModal .kr-mic');
+        var onScreen = mc ? mc.getBoundingClientRect().bottom > 0 : true;
+        fab.classList.toggle('show', !onScreen);
       }, { passive: true });
     }
     $('kr-echo').addEventListener('input', function () {
