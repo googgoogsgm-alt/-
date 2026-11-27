@@ -25,6 +25,7 @@ DATA = os.path.join(HERE, "exhibits.json")
 CATALOG = os.path.join(HERE, "catalog.json")
 NEWS = os.path.join(HERE, "news.json")
 BRIEF = os.path.join(HERE, "secretary_brief.json")
+TREASURES = os.path.join(HERE, "treasures.json")
 OUT = os.path.join(HERE, "index.html")
 
 
@@ -75,12 +76,22 @@ def main():
         except ValueError as e:
             raise SystemExit(f"secretary_brief.json 을 읽지 못했습니다: {e}")
 
+    treasures = None
+    if os.path.exists(TREASURES):
+        try:
+            treasures = _load_json(TREASURES)
+            if not treasures.get("items"):
+                treasures = None
+        except ValueError as e:
+            raise SystemExit(f"treasures.json 을 읽지 못했습니다: {e}")
+
     html = (tpl
             .replace("/*__THREE_JS__*/", three)
             .replace("/*__EXHIBITS_JSON__*/", _embed(data))
             .replace("/*__CATALOG_JSON__*/", _embed(catalog) if catalog else "null")
             .replace("/*__NEWS_JSON__*/", _embed(news) if news else "null")
-            .replace("/*__SECRETARY_BRIEF_JSON__*/", _embed(brief) if brief else "null"))
+            .replace("/*__SECRETARY_BRIEF_JSON__*/", _embed(brief) if brief else "null")
+            .replace("/*__TREASURES_JSON__*/", _embed(treasures) if treasures else "null"))
     with open(OUT, "w", encoding="utf-8") as f:
         f.write(html)
 
@@ -109,6 +120,11 @@ def main():
     else:
         print("  secretary_brief.json 없음 · 희망이는 뉴스·종목 데이터로만 답합니다"
               "(python3 export_brief.py 로 만들 수 있습니다)")
+    if treasures:
+        print(f"  treasures.json 내장 · 🎁 보물상자 {len(treasures.get('items', []))}개 "
+              f"(하루 {treasures.get('meta', {}).get('daily_limit', 5)}회 · 확인 {treasures.get('meta', {}).get('checked_at', '')})")
+    else:
+        print("  treasures.json 없음 · 보물찾기는 '준비 중' 상태로 남습니다")
 
 
 if __name__ == "__main__":

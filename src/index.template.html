@@ -82,7 +82,10 @@
 
   /* ── 오른쪽 버튼 ─────────────────────────── */
   #fabs{position:fixed;right:calc(14px + env(safe-area-inset-right));bottom:calc(16px + env(safe-area-inset-bottom));
-    z-index:12;display:flex;flex-direction:column;gap:9px;align-items:flex-end}
+    z-index:12;display:flex;flex-direction:column;gap:9px;align-items:flex-end;
+    pointer-events:none}   /* 넓은 빈 칸이 화면 아래 안내 알약(#near)의 탭을 가로채지 않게 */
+  #fabs > .fab, #greet > .fab{pointer-events:auto}
+  #greet{pointer-events:none}
   .fab{border:0;cursor:pointer;font-family:inherit;font-weight:700;color:var(--ink);
     background:rgba(255,255,255,.9);backdrop-filter:blur(10px);border-radius:14px;padding:9px 13px;font-size:12.5px;
     box-shadow:var(--shadow);display:flex;align-items:center;gap:7px;transition:transform .12s ease}
@@ -422,7 +425,8 @@
   /* ── 방문자 채팅 ─────────────────────────── */
   #chat{position:fixed;left:calc(12px + env(safe-area-inset-left));bottom:calc(92px + env(safe-area-inset-bottom));
     z-index:13;display:flex;flex-direction:column;align-items:flex-start;gap:8px;
-    width:min(320px,calc(100vw - 24px))}
+    width:min(320px,calc(100vw - 24px));pointer-events:none}
+  #chat > *{pointer-events:auto}
   #chat-toggle{display:flex;align-items:center;gap:7px;border:0;cursor:pointer;font-family:inherit;
     font-size:12.5px;font-weight:800;color:#fff;background:var(--navy-solid);border-radius:999px;
     padding:10px 14px;box-shadow:var(--shadow)}
@@ -1144,6 +1148,64 @@
     #first-visit .fv-sub{display:none}
     #meeting-voice{top:calc(70px + env(safe-area-inset-top));padding:7px 10px}
   }
+
+  /* ══ 🎁 보물찾기 — 오른쪽 단추 줄의 작은 알약 · 결과 카드 ══════════ */
+  #btn-treasure{background:linear-gradient(140deg,#fffaee,#ffefc9);border:1.3px solid #e3c877;
+    gap:6px;padding:8px 12px}
+  #btn-treasure .ico{font-size:14px}
+  #btn-treasure .tr-hud{font-size:12.5px;font-weight:900;color:#5b4405;letter-spacing:-.2px;
+    font-variant-numeric:tabular-nums}
+  #btn-treasure .tr-today{font-style:normal;font-size:9.5px;font-weight:800;color:#8a6d1f;
+    background:#fff;border:1px solid #ead9a4;border-radius:999px;padding:2px 6px;white-space:nowrap}
+  #btn-treasure.full{background:linear-gradient(140deg,#f2f7ff,#dfe9ff);border-color:#b9cdf2}
+  #btn-treasure.full .tr-hud{color:#1d3f78}
+
+  #treasure-modal .sheet{max-width:560px}
+  #treasure-modal .tr-head{display:flex;flex-direction:column;align-items:flex-start;gap:5px;padding-right:40px}
+  #treasure-modal .tr-chip{background:linear-gradient(135deg,#7a5c07,#c9a227);color:#fff}
+  #treasure-modal h2{margin:6px 0 0;font-size:19px;letter-spacing:-.4px;line-height:1.3}
+  .tr-count{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+  .tr-pill{font-size:10.5px;font-weight:900;color:#31486b;background:#f4f7fd;border:1px solid #dde5f2;
+    border-radius:999px;padding:4px 9px}
+  .tr-pill b{color:#8a6d1f}
+  .tr-card{margin-top:12px;padding:13px 14px;border-radius:16px;border:1.4px solid #e8dbab;
+    background:linear-gradient(165deg,#fffdf4,#fff);box-shadow:0 8px 22px rgba(120,96,20,.08)}
+  .tr-card.locked{background:#f7f9fd;border-color:#dbe3ef;box-shadow:none}
+  .tr-card.hidden{display:none}
+  .tr-tag{display:inline-block;font-size:10.5px;font-weight:900;color:#7a5c07;background:#fdf1cf;
+    border:1px solid #ecd9a0;border-radius:999px;padding:3px 9px}
+  .tr-card.locked .tr-tag{color:#8a2b20;background:#ffeceb;border-color:#f2c9c4}
+  .tr-card h3{margin:8px 0 2px;font-size:16px;line-height:1.35;letter-spacing:-.3px;color:#1b2740}
+  .tr-org{margin:0;font-size:11.5px;font-weight:800;color:#6a7891}
+  .tr-reward{margin:9px 0 0;padding:8px 10px;border-radius:11px;background:#fdf4dc;border:1px solid #ecd9a0;
+    font-size:12.5px;font-weight:900;line-height:1.45;color:#6f5306}
+  .tr-meta{margin:9px 0 0;display:grid;gap:5px;font-size:11.5px;font-weight:700;line-height:1.5;color:#33405a}
+  .tr-meta b{color:#1d3f78}
+  .tr-link{display:inline-flex;align-items:center;gap:5px;margin-top:11px;text-decoration:none;
+    font-size:12.5px;font-weight:900;color:#241c00;background:var(--gold,#c9a227);border-radius:999px;
+    padding:9px 14px;box-shadow:0 5px 14px rgba(201,162,39,.28)}
+  .tr-link:active{transform:scale(.98)}
+  .tr-note{margin:11px 0 0;padding:9px 11px;border-radius:12px;background:#fff4f3;border:1.3px solid #f2c9c4;
+    font-size:11.5px;font-weight:800;line-height:1.5;color:#8a2b20}
+  .tr-list{list-style:none;margin:14px 0 0;padding:0;display:flex;flex-direction:column;gap:6px;
+    max-height:none;overflow:visible}
+  .tr-row{display:flex;align-items:center;gap:8px;width:100%;padding:8px 10px;border-radius:11px;
+    border:1px solid #e2e9f4;background:#fff;font-family:inherit;font-size:11.5px;font-weight:800;
+    color:#22304a;cursor:pointer;text-align:left}
+  .tr-row .st{flex:0 0 auto;font-size:13px}
+  .tr-row .n{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tr-row .h{flex:0 0 auto;font-size:9.5px;font-weight:800;color:#8d9bb3;white-space:nowrap}
+  .tr-row.found{background:#f6fbf3;border-color:#cfe4c4}
+  .tr-row.found .n{color:#2f5c1f}
+  .tr-row.locked{background:#f8fafd;border-style:dashed;cursor:default}
+  .tr-foot{margin:10px 0 0;font-size:10.5px;font-weight:700;line-height:1.5;color:#8d9bb3}
+  .tr-foot b{color:#8a6d1f}
+  @media (max-width:760px){
+    #treasure-modal .sheet{padding:15px 13px 13px;border-radius:20px}
+    #btn-treasure{padding:7px 10px}
+    #btn-treasure .tr-hud{font-size:12px}
+    #btn-treasure .tr-today{font-size:9px}
+  }
 </style>
 </head>
 <body>
@@ -1199,6 +1261,8 @@
 <div id="stick"><div class="knob">✥</div></div>
 
 <div id="fabs">
+  <!-- 🎁 보물찾기 진행 알약 — 화면을 가리지 않는 오른쪽 단추 줄의 맨 위 -->
+  <button class="fab" id="btn-treasure" aria-haspopup="dialog" title="보물찾기 진행 상황과 힌트"><span class="ico">🎁</span><span class="tr-hud" id="tr-hud">0/8</span><em class="tr-today" id="tr-today">오늘 0/5</em></button>
   <button class="fab" id="btn-sit" style="display:none"><span class="ico">🪑</span><span id="sit-label">앉기</span></button>
   <button class="fab" id="btn-view"><span class="ico">👁</span><span id="view-label">1인칭</span></button>
   <button class="fab" id="btn-gb"><span class="ico">📌</span>메모판</button>
@@ -1486,6 +1550,23 @@
   </div>
 </div>
 
+<div id="treasure-modal" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tr-title">
+  <div class="sheet small">
+    <button class="x" id="tr-close" aria-label="닫기">✕</button>
+    <div class="tr-head">
+      <span class="chip tr-chip">🎁 3D 보물찾기</span>
+      <h2 id="tr-title">전시관 곳곳의 보물상자를 찾아보세요</h2>
+      <div class="tr-count">
+        <span class="tr-pill" id="tr-found-pill">찾은 보물 <b>0/8</b></span>
+        <span class="tr-pill" id="tr-today-pill">오늘 남은 횟수 <b>5/5회</b></span>
+      </div>
+    </div>
+    <div id="tr-card" class="tr-card hidden" aria-live="polite"></div>
+    <ul class="tr-list" id="tr-list"></ul>
+    <p class="tr-foot">보물상자는 하루 <b>5개</b>까지 새로 열 수 있어요. 남은 횟수는 한국 시간 자정에 다시 채워지고, 이미 찾은 상자는 횟수 없이 몇 번이든 다시 볼 수 있습니다.</p>
+  </div>
+</div>
+
 <div id="karaokeModal" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="kr-title">
   <div class="sheet kr-sheet">
     <button class="x kr-x" id="kr-close" aria-label="닫기">✕</button>
@@ -1634,6 +1715,7 @@
 <script>window.__CATALOG_FALLBACK__ = /*__CATALOG_JSON__*/;</script>
 <script>window.__NEWS_FALLBACK__ = /*__NEWS_JSON__*/;</script>
 <script>window.__SECRETARY_BRIEF_FALLBACK__ = /*__SECRETARY_BRIEF_JSON__*/;</script>
+<script>window.__TREASURES_FALLBACK__ = /*__TREASURES_JSON__*/;</script>
 <script>
 (function () {
   'use strict';
@@ -1731,7 +1813,7 @@
     kiosk: null, kioskScreen: null, lastRender: 0, camDist: 4.3, aspect: 1.6, modalOpenedAt: 0,
     seated: null, sitCandidate: null,
     // 층(1=중앙홀, 2=2층 회의실) · 회의실 입장 정보 · 포털 근접 · 음성 안내 상태
-    floor: 1, floorY: 0, meeting: null, nearPortal: null, nearPortalText: '',
+    floor: 1, floorY: 0, meeting: null, nearPortal: null, nearPortalText: '', nearTreasure: null,
     lastSpeech: null, lastGreet: null, voiceOn: true,
     // 두 손가락 확대·축소: FOV 를 baseFov/zoom 으로 나눈다(줌>1 확대, 줌<1 축소)
     zoom: 1, baseFov: 58, pinching: false
@@ -8160,6 +8242,7 @@
     else if (hit.kind === 'news-tv') openNewsTV(hit.tv || 'hall');
     else if (hit.kind === 'guestbook') openGuestbook();
     else if (hit.kind === 'karaoke') openKaraoke();
+    else if (hit.kind === 'treasure') trOpen(hit.id);
     else if (hit.kind === 'chair') sitOn(hit.index);
     else if (hit.kind === 'slot' && hit.booth) openSlot(hit.booth, hit.slot);
   }
@@ -8195,11 +8278,21 @@
 
   function updateNearHint() {
     var el = $('near');
-    if (!state.avatar || state.firstPerson) { el.classList.remove('show'); state.near = null; state.nearPortal = null; state.nearPickle = null; return; }
+    if (!state.avatar || state.firstPerson) { el.classList.remove('show'); state.near = null; state.nearPortal = null; state.nearPickle = null; state.nearTreasure = null; return; }
     var p = state.avatar.position;
     // 🏛️ 2층 회의실에서는 중앙홀 카운터·부스 알약을 띄우지 않고 회의실 포털만 안내한다
     if (state.floor === 2) {
       state.near = null; state.nearTV = null; state.nearDesk = null;
+      // 🎁 보물상자 — 3.1m 안에 서면 열기 안내 알약
+      var ch2 = trNearestChest(p);
+      if (ch2) {
+        state.nearTreasure = ch2; state.nearPortal = null; state.nearKaraoke = false;
+        var ct2 = trIsFound(ch2) ? '🎁 보물상자(찾음) · 다시 보기' : '🎁 보물상자 · 열기';
+        if ($('near-text').textContent !== ct2) $('near-text').textContent = ct2;
+        el.classList.add('show');
+        return;
+      }
+      state.nearTreasure = null;
       // 🎤 서쪽 벽 노래방 기기 — 3.2m 안에 서면 선곡 안내 알약
       var dk = Math.hypot(p.x - KARAOKE.x, p.z - KARAOKE.z);
       if (dk < 3.2) {
@@ -8238,6 +8331,17 @@
       return;
     }
     state.nearPortal = null;
+    // 🎁 보물상자 — 벽가에 놓인 상자 3.1m 안
+    var ch1 = trNearestChest(p);
+    if (ch1) {
+      state.nearTreasure = ch1; state.near = null; state.nearTV = null;
+      state.nearDesk = null; state.nearPickle = null;
+      var ct1 = trIsFound(ch1) ? '🎁 보물상자(찾음) · 다시 보기' : '🎁 보물상자 · 열기';
+      if ($('near-text').textContent !== ct1) $('near-text').textContent = ct1;
+      el.classList.add('show');
+      return;
+    }
+    state.nearTreasure = null;
     // 💁 프런트데스크 — 카운터 앞에 서면 '프런트데스크 질문하기' 알약
     var ddx = DESK.cx - p.x, ddz = DESK.cz - p.z;
     var dDist = Math.hypot(ddx, ddz);
@@ -11490,6 +11594,7 @@
       if (k === 'e' || k === 'enter') {
         if (state.nearPortal) { portalAct(state.nearPortal); e.preventDefault(); return; }
         if (state.nearKaraoke) { openKaraoke(); e.preventDefault(); return; }
+        if (state.nearTreasure) { trOpen(state.nearTreasure); e.preventDefault(); return; }
         if (state.nearPickle) { openPickle(state.nearPickle); e.preventDefault(); return; }
         if (state.nearDesk) { openDeskModal(state.nearDesk.who); e.preventDefault(); return; }
         // 안내 알약이 📺 뉴스 TV 를 가리키고 있으면 E 도 그 화면을 연다
@@ -11668,6 +11773,7 @@
     $('near').addEventListener('click', function () {
       if (state.nearPortal) { portalAct(state.nearPortal); return; }
       if (state.nearKaraoke) { openKaraoke(); return; }
+      if (state.nearTreasure) { trOpen(state.nearTreasure); return; }
       if (state.nearPickle) { openPickle(state.nearPickle); return; }
       if (state.nearDesk) { openDeskModal(state.nearDesk.who); return; }
       if (state.nearTV) { openNewsTV(state.nearTV); return; }
@@ -11816,6 +11922,7 @@
     updatePortals(dt);    // 회의실 ↔ 중앙홀 포털 링 회전
     updateDokdoVista(dt); // 창밖 동해 물결·선박·갈매기·독도 LIVE(2층에서만)
     updateKaraoke(dt);    // 🎤 2층 노래방 기기 화면·네온·이퀄라이저
+    updateTreasures(dt);  // 🎁 보물상자 금빛 숨쉬기·둥둥 떠오름
     updateDeskGreet();    // 프런트데스크 근접 인사(말풍선 + 제스처 + 목소리)
     updateMeetingHud();
     broadcastState(false);
@@ -15495,6 +15602,373 @@
     SPEAK.unlocked = true;
   }
 
+  /* ══════════════════════════════════════════════════════════════════
+     🎁 3D 보물찾기 — 전시관 곳곳의 보물상자를 열면 실제로 진행 중인
+     국내 공식 이벤트(포인트·쿠폰·교통비 환급)를 알려 준다.
+     · treasures.json(서버가 없으면 내장값)의 항목만 상자로 세운다.
+     · 하루 5개까지 새로 열 수 있다(한국 시간 자정에 초기화 · localStorage).
+     · 이미 찾은 상자는 횟수를 쓰지 않고 다시 볼 수 있다.
+     · 상자는 벽·부스·통로를 가리지 않는 가장자리에만 놓는다.
+     ══════════════════════════════════════════════════════════════════ */
+  var TREASURE = {
+    items: [], byId: {}, limit: 5, found: [], daily: { date: '', ids: [] },
+    chests: {}, group: null, ready: false, idsKey: '', activeId: null
+  };
+  var TR_FOUND_KEY = 'mg_treasure_found_v1', TR_DAILY_KEY = 'mg_treasure_daily_v1';
+
+  /* 한국 시간 기준 오늘 날짜(YYYY-MM-DD) — 자정에 하루 횟수가 새로 채워진다 */
+  function trKstDate() {
+    try {
+      return new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit'
+      }).format(new Date());
+    } catch (e) {
+      return new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+    }
+  }
+
+  function trLoad() {
+    try {
+      var f = JSON.parse(localStorage.getItem(TR_FOUND_KEY) || '[]');
+      if (Array.isArray(f)) {
+        TREASURE.found = f.filter(function (x) { return typeof x === 'string'; });
+      }
+    } catch (e) {}
+    try {
+      var d = JSON.parse(localStorage.getItem(TR_DAILY_KEY) || '{}');
+      if (d && d.date === trKstDate() && Array.isArray(d.ids)) {
+        TREASURE.daily = { date: d.date, ids: d.ids.filter(function (x) { return typeof x === 'string'; }) };
+      } else {
+        TREASURE.daily = { date: trKstDate(), ids: [] };      // 날짜가 바뀌었으면 오늘 몫은 비어 있다
+      }
+    } catch (e) { TREASURE.daily = { date: trKstDate(), ids: [] }; }
+  }
+
+  function trSave() {
+    try {
+      localStorage.setItem(TR_FOUND_KEY, JSON.stringify(TREASURE.found));
+      localStorage.setItem(TR_DAILY_KEY, JSON.stringify(TREASURE.daily));
+    } catch (e) {}
+  }
+
+  function trTodayIds() {
+    var today = trKstDate();
+    if (!TREASURE.daily || TREASURE.daily.date !== today) TREASURE.daily = { date: today, ids: [] };
+    return TREASURE.daily.ids;
+  }
+  function trTodayCount() { return trTodayIds().length; }
+  function trRemaining() { return Math.max(0, TREASURE.limit - trTodayCount()); }
+  function trIsFound(id) { return TREASURE.found.indexOf(id) >= 0; }
+  function trTotal() { return TREASURE.items.length; }
+
+  function trUpdateHud() {
+    var n = TREASURE.found.length, t = trTotal() || 8;
+    var hud = $('tr-hud'), today = $('tr-today'), btn = $('btn-treasure');
+    if (hud) hud.textContent = n + '/' + t;
+    if (today) today.textContent = '오늘 ' + trTodayCount() + '/' + TREASURE.limit;
+    if (btn) {
+      btn.classList.toggle('full', n >= t);
+      btn.setAttribute('aria-label',
+        '보물찾기 ' + n + '/' + t + ' · 오늘 ' + trTodayCount() + '/' + TREASURE.limit + '회 사용 · 남은 ' + trRemaining() + '회');
+    }
+    var fp = $('tr-found-pill'), tp = $('tr-today-pill');
+    if (fp) fp.innerHTML = '찾은 보물 <b>' + n + '/' + t + '</b>';
+    if (tp) tp.innerHTML = '오늘 남은 횟수 <b>' + trRemaining() + '/' + TREASURE.limit + '회</b>';
+  }
+
+  var trGlowTex = null;
+  function trGlowTexture() {
+    if (trGlowTex) return trGlowTex;
+    var S = 128, cv = document.createElement('canvas'); cv.width = cv.height = S;
+    var g = cv.getContext('2d');
+    var gr = g.createRadialGradient(S / 2, S / 2, 2, S / 2, S / 2, S / 2);
+    gr.addColorStop(0, 'rgba(255,232,160,.95)');
+    gr.addColorStop(.42, 'rgba(232,193,88,.40)');
+    gr.addColorStop(1, 'rgba(232,193,88,0)');
+    g.fillStyle = gr; g.fillRect(0, 0, S, S);
+    trGlowTex = new THREE.CanvasTexture(cv);
+    return trGlowTex;
+  }
+
+  /* 상자는 방 안쪽(가운데)을 바라보게 둔다 */
+  function trFaceYaw(it) {
+    var cx = 0, cz = 0.6;
+    if (it.floor !== 2) {
+      for (var i = 0; i < ROOMS.length; i++) {
+        var r = ROOMS[i];
+        if (it.pos.x >= r.x0 && it.pos.x <= r.x1 && it.pos.z >= r.z0 && it.pos.z <= r.z1) {
+          cx = (r.x0 + r.x1) / 2; cz = (r.z0 + r.z1) / 2; break;
+        }
+      }
+    }
+    return Math.atan2(cx - it.pos.x, cz - it.pos.z);
+  }
+
+  function trClearChests() {
+    if (!TREASURE.group) return;
+    TREASURE.group.traverse(function (o) {
+      if (o.geometry && o.geometry.dispose) o.geometry.dispose();
+    });
+    state.scene.remove(TREASURE.group);
+    TREASURE.group = null;
+    TREASURE.chests = {};
+    state.pickable = state.pickable.filter(function (m) {
+      return !(m.userData && m.userData.hit && m.userData.hit.kind === 'treasure');
+    });
+  }
+
+  function trBuildChests() {
+    trClearChests();
+    var g = new THREE.Group(); g.name = 'treasure-chests';
+    state.scene.add(g);
+    TREASURE.group = g;
+
+    TREASURE.items.forEach(function (it, i) {
+      var found = trIsFound(it.id);
+      var baseY = (it.floor === 2) ? FLOOR2_Y : 0;
+      var cg = new THREE.Group();
+      cg.position.set(it.pos.x, baseY, it.pos.z);
+      cg.rotation.y = trFaceYaw(it);
+      g.add(cg);
+
+      var wood = new THREE.MeshStandardMaterial({ color: 0x7a4a22, roughness: .72, metalness: .12 });
+      var dark = new THREE.MeshStandardMaterial({ color: 0x46301b, roughness: .82, metalness: .10 });
+      var gold = new THREE.MeshStandardMaterial({
+        color: 0xe6c260, roughness: .26, metalness: .85,
+        emissive: 0x7a5906, emissiveIntensity: found ? .18 : .45
+      });
+
+      var base = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.58, 0.14, 20), dark);
+      base.position.y = 0.07; cg.add(base);
+
+      var ring = new THREE.Mesh(new THREE.RingGeometry(0.64, 0.8, 36),
+        new THREE.MeshBasicMaterial({
+          color: found ? 0x6f9fe0 : 0xe6c25a, transparent: true,
+          opacity: found ? .28 : .55, side: THREE.DoubleSide, depthWrite: false
+        }));
+      ring.rotation.x = -Math.PI / 2; ring.position.y = 0.025; cg.add(ring);
+
+      var body = new THREE.Mesh(new THREE.BoxGeometry(0.86, 0.44, 0.56), wood);
+      body.position.y = 0.36; cg.add(body);
+
+      [-0.29, 0.29].forEach(function (x) {
+        var band = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.45, 0.58), gold);
+        band.position.set(x, 0.36, 0); cg.add(band);
+      });
+      // 앞면 가로 장식띠 — 뚜껑과 몸통이 구분돼 보이게
+      var frontBand = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.05, 0.02), gold);
+      frontBand.position.set(0, 0.2, 0.285); cg.add(frontBand);
+
+      // 뚜껑 — 뒤쪽 모서리를 축으로 열린다
+      var lidPivot = new THREE.Group();
+      lidPivot.position.set(0, 0.58, -0.28); cg.add(lidPivot);
+      var lidWood = new THREE.MeshStandardMaterial({ color: 0x744721, roughness: .68, metalness: .14 });
+      var lid = new THREE.Mesh(new THREE.BoxGeometry(0.94, 0.17, 0.64), lidWood);
+      lid.position.set(0, 0.08, 0.28); lidPivot.add(lid);
+      var lidBand = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.18, 0.65), gold);
+      lidBand.position.set(0, 0.08, 0.28); lidPivot.add(lidBand);
+      var lidEdge = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.035, 0.02), gold);
+      lidEdge.position.set(0, -0.01, 0.60); lidPivot.add(lidEdge);
+
+      var lock = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.15, 0.06), gold);
+      lock.position.set(0, 0.46, 0.30); cg.add(lock);
+
+      // 열렸을 때 보이는 금화 더미
+      var coins = new THREE.Group(); coins.position.set(0, 0.52, 0); cg.add(coins);
+      [[-0.14, 0.03], [0.02, -0.05], [0.16, 0.04]].forEach(function (p, k) {
+        var coin = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.022, 14), gold);
+        coin.position.set(p[0], k * 0.024, p[1]); coins.add(coin);
+      });
+      coins.visible = found;
+
+      var glow = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: trGlowTexture(), transparent: true, opacity: found ? .16 : .55, depthWrite: false
+      }));
+      glow.scale.set(1.9, 1.9, 1); glow.position.set(0, 0.56, 0); cg.add(glow);
+
+      var hit = { kind: 'treasure', id: it.id };
+      [body, lid, base, lock].forEach(function (m) {
+        m.userData.hit = hit;
+        state.pickable.push(m);
+      });
+
+      TREASURE.chests[it.id] = {
+        group: cg, lidPivot: lidPivot, glow: glow, ring: ring, coins: coins,
+        baseY: baseY, seed: i * 1.7, gold: gold
+      };
+      if (found) lidPivot.rotation.x = -1.95;
+    });
+  }
+
+  function trRefreshChest(id) {
+    var c = TREASURE.chests[id]; if (!c) return;
+    var f = trIsFound(id);
+    c.coins.visible = f;
+    c.ring.material.color.set(f ? 0x6f9fe0 : 0xe6c25a);
+    c.ring.material.opacity = f ? .28 : .55;
+    c.gold.emissiveIntensity = f ? .18 : .42;
+    c.lidPivot.rotation.x = f ? -1.95 : 0;
+  }
+
+  function updateTreasures(dt) {
+    if (!TREASURE.ready || !TREASURE.group) return;
+    var t = state.elapsed;
+    for (var id in TREASURE.chests) {
+      var c = TREASURE.chests[id];
+      if (!c || !c.group) continue;
+      var f = trIsFound(id);
+      // 아직 못 찾은 상자만 살짝 떠오르며 금빛으로 숨 쉰다
+      c.group.position.y = c.baseY + (f ? 0 : Math.sin(t * 1.5 + c.seed) * 0.045);
+      if (c.glow) c.glow.material.opacity = f ? .14 : (.42 + .18 * (0.5 + 0.5 * Math.sin(t * 2.1 + c.seed)));
+      if (c.ring) c.ring.rotation.z = t * (f ? 0.08 : 0.3);
+      c.lidPivot.rotation.x += ((f ? -1.95 : 0) - c.lidPivot.rotation.x) * Math.min(1, dt * 6);
+    }
+  }
+
+  function trNearestChest(p) {
+    var best = null, bestD = 3.1;
+    for (var id in TREASURE.chests) {
+      var c = TREASURE.chests[id], it = TREASURE.byId[id];
+      if (!c || !it) continue;
+      if ((it.floor === 2 ? FLOOR2_Y : 0) !== state.floorY) continue;
+      var d = Math.hypot(p.x - c.group.position.x, p.z - c.group.position.z);
+      if (d < bestD) { bestD = d; best = id; }
+    }
+    return best;
+  }
+
+  function trCardHtml(it, already) {
+    return '<span class="tr-tag">' + (already ? '✅ 이미 찾은 보물' : '🎉 보물을 찾았어요!') + '</span>' +
+      '<h3>' + escapeHtml(it.title) + '</h3>' +
+      '<p class="tr-org">' + escapeHtml(it.org) + '</p>' +
+      '<p class="tr-reward">💰 ' + escapeHtml(it.reward) + '</p>' +
+      '<div class="tr-meta">' +
+        '<div><b>참여 방법</b> · ' + escapeHtml(it.how_to) + '</div>' +
+        '<div><b>기간</b> · ' + escapeHtml(it.period) + '</div>' +
+      '</div>' +
+      '<a class="tr-link" href="' + escapeHtml(it.url) + '" target="_blank" rel="noopener">이벤트 바로가기 ↗</a>';
+  }
+
+  function trRenderList() {
+    var ul = $('tr-list'); if (!ul) return;
+    var html = '';
+    TREASURE.items.forEach(function (it) {
+      var f = trIsFound(it.id);
+      var hint = it.hint;
+      if (f) {
+        html += '<li><button type="button" class="tr-row found" data-tr="' + escapeHtml(it.id) + '">' +
+          '<span class="st">✅</span><span class="n">' + escapeHtml(it.title) + '</span>' +
+          '<span class="h">다시 보기</span></button></li>';
+      } else {
+        html += '<li><div class="tr-row locked"><span class="st">🎁</span>' +
+          '<span class="n">' + escapeHtml(hint) + '</span><span class="h">미발견</span></div></li>';
+      }
+    });
+    ul.innerHTML = html;
+  }
+
+  function trShowNotice() {
+    var card = $('tr-card'); if (!card) return;
+    card.className = 'tr-card locked';
+    card.innerHTML = '<span class="tr-tag">🔒 오늘은 여기까지</span>' +
+      '<h3>오늘 보물찾기 ' + TREASURE.limit + '회를 모두 사용했어요.</h3>' +
+      '<p class="tr-org">내일 다시 도전해 주세요! 한국 시간 자정에 횟수가 다시 ' + TREASURE.limit + '회로 채워집니다.</p>' +
+      '<p class="tr-note">이미 찾은 보물 상자는 그대로 열어 볼 수 있어요.</p>';
+    card.classList.remove('hidden');
+  }
+
+  function trOpen(id) {
+    var it = TREASURE.byId[id];
+    var card = $('tr-card');
+    if (!it) return;                        // 데이터 준비 전
+    TREASURE.activeId = id;
+    if (trIsFound(id)) {
+      if (card) {
+        card.className = 'tr-card';
+        card.innerHTML = trCardHtml(it, true);
+        card.classList.remove('hidden');
+      }
+    } else if (trRemaining() <= 0) {
+      // 오늘 5회를 다 쓴 뒤에는 새 상자를 열지 않는다 — 내용도 보여 주지 않는다
+      trShowNotice();
+    } else {
+      TREASURE.found.push(id);
+      trTodayIds().push(id);
+      trSave();
+      trRefreshChest(id);
+      if (card) {
+        card.className = 'tr-card';
+        card.innerHTML = trCardHtml(it, false);
+        card.classList.remove('hidden');
+      }
+    }
+    trUpdateHud();
+    trRenderList();
+    showOverlay('treasure-modal');
+  }
+
+  function trOpenList() {
+    TREASURE.activeId = null;
+    var card = $('tr-card');
+    if (card) { card.classList.add('hidden'); card.innerHTML = ''; }
+    trUpdateHud();
+    trRenderList();
+    showOverlay('treasure-modal');
+  }
+
+  function trApplyData(d) {
+    if (!d || !d.items || !d.items.length) return false;
+    var list = d.items.filter(function (x) {
+      return x && x.id && x.url && x.pos && typeof x.pos.x === 'number' && typeof x.pos.z === 'number';
+    });
+    if (!list.length) return false;
+    var key = list.map(function (x) { return x.id; }).join('|');
+    if (key === TREASURE.idsKey) return false;
+    TREASURE.idsKey = key;
+    TREASURE.items = list;
+    TREASURE.byId = {};
+    list.forEach(function (x) { TREASURE.byId[x.id] = x; });
+    if (d.meta && d.meta.daily_limit) {
+      TREASURE.limit = Math.max(1, Math.min(20, Number(d.meta.daily_limit) || 5));
+    }
+    TREASURE.ready = true;
+    trBuildChests();
+    trUpdateHud();
+    trRenderList();
+    return true;
+  }
+
+  function trBind() {
+    var btn = $('btn-treasure');
+    if (btn) btn.addEventListener('click', trOpenList);
+    var close = $('tr-close');
+    if (close) close.addEventListener('click', function () { hideOverlay('treasure-modal'); });
+    var ov = $('treasure-modal');
+    if (ov) ov.addEventListener('click', function (e) {
+      if (e.target === ov && performance.now() - state.modalOpenedAt > 400) hideOverlay('treasure-modal');
+    });
+    var list = $('tr-list');
+    if (list) list.addEventListener('click', function (e) {
+      var row = e.target && e.target.closest ? e.target.closest('[data-tr]') : null;
+      if (!row) return;
+      var id = row.getAttribute('data-tr');
+      if (id && trIsFound(id)) trOpen(id);
+    });
+  }
+
+  function initTreasureHunt() {
+    trLoad();
+    trApplyData(window.__TREASURES_FALLBACK__);   // 내장값으로 먼저 세운다(오프라인·file:// 포함)
+    trBind();
+    if (location.protocol !== 'file:') {
+      // 서버가 있으면 treasures.json 을 새로 읽어 최신 이벤트로 바꾼다
+      fetch('treasures.json?v=' + Date.now(), { cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (d) { if (trApplyData(d)) { trUpdateHud(); trRenderList(); } })
+        .catch(function () {});
+    }
+  }
+
   function boot() {
     document.body.classList.toggle('touch', matchMedia('(pointer: coarse)').matches);
     initRenderer();
@@ -15505,6 +15979,7 @@
     buildMeetingRoom();     // 2층 회의실 + 회의실/중앙홀 포털(1층 중앙홀 위 FLOOR2_Y)
     buildMeetingLounge();   // 12석 테이블·의자 — 2층 회의실 가운데로 옮겼다
     buildKaraokeMachine();  // 🎤 2층 노래방 기기 — 서쪽 벽 무대(독도 뷰를 가리지 않음)
+    initTreasureHunt();     // 🎁 3D 보물찾기 — 1층·2층 가장자리의 보물상자
     buildFrontDesk();     // 중앙 프런트데스크 + 루아·도현
     buildHeemang();       // 🩷 희망이 — 분홍 'ㅈ' 피클 AI 비서
     buildPickleGuides();  // 6개 전시실 문 앞 피클 비서
@@ -15698,6 +16173,36 @@
                      msg: ($('kr-mic-msg') || {}).textContent || '',
                      songs: $('kr-songs') ? $('kr-songs').children.length : 0,
                      frame: $('kr-player') ? $('kr-player').querySelectorAll('iframe').length : 0 };
+          }
+        },
+        // 🎁 보물찾기 — 검증용(상태·하루 횟수·상자 위치)
+        treasure: {
+          open: trOpen, list: trOpenList, close: function () { hideOverlay('treasure-modal'); },
+          items: function () { return TREASURE.items; },
+          found: function () { return TREASURE.found.slice(); },
+          today: function () { return trTodayIds().slice(); },
+          remaining: trRemaining,
+          limit: function () { return TREASURE.limit; },
+          date: trKstDate,
+          hud: function () {
+            return { hud: $('tr-hud') ? $('tr-hud').textContent : '',
+                     today: $('tr-today') ? $('tr-today').textContent : '',
+                     pill: $('tr-today-pill') ? $('tr-today-pill').textContent : '' };
+          },
+          card: function () {
+            var c = $('tr-card');
+            return { text: c ? c.textContent : '', locked: c ? c.classList.contains('locked') : false,
+                     hidden: c ? c.classList.contains('hidden') : true,
+                     link: c ? (c.querySelector('.tr-link') || {}).href || '' : '' };
+          },
+          chests: function () {
+            var out = [];
+            for (var id in TREASURE.chests) {
+              var c = TREASURE.chests[id];
+              out.push({ id: id, x: +c.group.position.x.toFixed(2), z: +c.group.position.z.toFixed(2),
+                         y: +c.baseY.toFixed(2), open: c.lidPivot.rotation.x < -1 });
+            }
+            return out;
           }
         },
         newsState: function (id) {
