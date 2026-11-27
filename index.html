@@ -372,7 +372,11 @@
       right:calc(16px + env(safe-area-inset-right));bottom:calc(18px + env(safe-area-inset-bottom));
       width:58px;height:58px;border-radius:50%;border:2px solid rgba(255,255,255,.22);cursor:pointer;
       font-size:24px;line-height:1;color:#fff;background:linear-gradient(160deg,#2f6cb3,#1d4a80);
-      box-shadow:0 10px 26px rgba(0,0,0,.45)}
+      box-shadow:0 10px 26px rgba(0,0,0,.45);
+      /* 위쪽(마이크 카드가 보이는 자리)에서는 숨겨 선곡·입력 단추를 가리지 않는다 */
+      opacity:0;visibility:hidden;pointer-events:none;
+      transition:opacity .18s ease,visibility .18s ease}
+    .kr-micfab.show{opacity:1;visibility:visible;pointer-events:auto}
     .kr-micfab.on{background:linear-gradient(160deg,#e0463f,#a82720);border-color:rgba(255,180,174,.6);
       animation:krFab 1.6s ease-in-out infinite}
     .kr-micfab:active{transform:scale(.94)}
@@ -10487,6 +10491,8 @@
     /* 다시 열 때 지난번 스크롤 위치(선곡 목록 아래)에 남아 슬라이더를 못 보는 일이 없게 맨 위부터 */
     var krSheet = document.querySelector('#karaokeModal .kr-sheet');
     if (krSheet) krSheet.scrollTop = 0;
+    var krFabTop = $('kr-micfab');
+    if (krFabTop) krFabTop.classList.remove('show');
     state.nearKaraoke = false;
   }
 
@@ -10546,6 +10552,15 @@
       krEmpty.addEventListener('keydown', function (e) {
         if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') { e.preventDefault(); karaokeGotoSearch(); }
       });
+    }
+    /* 떠 있는 마이크 단추는 선곡 목록까지 내려갔을 때만 보인다(맨 위에서는 마이크 카드가 그 역할을 한다) */
+    var krSheetEl = document.querySelector('#karaokeModal .kr-sheet');
+    if (krSheetEl) {
+      krSheetEl.addEventListener('scroll', function () {
+        var fab = $('kr-micfab');
+        if (!fab) return;
+        fab.classList.toggle('show', krSheetEl.scrollTop > 150);
+      }, { passive: true });
     }
     $('kr-echo').addEventListener('input', function () {
       KARAOKE_STATE.echo = +this.value || 0;
