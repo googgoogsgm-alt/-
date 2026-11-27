@@ -261,9 +261,12 @@
     background:#04070d;border:1px solid rgba(255,255,255,.1);
     box-shadow:0 12px 34px rgba(0,0,0,.5), inset 0 0 70px rgba(201,162,39,.09)}
   .kr-player iframe{position:absolute;inset:0;width:100%;height:100%;border:0;display:block}
+  /* 반주 화면은 선곡·유튜브 입력으로 가는 단추 역할도 한다(눌러도 반응이 없어 보이지 않게) */
   .kr-empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
-    gap:5px;padding:16px;text-align:center;
+    gap:5px;padding:16px;text-align:center;cursor:pointer;
     background:radial-gradient(circle at 50% 26%, #1b2a44, #060b14 76%)}
+  .kr-empty:active{background:radial-gradient(circle at 50% 26%, #22344f, #060b14 76%)}
+  .kr-empty:focus-visible{outline:2px solid #e7cd77;outline-offset:-4px}
   .kr-empty .em{font-size:34px;line-height:1;filter:drop-shadow(0 0 16px rgba(201,162,39,.65));
     animation:krPulse 2.6s ease-in-out infinite}
   .kr-empty b{font-size:14px;font-weight:900;color:#fff}
@@ -379,9 +382,21 @@
       -webkit-overflow-scrolling:touch}
     .kr-head h2{font-size:19px}
     .kr-sub{font-size:11.5px;margin-bottom:11px}
+    /* 마이크·에코 슬라이더를 플레이어 바로 아래로 — 36곡을 지나 스크롤하지 않아도 바로 보인다.
+       안내 카드(.kr-tips)는 맨 아래로 보낸다(display:contents 로 칸을 풀어 각각 배치). */
     .kr-grid{grid-template-columns:1fr;gap:11px;
-      grid-template-areas:"player" "search" "songs" "mic"}
+      grid-template-areas:"player" "mic" "search" "songs" "tips"}
+    .kr-miccol{display:contents}
+    .kr-miccol>.kr-mic{grid-area:mic}
+    .kr-miccol>.kr-tips{grid-area:tips;margin-top:2px}
     .kr-player{aspect-ratio:16/10}
+    /* 폰에서는 마이크 카드를 한 화면에 담기게 압축 — 에코·음량 슬라이더는 나란히 */
+    .kr-mic{grid-template-columns:1fr 1fr;gap:8px 16px;padding:10px 11px}
+    .kr-mic>.kr-michd,.kr-mic>.kr-mictog,.kr-mic>.kr-level,.kr-mic>.kr-hint{grid-column:1/-1}
+    .kr-mic>.kr-mictog{min-height:42px}
+    .kr-mic .kr-hint{font-size:10px}
+    .kr-mic .kr-slider{min-width:0}
+    .kr-mic .kr-slider + .kr-slider{border-left:1px solid rgba(255,255,255,.13);padding-left:12px}
     /* 검색·주소 입력은 플레이어 바로 아래에 카드처럼 묶어 첫 화면에서 바로 보이게 */
     .kr-searchblock{border:1px solid rgba(201,162,39,.2);border-radius:15px;padding:11px 11px 10px;
       background:linear-gradient(180deg, rgba(201,162,39,.07), rgba(255,255,255,.015) 70%)}
@@ -1583,10 +1598,10 @@
           <span class="kr-nowtitle" id="kr-now-title">아직 선곡 전</span>
         </div>
         <div class="kr-player" id="kr-player">
-          <div class="kr-empty" id="kr-empty">
+          <div class="kr-empty" id="kr-empty" role="button" tabindex="0" aria-label="선곡·유튜브 입력으로 이동">
             <span class="em">🎤</span>
-            <b>터치해서 노래 부르기</b>
-            <span>아래 선곡 목록에서 곡을 고르거나<br>유튜브 주소를 넣어 재생하세요</span>
+            <b>반주 화면 (곡을 고르세요)</b>
+            <span>여기를 누르면 선곡·유튜브 입력으로 이동합니다<br>곡을 고르면 이 자리에서 반주가 나옵니다</span>
           </div>
         </div>
         <div class="kr-bar">
@@ -10469,6 +10484,9 @@
     karaokeSyncControls();
     karaokeSelect(KARAOKE_STATE.selected);
     showOverlay('karaokeModal');
+    /* 다시 열 때 지난번 스크롤 위치(선곡 목록 아래)에 남아 슬라이더를 못 보는 일이 없게 맨 위부터 */
+    var krSheet = document.querySelector('#karaokeModal .kr-sheet');
+    if (krSheet) krSheet.scrollTop = 0;
     state.nearKaraoke = false;
   }
 
@@ -10476,6 +10494,30 @@
     karaokeStopVideo();
     karaokeMicStop();
     hideOverlay('karaokeModal');
+  }
+
+  /* 반주 화면을 누르면 선곡·유튜브 입력으로 이동한다(빈 화면이 반응 없이 보이던 문제)
+     유튜브 주소 입력이 있으면 그 칸에 바로 커서를 둔다. */
+  function karaokeGotoSearch() {
+    var box = document.querySelector('#karaokeModal .kr-searchblock');
+    var inp = $('kr-yt') || $('kr-url');
+    if (box && box.scrollIntoView) {
+      try { box.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) { box.scrollIntoView(); }
+    }
+    if (inp) {
+      try { inp.focus({ preventScroll: true }); } catch (e) { inp.focus(); }
+    }
+  }
+
+  /* 폰에서 떠 있는 마이크 단추를 누를 때, 마이크·에코 카드가 화면 밖이면 그 카드로 데려간다 */
+  function karaokeRevealMic() {
+    if (!window.matchMedia || !window.matchMedia('(max-width:760px)').matches) return;
+    var mc = document.querySelector('#karaokeModal .kr-mic');
+    if (!mc || !mc.getBoundingClientRect) return;
+    var r = mc.getBoundingClientRect();
+    var vh = window.innerHeight || 800;
+    if (r.top >= 0 && r.bottom <= vh) return;
+    try { mc.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) { mc.scrollIntoView(); }
   }
 
   function bindKaraoke() {
@@ -10497,7 +10539,14 @@
     $('kr-title-q').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); $('kr-mr').click(); } });
     function toggleMic() { if (MIC.stream) karaokeMicStop(); else karaokeMicStart(); }
     $('kr-mic-toggle').addEventListener('click', toggleMic);
-    $('kr-micfab').addEventListener('click', toggleMic);
+    $('kr-micfab').addEventListener('click', function () { toggleMic(); karaokeRevealMic(); });
+    var krEmpty = $('kr-empty');
+    if (krEmpty) {
+      krEmpty.addEventListener('click', karaokeGotoSearch);
+      krEmpty.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') { e.preventDefault(); karaokeGotoSearch(); }
+      });
+    }
     $('kr-echo').addEventListener('input', function () {
       KARAOKE_STATE.echo = +this.value || 0;
       karaokeSlideLabels(); karaokeApplyAudio(); karaokeSavePrefs();
