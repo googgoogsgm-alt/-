@@ -19,7 +19,7 @@
     },
     "disclaimer": "전시된 정보는 계약 스펙·체크 포인트 정리이며, 실시간 시세나 매매 권유가 아닙니다.",
     "last_sync": "2026-11-21 13:44 KST",
-    "last_slot1_sync": "2026-11-27 03:01 KST",
+    "last_slot1_sync": "2026-11-27 09:40 KST",
     "slot1_auto": true
   },
   "zones": [
@@ -823,10 +823,10 @@
       ],
       "videos": [
         {
-          "id": "aTsztLxVGe8",
+          "id": "BaSe8o6IBV4",
           "title": "오일 오늘의 전망",
           "kind": "shorts",
-          "date": "2026-11-26"
+          "date": "2026-11-10"
         },
         {
           "id": "wnO8RW9uzkA",
@@ -854,11 +854,11 @@
         }
       ],
       "auto_slot": {
-        "id": "aTsztLxVGe8",
+        "id": "BaSe8o6IBV4",
         "title": "오일 오늘의 전망",
-        "updated": "2026-11-26",
+        "updated": "2026-11-10",
         "mode": "auto",
-        "previous": "BaSe8o6IBV4"
+        "previous": "aTsztLxVGe8"
       }
     },
     {
