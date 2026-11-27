@@ -10117,7 +10117,7 @@
   /* ── 마이크 + 에코(Web Audio) ──────────────────────────────
      마이크 → 음량 → (마른 소리 + 지연·되먹임 에코) → 스피커
      에코 슬라이더는 지연 시간·되먹임·젖은 소리 세기를 함께 올린다. */
-  var MIC = { ctx: null, stream: null, src: null, gain: null, delay: null, fb: null, wet: null, analyser: null, raf: 0 };
+  var MIC = { ctx: null, stream: null, src: null, hpf: null, gain: null, dry: null, comp: null, delay: null, lpf: null, fb: null, wet: null, analyser: null, raf: 0 };   /* hpf: 저역 잡음 차단 · lpf: 에코 고역 하울링 차단 · comp: 출력 리미터 */
 
   function karaokeMicMsg(text, tone) {
     var el = $('kr-mic-msg');
@@ -10147,10 +10147,12 @@
       if (!param) return;
       try { param.setTargetAtTime(v, t, 0.03); } catch (err) { try { param.value = v; } catch (e2) {} }
     }
-    set(MIC.gain && MIC.gain.gain, Math.max(0, KARAOKE_STATE.vol / 100));
-    set(MIC.delay && MIC.delay.delayTime, 0.16 + 0.14 * e);
-    set(MIC.fb && MIC.fb.gain, 0.05 + 0.5 * e);
-    set(MIC.wet && MIC.wet.gain, 0.7 * e);
+    /* 음량 100%일 때 게인 0.85, 최대 1.35로 제한(과증폭·하울링 방지) */
+    var g = Math.max(0, (KARAOKE_STATE.vol / 100) * 0.85);
+    set(MIC.gain && MIC.gain.gain, Math.min(1.35, g));
+    set(MIC.delay && MIC.delay.delayTime, 0.15 + 0.12 * e);
+    set(MIC.fb && MIC.fb.gain, Math.min(0.38, 0.04 + 0.34 * e));   /* 되먹임 폭주 방지 */
+    set(MIC.wet && MIC.wet.gain, 0.52 * e);
   }
 
   function karaokeLevelLoop() {
@@ -10178,7 +10180,16 @@
       return Promise.resolve(false);
     }
     karaokeMicMsg('마이크 권한을 허용해 주세요…', '');
-    return navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: true, autoGainControl: true } })
+    /* 폰 스피커 소리가 마이크로 되돌아오는 하울링을 막는다: 에코 캔슬·잡음 억제 켜고 자동 게인은 끈다 */
+    var wantAudio = { echoCancellation: true, noiseSuppression: true, autoGainControl: false };
+    return navigator.mediaDevices.getUserMedia({ audio: wantAudio })
+      .catch(function (e) {
+        var n = (e && e.name) || '';
+        if (n === 'OverconstrainedError' || n === 'TypeError' || n === 'NotSupportedError') {
+          return navigator.mediaDevices.getUserMedia({ audio: true });   /* 제약 미지원 기기 폴백 */
+        }
+        throw e;
+      })
       .then(function (stream) {
         var AC = window.AudioContext || window.webkitAudioContext;
         if (!AC) {
@@ -10189,17 +10200,36 @@
         var ctx = new AC();
         MIC.ctx = ctx; MIC.stream = stream;
         MIC.src = ctx.createMediaStreamSource(stream);
+        /* 저역 웅웅거림·터치 잡음 차단 */
+        MIC.hpf = ctx.createBiquadFilter();
+        MIC.hpf.type = 'highpass';
+        MIC.hpf.frequency.value = 110;
+        MIC.hpf.Q.value = 0.7;
         MIC.gain = ctx.createGain();
+        /* 출력 리미터 — 큰 소리에서 갑자기 튀어 하울링으로 번지는 것을 눌러 준다 */
+        MIC.comp = ctx.createDynamicsCompressor();
+        MIC.comp.threshold.value = -18;
+        MIC.comp.knee.value = 12;
+        MIC.comp.ratio.value = 6;
+        MIC.comp.attack.value = 0.003;
+        MIC.comp.release.value = 0.15;
+        MIC.dry = ctx.createGain();
+        MIC.dry.gain.value = 0.85;
         MIC.delay = ctx.createDelay(0.8);
+        /* 에코 한 바퀴마다 고역을 깎아 쇳소리·하울링이 쌓이지 않게 한다 */
+        MIC.lpf = ctx.createBiquadFilter();
+        MIC.lpf.type = 'lowpass';
+        MIC.lpf.frequency.value = 2600;
+        MIC.lpf.Q.value = 0.7;
         MIC.fb = ctx.createGain();
         MIC.wet = ctx.createGain();
-        var dry = ctx.createGain();
-        dry.gain.value = 1;
-        MIC.src.connect(MIC.gain);
-        MIC.gain.connect(dry); dry.connect(ctx.destination);
+        MIC.src.connect(MIC.hpf); MIC.hpf.connect(MIC.gain);
+        MIC.gain.connect(MIC.dry); MIC.dry.connect(MIC.comp);
         MIC.gain.connect(MIC.delay);
-        MIC.delay.connect(MIC.fb); MIC.fb.connect(MIC.delay);
-        MIC.delay.connect(MIC.wet); MIC.wet.connect(ctx.destination);
+        MIC.delay.connect(MIC.lpf);
+        MIC.lpf.connect(MIC.fb); MIC.fb.connect(MIC.delay);
+        MIC.lpf.connect(MIC.wet); MIC.wet.connect(MIC.comp);
+        MIC.comp.connect(ctx.destination);
         MIC.analyser = ctx.createAnalyser();
         MIC.analyser.fftSize = 512;
         MIC.gain.connect(MIC.analyser);
@@ -10208,7 +10238,7 @@
         karaokeMicUi();
         refreshKaraokeScreen();
         karaokeLevelLoop();
-        karaokeMicMsg('마이크가 켜졌습니다. 이어폰을 끼면 하울링이 줄어듭니다.', '');
+        karaokeMicMsg('마이크가 켜졌습니다. 하울링·잡음 억제 필터가 적용되었습니다.', '');
         return true;
       })
       .catch(function (e) {
@@ -10233,8 +10263,16 @@
     if (MIC.raf) { cancelAnimationFrame(MIC.raf); MIC.raf = 0; }
     try { if (MIC.stream) MIC.stream.getTracks().forEach(function (t) { t.stop(); }); } catch (e) {}
     try { if (MIC.src) MIC.src.disconnect(); } catch (e) {}
+    try { if (MIC.hpf) MIC.hpf.disconnect(); } catch (e) {}
+    try { if (MIC.gain) MIC.gain.disconnect(); } catch (e) {}
+    try { if (MIC.dry) MIC.dry.disconnect(); } catch (e) {}
+    try { if (MIC.comp) MIC.comp.disconnect(); } catch (e) {}
+    try { if (MIC.delay) MIC.delay.disconnect(); } catch (e) {}
+    try { if (MIC.lpf) MIC.lpf.disconnect(); } catch (e) {}
+    try { if (MIC.fb) MIC.fb.disconnect(); } catch (e) {}
+    try { if (MIC.wet) MIC.wet.disconnect(); } catch (e) {}
     try { if (MIC.ctx && MIC.ctx.state !== 'closed') MIC.ctx.close(); } catch (e) {}
-    MIC.ctx = MIC.stream = MIC.src = MIC.gain = MIC.delay = MIC.fb = MIC.wet = MIC.analyser = null;
+    MIC.ctx = MIC.stream = MIC.src = MIC.hpf = MIC.gain = MIC.dry = MIC.comp = MIC.delay = MIC.lpf = MIC.fb = MIC.wet = MIC.analyser = null;
     if (KARAOKE_STATE.mic) {
       KARAOKE_STATE.mic = false;
       refreshKaraokeScreen();
