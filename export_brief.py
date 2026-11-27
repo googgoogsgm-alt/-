@@ -3,14 +3,14 @@
 """전시관 AI 비서 '희망이' 일일 동기화 브리프 생성기.
 
 trading/ 폴더는 **읽기 전용**으로만 읽는다(어떤 파일도 쓰지 않는다).
-  · trading/watchlist.json        — 승인 7종목 · 지표 설정 · 수평선/무효화선
+  · trading/watchlist.json        — 승인 9종목 · 지표 설정 · 수평선/무효화선
   · trading/forecast_latest.json  — 현재가 · 예측 분위(P10/P50/P90) · 백테스트 적중률
   · trading/oi_history.json       — 일별 OI · 차근월물 비중(롤오버)
   · trading/inflection_filter.py --all — 변곡 점수·등급·★ 고순도·특화 필터 (실행)
         실행이 실패하면 metaverse-gallery/.cache/inflection_last.json 캐시를 쓴다.
 
 출력: metaverse-gallery/secretary_brief.json
-  · 공개 가능한 분석 방법론 + 7종목 현재 상태 + 방(zone)별 요약 + 뉴스 카드
+  · 공개 가능한 분석 방법론 + 9종목 현재 상태 + 방(zone)별 요약 + 뉴스 카드
   · 개인정보(이메일·전화번호·계좌·개인 일정)는 절대 담지 않는다.
 
     python3 metaverse-gallery/export_brief.py
@@ -40,19 +40,26 @@ ZONE_OF = {
     "GC=F": "metals",
     "6S=F": "fx",
     "6C=F": "fx",
+    "6A=F": "fx",
     "ZN=F": "rates",
     "NGF27.NYM": "energy",
     "ZW=F": "ags",
     "CL=F": "energy",
+    # 비트코인은 아직 전용 전시실이 없다 — zone 은 'crypto' 로만 표시하고
+    # ZONE_ORDER 에 넣지 않아 6개 전시실 카드는 그대로 유지된다.
+    "BTC=F": "crypto",
 }
 ZONE_NAME = {
     "fx": "통화", "metals": "금속", "index": "지수",
     "rates": "금리", "energy": "에너지", "ags": "농축산물",
+    "crypto": "디지털자산",
 }
 ZONE_EN = {
     "fx": "CURRENCY", "metals": "METALS", "index": "INDEX",
     "rates": "RATES", "energy": "ENERGY", "ags": "AGS",
+    "crypto": "CRYPTO",
 }
+# 전시실(방) 6개 — crypto 는 방이 없으므로 여기 넣지 않는다
 ZONE_ORDER = ["fx", "metals", "index", "rates", "energy", "ags"]
 
 METHODOLOGY = {
@@ -138,7 +145,7 @@ def short_levels(levels):
 
 
 def forecast_block(fx):
-    """forecast_latest.json 한 종목 → 현재가·예측·백테스트 요약."""
+    """forecast_latest.json 한 종목 → 현재가·예측(1·2·6개월 포함)·백테스트 요약."""
     if not fx:
         return None
     fc = fx.get("forecast") or {}
@@ -146,16 +153,22 @@ def forecast_block(fx):
     bt = bt_raw.get("results") if isinstance(bt_raw.get("results"), dict) else bt_raw
     if not isinstance(bt, dict):
         bt = {}
+    # 종목별 소수 자리 — FX(0.66445)는 2자리로 반올림하면 값이 뭉개진다
+    try:
+        dec = max(0, min(6, int(fx.get("decimals"))))
+    except (TypeError, ValueError):
+        dec = 2
     picks = {}
-    for h in ("1주", "1개월", "3개월", "6개월"):
+    for h in ("1주", "1개월", "2개월", "3개월", "6개월"):
         if h in fc:
             d = fc[h]
             picks[h] = {
-                "P10": sev(d.get("P10")), "P50": sev(d.get("P50")), "P90": sev(d.get("P90")),
+                "P10": sev(d.get("P10"), dec), "P50": sev(d.get("P50"), dec),
+                "P90": sev(d.get("P90"), dec),
                 "up_pct": sev(d.get("p_up_pct"), 1),
             }
     hits = {}
-    for h in ("1개월", "3개월", "6개월"):
+    for h in ("1개월", "2개월", "3개월", "6개월"):
         if h in bt and bt[h].get("direction_hit_blend_pct") is not None:
             hits[h] = {
                 "dir_pct": sev(bt[h].get("direction_hit_blend_pct"), 1),
@@ -164,7 +177,13 @@ def forecast_block(fx):
                 "n": bt[h].get("n"),
             }
     ind = fx.get("inductor_snapshot") or {}
+    disp = fx.get("display") or {}
+    cons = fx.get("contracts") or {}
     return {
+        "mode": fx.get("suggested_u_mode") or "",       # bottom / top / downtrend
+        "active_short": disp.get("active_short") or (cons.get("active") or {}).get("symbol") or "",
+        "next_short": disp.get("next_short") or (cons.get("next") or {}).get("symbol") or "",
+        "remain": fx.get("remaining_trading_days"),
         "base_price": sev(fx.get("live_price"), 5),
         "base_time": fx.get("live_time") or "",
         "anchor_date": fx.get("anchor_bar_date") or "",
