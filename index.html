@@ -12971,13 +12971,17 @@
     return null;
   }
 
-  /* 전시관 기능(보물찾기·노래방·메모판) — 내장 데이터로 바로 답한다 */
-  function heemangFeatureReply(text, low) {
-    var addr = heemangAddress();
+  /* 전시관 기능(보물찾기·노래방·메모판) — 내장 데이터로 바로 답한다.
+     who: 'heemang' | 'lua' | 'dohyun' — 말투만 다르고 내용은 같은 확인된 사실만 쓴다. */
+  function galleryFeatureReply(text, low, who) {
+    var isH = !who || who === 'heemang';
+    var lead = isH ? heemangAddress() + ', ' : (who === 'lua' ? '네! ' : '');
+    var tail = isH ? '' : (who === 'lua' ? '\n\n더 궁금한 게 있으면 또 불러 주세요! 💛'
+                                          : '\n\n추가로 확인하실 사항이 있으면 말씀해 주십시오.');
     if (/보물|상자|이벤트|포인트|복권/.test(low)) {
       var items = (typeof TREASURE !== 'undefined' && TREASURE.items) || [];
       if (!items.length) return null;
-      var lines = [addr + ', 3D 보물찾기는 1층 6개 · 2층 2개, 모두 ' + items.length + '개 상자입니다.',
+      var lines = [lead + '3D 보물찾기는 1층 6개 · 2층 2개, 모두 ' + items.length + '개 상자입니다.',
         '상자를 열면 지금 실제 진행 중인 공식 이벤트(가입비·참여비 없음)의 신청 방법과 링크가 나옵니다.'];
       items.forEach(function (it) {
         lines.push('· ' + String(it.title || '').split(' — ')[0] + ' — ' + (it.hint || ''));
@@ -12985,29 +12989,31 @@
       if (typeof TREASURE !== 'undefined') {
         lines.push('오늘 새로 열 수 있는 횟수는 ' + trRemaining() + '/' + TREASURE.limit + '회이고, 이미 찾은 상자는 횟수 없이 몇 번이든 다시 볼 수 있습니다.');
       }
-      return { reply: lines.join('\n'), moves: null };
+      return { reply: lines.join('\n') + tail, moves: null };
     }
     if (/노래|반주|마이크|에코|가요|karaoke/i.test(low)) {
       var n = (typeof KARAOKE_SONGS !== 'undefined' && KARAOKE_SONGS.length) || 36;
       return {
-        reply: addr + ', 2층 독도 오션뷰 노래방은 2층 회의실 서쪽(서남쪽 코너) 벽의 3D 노래방 기기에서 열립니다.\n' +
+        reply: lead + '2층 독도 오션뷰 노래방은 2층 회의실 서쪽(서남쪽 코너) 벽의 3D 노래방 기기에서 열립니다.\n' +
           '· 기본 선곡 ' + n + '곡 + 유튜브 주소·검색으로 반주(MR) 찾아 부르기\n' +
           '· 에코·마이크·반주 음량 조절, 곡을 바꾸면 바로 새 반주로 이어집니다\n' +
           '· 부르는 소리는 2층 회의실에 함께 있는 사람에게 듣기 전용으로 실시간 전달됩니다(마이크를 안 켜도 들림)\n' +
-          '기기 앞 3m 안에 서면 "🎤 2F 독도 노래방 · 눌러서 열기" 안내가 뜨고, 창을 닫으면 반주가 멈춥니다.',
+          '기기 앞 3m 안에 서면 "🎤 2F 독도 노래방 · 눌러서 열기" 안내가 뜨고, 창을 닫으면 반주가 멈춥니다.' + tail,
         moves: null
       };
     }
     if (/메모판|방명록|메모|연락처/.test(low)) {
       return {
-        reply: addr + ', 방문자 메모판은 1층 중앙홀 남동육 원형 받침대에 세운 앞·뒤 양면 판입니다.\n' +
+        reply: lead + '방문자 메모판은 1층 중앙홀 남동쪽 원형 받침대에 세운 앞·뒤 양면 판입니다.\n' +
           '· 판을 누르면 이름·연락처·메모를 남길 수 있고, 남긴 글은 방문자 모두의 판에 실시간으로 함께 보입니다\n' +
-          '· 화면의 📌 메모판 단추로도 열 수 있습니다',
+          '· 화면의 📌 메모판 단추로도 열 수 있습니다' + tail,
         moves: null
       };
     }
     return null;
   }
+
+  function heemangFeatureReply(text, low) { return galleryFeatureReply(text, low, 'heemang'); }
 
   /* AI 가 응답하지 않을 때 — 내장 브리프 지식으로 최대한 자세히 답한다 */
   function heemangFallbackRich(q) {
@@ -13911,6 +13917,10 @@
         isChairman: !!HEEMANG.isChairman,
         visitorName: ownName()
       };
+    } else if (SECRETARY.data) {
+      // 루아·도현도 희망이와 같은 9종목 브리프 요약을 본다(사실은 같고 말투만 다르다)
+      var sbDesk = heemangBriefContext(prio, text);
+      if (sbDesk) { delete sbDesk.owner; delete sbDesk.assistant; ctx.secretary = sbDesk; }
     }
 
     // 안전장치 — 7,200자를 넘으면 잡다한 목록부터 덜어 낸다.
@@ -13953,6 +13963,7 @@
         },
         function (c) { c.news.hall = c.news.hall.slice(0, 2); },
         function (c) { if (c.secretary) { c.secretary.others = []; c.secretary.rules = []; } },
+        function (c) { if (c.secretary && c.secretary.symbols) c.secretary.symbols = c.secretary.symbols.slice(0, 2); },
         function (c) { delete c.exhibits; }
       ]);
     }
@@ -14006,10 +14017,10 @@
     if (who === 'heemang') return heemangGreeting(DESK_CHAT.roomZone);
     if (who === 'lua') {
       return '안녕하세요! 저는 프런트데스크 안내원 루아예요 😊\n' +
-        '뉴스 TV는 ' + when + ' 기준 ' + n + '건으로 준비되어 있어요. 전시실·종목·쇼츠·지표, 무엇이든 물어보세요!';
+        '뉴스 TV는 ' + when + ' 기준 ' + n + '건으로 준비되어 있어요. 전시실·종목·쇼츠·지표는 물론, 2층 노래방·3D 보물찾기·방문자 메모판까지 무엇이든 물어보세요!';
     }
     return '반갑습니다. 프런트데스크 컨시어지 도현입니다.\n' +
-      '현재 뉴스 TV는 ' + when + ' 기준 ' + n + '건이 게시되어 있습니다. 전시관 안내·종목 정보·쇼츠·매매 지표 중 궁금하신 것을 말씀해 주십시오.';
+      '현재 뉴스 TV는 ' + when + ' 기준 ' + n + '건이 게시되어 있습니다. 전시관 안내·국제상품 종목·쇼츠·매매 지표, 2층 노래방·3D 보물찾기·방문자 메모판까지 안내해 드립니다.';
   }
 
   function heemangAddress() { return HEEMANG.isChairman ? '회장님' : '방문자님'; }
@@ -14039,7 +14050,7 @@
       }
       return ['오늘 9종목 브리프', '호주달러 지금 어때?', '비트코인 전망은?', '보물 어디 있어?', '변곡점·고순도 점검'];
     }
-    var base = ['오늘 핵심 시장 뉴스', '전시실·종목 안내', '쇼츠 추천해 줘', '매매 지표(MACD·CCI) 설명'];
+    var base = ['오늘 핵심 시장 뉴스', '전시실·종목 안내', '보물 어디 있어?', '노래방 어떻게 써?', '쇼츠 추천해 줘'];
     return base;
   }
 
@@ -14093,7 +14104,7 @@
     el.classList.toggle('ai', ai);
     el.title = ai
       ? 'Groq/Gemini 기반 실시간 웹 검색·답변'
-      : '뉴스 TV·34개 종목·604편 쇼츠·지표 지식으로 답합니다. Supabase에 AI 키를 넣으면 실시간 두뇌로 바뀝니다.';
+      : '뉴스 TV·' + ((state.data && state.data.tickers) || []).length + '개 종목·9종목 분석 브리프·쇼츠 카탈로그·노래방·보물찾기 지식으로 답합니다. Supabase에 AI 키를 넣으면 실시간 두뇌로 바뀝니다.';
   }
 
   function renderDeskLog() {
@@ -14527,7 +14538,8 @@
   }
 
   /* ── 내장 지식 응답기(Edge Function 이 없거나 실패할 때) ──────────
-     뉴스 TV 7개 피드 · 34개 종목 스펙 · 604편 카탈로그 · 지표 지식으로 답한다. */
+     뉴스 TV 7개 피드 · 전시 종목 스펙 · 쇼츠 카탈로그 · 9종목 브리프 ·
+     노래방·보물찾기·메모판 지식으로 답한다. */
   function localDeskAnswer(who, q) {
     if (who === 'heemang') return heemangLocalAnswer(q);
     var text = String(q || '');
@@ -14546,6 +14558,10 @@
       tail: isLua ? '더 궁금한 게 있으면 또 불러 주세요! 💛' : '추가로 확인하실 사항이 있으면 말씀해 주십시오.'
     };
     function bullets(arr) { return arr.map(function (x) { return '· ' + x; }).join('\n'); }
+    var nCatalog = (function () {
+      var cat = (PANELS && PANELS.catalog) || window.__CATALOG_FALLBACK__;
+      return (cat && cat.videos && cat.videos.length) || 0;
+    })();
 
     // 1) 종목·구역 매칭
     var zoneHit = null;
@@ -14608,6 +14624,17 @@
           (isLua ? '\n\n뉴스 TV에도 OI·COT 수치가 실려 있으니 같이 보면 좋아요!' : '\n\n뉴스 TV 각 방 카드에 OI·COT 실측치가 함께 게시되어 있습니다.'),
         moves: null
       };
+    }
+
+    // 전시관 기능 — 보물찾기·노래방·메모판(내장 데이터)
+    var featReply = galleryFeatureReply(text, low, who);
+    if (featReply) return featReply;
+
+    // 추적 9종목(호주달러·비트코인 포함) — 내장 비서 브리프로 답한다
+    var sbHit = (typeof heemangSymbolHit === 'function') ? heemangSymbolHit(text, low) : null;
+    if (sbHit) {
+      var sbReply = heemangSymbolReply(sbHit);
+      return { reply: (isLua ? '네! ' : '') + sbReply.reply + L.tail, moves: sbReply.moves || null };
     }
 
     // 특정 종목
@@ -14742,7 +14769,7 @@
     return {
       reply: (isLua
         ? '음, 그건 제가 가진 자료에서 바로 찾지 못했어요 🙏\n전시관 안내·종목·쇼츠·뉴스·지표는 자신 있어요! 이렇게 물어봐 주세요.\n· "오늘 핵심 시장 뉴스"\n· "금속 전시실 종목 알려줘"\n· "골드 지금 어때?"\n· "쇼츠 추천해 줘"'
-        : '말씀하신 내용은 현재 전시관 데이터에서 확인되지 않습니다.\n다음 범위는 정확히 안내드릴 수 있습니다.\n· 오늘의 핵심 시장 뉴스 (뉴스 TV 7개 피드)\n· 6개 전시실 · 34개 종목 정보\n· 쇼츠 604편 검색·추천\n· 매매 지표(MACD·CCI·OI·COT·만기) 설명'),
+        : '말씀하신 내용은 현재 전시관 데이터에서 확인되지 않습니다.\n다음 범위는 정확히 안내드릴 수 있습니다.\n· 오늘의 핵심 시장 뉴스 (뉴스 TV 7개 피드)\n· 6개 전시실 · ' + tickers.length + '개 종목 정보\n· 쇼츠 ' + nCatalog + '편 검색·추천\n· 2층 노래방 · 3D 보물찾기 · 방문자 메모판\n· 매매 지표(MACD·CCI·OI·COT·만기) 설명'),
       moves: null
     };
   }
