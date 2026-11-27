@@ -372,12 +372,18 @@
     .kr-micfab:active{transform:scale(.94)}
     @keyframes krFab{0%,100%{box-shadow:0 10px 26px rgba(0,0,0,.45),0 0 0 0 rgba(224,70,63,.55)}
       50%{box-shadow:0 10px 26px rgba(0,0,0,.45),0 0 0 12px rgba(224,70,63,0)}}
-    #karaokeModal .kr-sheet{padding:14px 12px calc(80px + env(safe-area-inset-bottom));border-radius:18px}
+    #karaokeModal .kr-sheet{padding:14px 12px calc(80px + env(safe-area-inset-bottom));border-radius:18px;
+      -webkit-overflow-scrolling:touch}
     .kr-head h2{font-size:19px}
     .kr-sub{font-size:11.5px;margin-bottom:11px}
     .kr-grid{grid-template-columns:1fr;gap:11px;
-      grid-template-areas:"player" "songs" "search" "mic"}
+      grid-template-areas:"player" "search" "songs" "mic"}
     .kr-player{aspect-ratio:16/10}
+    /* 검색·주소 입력은 플레이어 바로 아래에 카드처럼 묶어 첫 화면에서 바로 보이게 */
+    .kr-searchblock{border:1px solid rgba(201,162,39,.2);border-radius:15px;padding:11px 11px 10px;
+      background:linear-gradient(180deg, rgba(201,162,39,.07), rgba(255,255,255,.015) 70%)}
+    .kr-search{gap:8px}
+    .kr-hint{padding-top:1px}
     .kr-songs{grid-template-columns:repeat(2,minmax(0,1fr));max-height:none}
     .kr-song-main .ttl{font-size:11.5px}
     .kr-btn{padding:9px 12px;font-size:12px}
@@ -1535,24 +1541,24 @@
         </div>
       </div>
 
-      <div class="kr-songswrap">
-        <div class="kr-sect"><b>🎵 오늘의 선곡</b><span id="kr-count"></span></div>
-        <div class="kr-picks" id="kr-picks"></div>
-        <div class="kr-songs" id="kr-songs"></div>
-      </div>
-
       <div class="kr-col kr-searchblock">
         <div class="kr-search">
-          <div class="kr-row">
-            <input class="kr-input" id="kr-title-q" maxlength="40" placeholder="노래 제목 (예: 갈무리, 어매)" autocomplete="off">
-            <button type="button" class="kr-btn pri" id="kr-mr">🔍 반주 찾기</button>
-          </div>
           <div class="kr-row">
             <input class="kr-input" id="kr-url" maxlength="160" placeholder="유튜브 주소 또는 영상 ID" autocomplete="off" inputmode="url">
             <button type="button" class="kr-btn pri" id="kr-play">▶ 재생</button>
           </div>
+          <div class="kr-row">
+            <input class="kr-input" id="kr-title-q" maxlength="40" placeholder="노래 제목 (예: 갈무리, 어매)" autocomplete="off">
+            <button type="button" class="kr-btn pri" id="kr-mr">🔍 반주 찾기</button>
+          </div>
           <p class="kr-hint">반주 찾기는 유튜브 검색을 새 창으로 엽니다 — 노래방 반주(MR) 영상을 골라 부르세요.</p>
         </div>
+      </div>
+
+      <div class="kr-songswrap">
+        <div class="kr-sect"><b>🎵 오늘의 선곡</b><span id="kr-count"></span></div>
+        <div class="kr-picks" id="kr-picks"></div>
+        <div class="kr-songs" id="kr-songs"></div>
       </div>
     </div>
 
@@ -10111,7 +10117,7 @@
   /* ── 마이크 + 에코(Web Audio) ──────────────────────────────
      마이크 → 음량 → (마른 소리 + 지연·되먹임 에코) → 스피커
      에코 슬라이더는 지연 시간·되먹임·젖은 소리 세기를 함께 올린다. */
-  var MIC = { ctx: null, stream: null, src: null, hpf: null, gain: null, dry: null, comp: null, delay: null, lpf: null, fb: null, wet: null, analyser: null, raf: 0 };   /* hpf: 저역 잡음 차단 · lpf: 에코 고역 하울링 차단 · comp: 출력 리미터 */
+  var MIC = { ctx: null, stream: null, src: null, hpf: null, gain: null, dry: null, comp: null, delay: null, lpf: null, fb: null, wet: null, analyser: null, dest: null, owned: false, raf: 0 };   /* hpf: 저역 잡음 차단 · lpf: 에코 고역 하울링 차단 · comp: 출력 리미터 · dest: 회의실 음성으로 보내는 가공 스트림 */
 
   function karaokeMicMsg(text, tone) {
     var el = $('kr-mic-msg');
@@ -10167,12 +10173,100 @@
     tick();
   }
 
+  /* 이미 켜 둔 음성 대화가 있으면 그 마이크를 그대로 빌려 쓴다 —
+     안드로이드에서 getUserMedia 를 두 번 열면 마이크가 겹쳐 한쪽이 먹통이 된다. */
+  function karaokeBorrowVoiceStream() {
+    if (!VOICE.active || !VOICE.stream || VOICE._autoJoinedByKaraoke) return null;
+    try {
+      var live = (VOICE.stream.getAudioTracks() || []).filter(function (t) { return t.readyState === 'live'; });
+      if (live.length) return VOICE.stream;
+    } catch (e) {}
+    return null;
+  }
+
+  /* 마이크 → 필터·에코 → 스피커(내가 듣는 모니터) + 2층 회의실 음성(VOICE) 스트림 */
+  function karaokeMicAttach(stream, owned) {
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) {
+      if (owned) { try { stream.getTracks().forEach(function (t) { t.stop(); }); } catch (e0) {} }
+      karaokeMicMsg('이 브라우저는 오디오 처리를 지원하지 않습니다.', 'warn');
+      return false;
+    }
+    var ctx = new AC();
+    MIC.ctx = ctx; MIC.stream = stream; MIC.owned = !!owned;
+    MIC.src = ctx.createMediaStreamSource(stream);
+    /* 저역 웅웅거림·터치 잡음 차단 */
+    MIC.hpf = ctx.createBiquadFilter();
+    MIC.hpf.type = 'highpass';
+    MIC.hpf.frequency.value = 110;
+    MIC.hpf.Q.value = 0.7;
+    MIC.gain = ctx.createGain();
+    /* 출력 리미터 — 큰 소리에서 갑자기 튀어 하울링으로 번지는 것을 눌러 준다 */
+    MIC.comp = ctx.createDynamicsCompressor();
+    MIC.comp.threshold.value = -18;
+    MIC.comp.knee.value = 12;
+    MIC.comp.ratio.value = 6;
+    MIC.comp.attack.value = 0.003;
+    MIC.comp.release.value = 0.15;
+    MIC.dry = ctx.createGain();
+    MIC.dry.gain.value = 0.85;
+    MIC.delay = ctx.createDelay(0.8);
+    /* 에코 한 바퀴마다 고역을 깎아 쇳소리·하울링이 쌓이지 않게 한다 */
+    MIC.lpf = ctx.createBiquadFilter();
+    MIC.lpf.type = 'lowpass';
+    MIC.lpf.frequency.value = 2600;
+    MIC.lpf.Q.value = 0.7;
+    MIC.fb = ctx.createGain();
+    MIC.wet = ctx.createGain();
+    MIC.src.connect(MIC.hpf); MIC.hpf.connect(MIC.gain);
+    MIC.gain.connect(MIC.dry); MIC.dry.connect(MIC.comp);
+    MIC.gain.connect(MIC.delay);
+    MIC.delay.connect(MIC.lpf);
+    MIC.lpf.connect(MIC.fb); MIC.fb.connect(MIC.delay);
+    MIC.lpf.connect(MIC.wet); MIC.wet.connect(MIC.comp);
+    MIC.comp.connect(ctx.destination);          /* 내 스피커 모니터(기존 동작 그대로) */
+    /* 가공된 노래 소리(필터·에코 포함)를 스트림 하나로 뽑는다 — 이 스트림이 회의실 사람에게 간다 */
+    try {
+      MIC.dest = ctx.createMediaStreamDestination();
+      MIC.comp.connect(MIC.dest);
+    } catch (e1) { MIC.dest = null; }
+    MIC.analyser = ctx.createAnalyser();
+    MIC.analyser.fftSize = 512;
+    MIC.gain.connect(MIC.analyser);
+    try { if (ctx.state === 'suspended' && ctx.resume) ctx.resume(); } catch (e2) {}
+    karaokeApplyAudio();
+    KARAOKE_STATE.mic = true;
+    karaokeMicUi();
+    refreshKaraokeScreen();
+    karaokeLevelLoop();
+    /* 음성이 꺼져 있으면 이 스트림으로 바로 회의실에 참여하고, 켜져 있으면 나가는 트랙만 바꾼다 */
+    if (MIC.dest && MIC.dest.stream) {
+      try { VOICE.attachKaraokeStream(MIC.dest.stream); } catch (e3) {}
+    }
+    karaokeMicVoiceNote();
+    return true;
+  }
+
+  /* 마이크 안내문 — 2층 회의실 음성이 함께 켜졌을 때는 노래가 상대에게 전달된다는 것까지 알린다 */
+  function karaokeMicVoiceNote() {
+    if (VOICE.active && VOICE.room === 'meeting') {
+      karaokeMicMsg('마이크가 켜졌습니다. 2층 회의실 상대방에게도 노래 소리가 전달됩니다.', '');
+    } else if (VOICE.active) {
+      karaokeMicMsg('마이크가 켜졌습니다. 1층 음성 대화 상대에게도 노래 소리가 전달됩니다.', '');
+    } else {
+      karaokeMicMsg('마이크가 켜졌습니다. 하울링·잡음 억제 필터가 적용되었습니다.', '');
+    }
+  }
+
   function karaokeMicStart() {
     if (MIC.stream) return Promise.resolve(true);
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       karaokeMicMsg('이 브라우저에서는 마이크를 쓸 수 없습니다. 크롬·삼성 인터넷 최신 버전으로 열어 주세요.', 'warn');
       return Promise.resolve(false);
     }
+    /* 음성 대화가 이미 켜져 있으면 그 마이크를 빌려 쓴다(두 번째 getUserMedia 로 마이크가 겹치지 않게) */
+    var borrowed = karaokeBorrowVoiceStream();
+    if (borrowed) return Promise.resolve(karaokeMicAttach(borrowed, false));
     karaokeMicMsg('마이크 권한을 허용해 주세요…', '');
     /* 폰 스피커 소리가 마이크로 되돌아오는 하울링을 막는다: 에코 캔슬·잡음 억제 켜고 자동 게인은 끈다 */
     var wantAudio = { echoCancellation: true, noiseSuppression: true, autoGainControl: false };
@@ -10185,55 +10279,7 @@
         throw e;
       })
       .then(function (stream) {
-        var AC = window.AudioContext || window.webkitAudioContext;
-        if (!AC) {
-          stream.getTracks().forEach(function (t) { t.stop(); });
-          karaokeMicMsg('이 브라우저는 오디오 처리를 지원하지 않습니다.', 'warn');
-          return false;
-        }
-        var ctx = new AC();
-        MIC.ctx = ctx; MIC.stream = stream;
-        MIC.src = ctx.createMediaStreamSource(stream);
-        /* 저역 웅웅거림·터치 잡음 차단 */
-        MIC.hpf = ctx.createBiquadFilter();
-        MIC.hpf.type = 'highpass';
-        MIC.hpf.frequency.value = 110;
-        MIC.hpf.Q.value = 0.7;
-        MIC.gain = ctx.createGain();
-        /* 출력 리미터 — 큰 소리에서 갑자기 튀어 하울링으로 번지는 것을 눌러 준다 */
-        MIC.comp = ctx.createDynamicsCompressor();
-        MIC.comp.threshold.value = -18;
-        MIC.comp.knee.value = 12;
-        MIC.comp.ratio.value = 6;
-        MIC.comp.attack.value = 0.003;
-        MIC.comp.release.value = 0.15;
-        MIC.dry = ctx.createGain();
-        MIC.dry.gain.value = 0.85;
-        MIC.delay = ctx.createDelay(0.8);
-        /* 에코 한 바퀴마다 고역을 깎아 쇳소리·하울링이 쌓이지 않게 한다 */
-        MIC.lpf = ctx.createBiquadFilter();
-        MIC.lpf.type = 'lowpass';
-        MIC.lpf.frequency.value = 2600;
-        MIC.lpf.Q.value = 0.7;
-        MIC.fb = ctx.createGain();
-        MIC.wet = ctx.createGain();
-        MIC.src.connect(MIC.hpf); MIC.hpf.connect(MIC.gain);
-        MIC.gain.connect(MIC.dry); MIC.dry.connect(MIC.comp);
-        MIC.gain.connect(MIC.delay);
-        MIC.delay.connect(MIC.lpf);
-        MIC.lpf.connect(MIC.fb); MIC.fb.connect(MIC.delay);
-        MIC.lpf.connect(MIC.wet); MIC.wet.connect(MIC.comp);
-        MIC.comp.connect(ctx.destination);
-        MIC.analyser = ctx.createAnalyser();
-        MIC.analyser.fftSize = 512;
-        MIC.gain.connect(MIC.analyser);
-        karaokeApplyAudio();
-        KARAOKE_STATE.mic = true;
-        karaokeMicUi();
-        refreshKaraokeScreen();
-        karaokeLevelLoop();
-        karaokeMicMsg('마이크가 켜졌습니다. 하울링·잡음 억제 필터가 적용되었습니다.', '');
-        return true;
+        return karaokeMicAttach(stream, true);
       })
       .catch(function (e) {
         var name = (e && e.name) || '';
@@ -10255,7 +10301,11 @@
 
   function karaokeMicStop() {
     if (MIC.raf) { cancelAnimationFrame(MIC.raf); MIC.raf = 0; }
-    try { if (MIC.stream) MIC.stream.getTracks().forEach(function (t) { t.stop(); }); } catch (e) {}
+    /* 회의실 음성에서 노래방 마이크를 먼저 뗀다 — 자동으로 켠 음성은 함께 나가고,
+       이미 켜 둔 음성은 원래 마이크로 되돌아온다 */
+    try { VOICE.detachKaraokeStream(); } catch (e0) {}
+    /* 빌려 쓴 음성 대화 마이크는 그쪽 소유라 여기서 끄지 않는다 */
+    try { if (MIC.stream && MIC.owned !== false) MIC.stream.getTracks().forEach(function (t) { t.stop(); }); } catch (e) {}
     try { if (MIC.src) MIC.src.disconnect(); } catch (e) {}
     try { if (MIC.hpf) MIC.hpf.disconnect(); } catch (e) {}
     try { if (MIC.gain) MIC.gain.disconnect(); } catch (e) {}
@@ -10265,8 +10315,10 @@
     try { if (MIC.lpf) MIC.lpf.disconnect(); } catch (e) {}
     try { if (MIC.fb) MIC.fb.disconnect(); } catch (e) {}
     try { if (MIC.wet) MIC.wet.disconnect(); } catch (e) {}
+    try { if (MIC.dest) MIC.dest.disconnect(); } catch (e) {}
     try { if (MIC.ctx && MIC.ctx.state !== 'closed') MIC.ctx.close(); } catch (e) {}
-    MIC.ctx = MIC.stream = MIC.src = MIC.hpf = MIC.gain = MIC.dry = MIC.comp = MIC.delay = MIC.lpf = MIC.fb = MIC.wet = MIC.analyser = null;
+    MIC.ctx = MIC.stream = MIC.src = MIC.hpf = MIC.gain = MIC.dry = MIC.comp = MIC.delay = MIC.lpf = MIC.fb = MIC.wet = MIC.analyser = MIC.dest = null;
+    MIC.owned = false;
     if (KARAOKE_STATE.mic) {
       KARAOKE_STATE.mic = false;
       refreshKaraokeScreen();
@@ -11063,6 +11115,8 @@
   var VOICE = {
     active: false, stream: null, peers: {}, audioEls: {},
     supported: false, denied: false, room: 'gallery',
+    /* 🎤 노래방 마이크(필터·에코를 거친 스트림) — 켜져 있으면 이 스트림을 회의실로 내보낸다 */
+    karaokeStream: null, _autoJoinedByKaraoke: false,
     init: function (cfg) {
       this.supported = !!(cfg && cfg.supabaseUrl && cfg.supabaseAnonKey &&
         navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.RTCPeerConnection);
@@ -11112,6 +11166,70 @@
         toast('마이크 권한을 허용해 주세요 (크롬에서 여시면 정상 작동합니다)', 4200);
       });
     },
+    /* 🎤 노래방 마이크를 회의실 음성에 태운다.
+       · 음성이 이미 켜져 있으면 나가는 오디오 트랙만 교체(replaceTrack) — getUserMedia 를 다시 열지 않는다
+       · 꺼져 있으면 이 스트림으로 바로 참여 — 같은 마이크를 두 번 열지 않는다 */
+    attachKaraokeStream: function (stream) {
+      var self = this;
+      if (!stream) return false;
+      this.karaokeStream = stream;
+      var track = (stream.getAudioTracks() || [])[0] || null;
+      if (this.active) {
+        if (track) {
+          Object.keys(this.peers).forEach(function (id) {
+            var pc = self.peers[id];
+            if (!pc) return;
+            try {
+              pc.getSenders().forEach(function (s) {
+                if (s.track && s.track.kind === 'audio') s.replaceTrack(track);
+              });
+            } catch (e) {}
+          });
+        }
+        renderVoiceNote('on');
+        updateMeetingHud();
+        updateHallVoice();
+        return true;
+      }
+      if (!this.supported) { renderVoiceNote('unsupported'); updateMeetingHud(); updateHallVoice(); return false; }
+      this.denied = false;
+      this.room = this.scopeOfFloor();
+      this.stream = stream;
+      this.active = true;
+      this._autoJoinedByKaraoke = true;
+      renderVoiceNote('on');
+      updateHallVoice();
+      REALTIME.send({ type: 'voice-hello', id: REALTIME.id(), name: ownName(), room: this.room });
+      Object.keys(visitors).forEach(function (vid) {
+        self.connect(vid, String(REALTIME.id()) < String(vid));
+      });
+      updateMeetingHud();
+      return true;
+    },
+    /* 노래방 마이크를 뺄 때 — 자동으로 켠 음성은 함께 끄고, 원래 켜 둔 음성은 원래 마이크로 되돌린다 */
+    detachKaraokeStream: function () {
+      var self = this;
+      var auto = !!this._autoJoinedByKaraoke;
+      this._autoJoinedByKaraoke = false;
+      if (auto) {
+        if (this.active) this.leave();   /* leave() 안의 가드로 노래방 마이크는 살려 두고 연결만 정리된다 */
+        this.karaokeStream = null;
+        return;
+      }
+      this.karaokeStream = null;
+      if (!this.active || !this.stream) return;
+      var track = (this.stream.getAudioTracks() || [])[0] || null;
+      if (!track) return;
+      Object.keys(this.peers).forEach(function (id) {
+        var pc = self.peers[id];
+        if (!pc) return;
+        try {
+          pc.getSenders().forEach(function (s) {
+            if (s.track && s.track.kind === 'audio') s.replaceTrack(track);
+          });
+        } catch (e) {}
+      });
+    },
     /* 같은 room 상대가 음성 대화를 켰다는 알림 — 이미 연결된 것이 아니면 새로 건다 */
     helloPeer: function (peerId) {
       if (!this.active || !this.sameRoom(peerId)) return;
@@ -11128,7 +11246,12 @@
         REALTIME.send({ type: 'voice-bye', id: REALTIME.id(), name: ownName(), room: this.room });
       }
       Object.keys(this.peers).forEach(function (k) { self.dropPeer(k); });
-      if (this.stream) { this.stream.getTracks().forEach(function (t) { t.stop(); }); this.stream = null; }
+      var s = this.stream;
+      this.stream = null;
+      /* 노래방 마이크 스트림의 주인은 노래방이다 — 여기서 끄면 노래방 마이크까지 같이 죽는다 */
+      if (s && s !== this.karaokeStream) { try { s.getTracks().forEach(function (t) { t.stop(); }); } catch (e) {} }
+      this.karaokeStream = null;
+      this._autoJoinedByKaraoke = false;
       this.active = false;
       renderVoiceNote('idle');
       updateMeetingHud();
@@ -11146,12 +11269,14 @@
     },
     connect: function (peerId, initiator) {
       var self = this;
-      if (!this.supported || !this.stream || this.peers[peerId]) return;
+      /* 노래방 마이크가 켜져 있으면 그 가공 스트림(필터·에코)을 내보낸다 */
+      var src = this.karaokeStream || this.stream;
+      if (!this.supported || !src || this.peers[peerId]) return;
       if (!this.sameRoom(peerId)) return;      // 다른 층(다른 room) 사람과는 절대 연결하지 않는다
       try {
         var pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
         this.peers[peerId] = pc;
-        this.stream.getTracks().forEach(function (t) { pc.addTrack(t, self.stream); });
+        src.getTracks().forEach(function (t) { pc.addTrack(t, src); });
         pc.onicecandidate = function (e) {
           if (e.candidate) REALTIME.send({ type: 'rtc-ice', id: REALTIME.id(), to: peerId, room: self.room, candidate: e.candidate });
         };
