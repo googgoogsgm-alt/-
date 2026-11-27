@@ -7876,6 +7876,7 @@
     var changed = state.floor !== f;
     var room = f === 2 ? 'meeting' : 'gallery';
     if (VOICE.active && (changed || VOICE.room !== room)) VOICE.leave();   // 층이 바뀌면 음성 자동 퇴장
+    if (changed) VOICE.dropAll();                                        // 듣기 전용 연결도 정리 — 이전 층 소리가 섞이지 않게
     state.floor = f;
     state.floorY = y;
     if (document.body) document.body.classList.toggle('floor-2', f === 2);   // 2층에서는 1층 구역 줄 숨김
@@ -11125,15 +11126,22 @@
       ensureVisitor(msg);
     } else if (msg.type === 'hello') {
       ensureVisitor(msg);
-      if (VOICE.active && msg.room === VOICE.room) VOICE.connect(msg.id, true);
+      /* 내가 음성을 켜 둔 채 같은 층 사람이 들어오면 내 채널을 다시 알린다 —
+         그 사람은 마이크가 켜져 있으면 연결하고, 꺼져 있으면 듣기 전용으로 받는다 */
+      if (VOICE.active && msg.room === VOICE.room && !VOICE.peers[msg.id]) VOICE.announce();
     } else if (msg.type === 'voice-hello') {
       // 음성 채널이 같은 room(1층 중앙홀 gallery · 2층 회의실 meeting) 사람끼리만 연결된다
-      if (VOICE.active && msg.room === VOICE.room) {
-        VOICE.helloPeer(msg.id);
-      } else if (!VOICE.active && msg.room === 'gallery' && state.floor === 1) {
+      if (msg.room === VOICE.refRoom()) {
+        if (VOICE.active) VOICE.helloPeer(msg.id, msg.room);
+        else VOICE.askListen(msg.id, msg.room);      // 마이크를 켜지 않아도 같은 층이면 듣기 전용으로 받는다
+      }
+      if (!VOICE.active && msg.room === 'gallery' && state.floor === 1) {
         // 1층에서 마주친 방문자가 음성 대화를 켰다 — 2층 회의실 알림은 1층에 절대 뜨지 않는다
         hallVoiceNudge(msg.name || (visitors[msg.id] && visitors[msg.id].name));
       }
+    } else if (msg.type === 'voice-listen') {
+      // 같은 층에서 마이크 없이 듣겠다고 알려 왔다 — 말하는 쪽(나)이 먼저 연결을 건다
+      if (VOICE.active && msg.room === VOICE.room) VOICE.offerTo(msg.id, msg.room);
     } else if (msg.type === 'voice-bye') {
       VOICE.dropPeer(msg.id);
     } else if (msg.type === 'bye') {
@@ -11223,8 +11231,8 @@
      · 2층 회의실: A·B 등급 전용 음성 회의
      두 채널은 room 이름으로 완전히 갈라지며 서로 연결되지 않는다. */
   var VOICE = {
-    active: false, stream: null, peers: {}, audioEls: {},
-    supported: false, denied: false, room: 'gallery',
+    active: false, stream: null, peers: {}, audioEls: {}, iceBuf: {},
+    supported: false, denied: false, room: 'gallery', _unlockArmed: false, _retry: {},
     /* 🎤 노래방 마이크(필터·에코를 거친 스트림) — 켜져 있으면 이 스트림을 회의실로 내보낸다 */
     karaokeStream: null, _autoJoinedByKaraoke: false,
     init: function (cfg) {
@@ -11240,11 +11248,14 @@
       var v = visitors[vid];
       return v ? (v.room || 'gallery') : null;
     },
-    /* 같은 room 에 있는 사람인지 — 방문자를 알면 그 room 이 기준, 모르면 메시지가 실어 온 room 으로 판단 */
+    /* 내가 지금 듣는 음성 채널 — 마이크를 안 켠 '듣기 전용'이면 지금 서 있는 층의 채널 */
+    refRoom: function () { return this.active ? this.room : this.scopeOfFloor(); },
+    /* 같은 room 에 있는 사람인지 — 메시지가 실어 온 room 을 먼저 믿고, 없으면 방문자 정보로 판단.
+       듣기 전용(마이크 꺼짐)일 때도 같은 층 사람이면 true 가 되어 소리를 받을 수 있다. */
     sameRoom: function (vid, roomHint) {
-      var r = this.visitorRoom(vid);
-      if (r) return r === this.room;
-      return !!roomHint && roomHint === this.room;
+      var mine = this.refRoom();
+      var r = roomHint || this.visitorRoom(vid);
+      return !!r && r === mine;
     },
     join: function (scope) {
       var self = this;
@@ -11264,11 +11275,12 @@
         self.active = true;
         renderVoiceNote('on');
         updateHallVoice();
+        self.upgradeAll();      // 듣기만 하던 연결에 내 마이크를 얹는다(말을 시작할 때)
         // 같은 채널(같은 층) 방문자에게만 알린다
         REALTIME.send({ type: 'voice-hello', id: REALTIME.id(), name: ownName(), room: self.room });
         Object.keys(visitors).forEach(function (vid) {
           // 방이 같을 때만 연결하고, id 가 작은 쪽이 먼저 offer 를 건다(동시에 켜도 엇갈리지 않게)
-          self.connect(vid, String(REALTIME.id()) < String(vid));
+          self.connect(vid, String(REALTIME.id()) < String(vid), self.room);
         });
         updateMeetingHud();
       }).catch(function () {
@@ -11300,6 +11312,7 @@
             } catch (e) {}
           });
         }
+        this.upgradeAll();      // 듣기만 하던 상대에게는 트랙이 없으니 새로 얹는다
         renderVoiceNote('on');
         updateMeetingHud();
         updateHallVoice();
@@ -11315,7 +11328,7 @@
       updateHallVoice();
       REALTIME.send({ type: 'voice-hello', id: REALTIME.id(), name: ownName(), room: this.room });
       Object.keys(visitors).forEach(function (vid) {
-        self.connect(vid, String(REALTIME.id()) < String(vid));
+        self.connect(vid, String(REALTIME.id()) < String(vid), self.room);
       });
       updateMeetingHud();
       return true;
@@ -11345,8 +11358,8 @@
       });
     },
     /* 같은 room 상대가 음성 대화를 켰다는 알림 — 이미 연결된 것이 아니면 새로 건다 */
-    helloPeer: function (peerId) {
-      if (!this.active || !this.sameRoom(peerId)) return;
+    helloPeer: function (peerId, roomHint) {
+      if (!this.active || !this.sameRoom(peerId, roomHint)) return;
       if (String(REALTIME.id()) >= String(peerId)) return;    // id 가 큰 쪽은 작은 쪽의 offer 를 기다린다
       var pc = this.peers[peerId];
       // 이미 연결되어 있거나 상대 응답까지 받아 진행 중이면 그대로 둔다(말이 끊기지 않게)
@@ -11373,6 +11386,7 @@
     },
     /* 한 사람의 연결·<audio> 만 정리한다 — 여러 명이 동시에 말해도 소리가 덮어씌워지지 않게 피어별로 둔다 */
     dropPeer: function (peerId) {
+      delete this.iceBuf[peerId];
       var pc = this.peers[peerId];
       if (pc) { try { pc.close(); } catch (e) {} delete this.peers[peerId]; }
       var el = this.audioEls[peerId];
@@ -11381,62 +11395,264 @@
         delete this.audioEls[peerId];
       }
     },
-    connect: function (peerId, initiator) {
+    /* 새 방문자에게 내 음성 채널을 알린다(연결 또는 듣기 전용 수신을 시작하게) */
+    announce: function () {
+      if (!this.supported) return;
+      REALTIME.send({ type: 'voice-hello', id: REALTIME.id(), name: ownName(), room: this.refRoom() });
+    },
+    /* 마이크를 켜지 않은 채 듣기만 하겠다고 말하는 쪽에 알린다 —
+       말하는 쪽이 offer 를 걸어 주고, 이쪽은 트랙 없이(recvonly) 응답만 한다 */
+    askListen: function (peerId, roomHint) {
+      if (!this.supported || this.active) return;
+      if (String(peerId) === String(REALTIME.id())) return;
+      if (!this.sameRoom(peerId, roomHint)) return;
+      REALTIME.send({ type: 'voice-listen', id: REALTIME.id(), to: peerId, room: this.refRoom() });
+    },
+    /* 같은 층 사람에게 내 소리를 보내는 연결을 건다 — 이미 협상 중이면 그대로 둔다 */
+    offerTo: function (peerId, roomHint) {
+      if (!this.supported || String(peerId) === String(REALTIME.id())) return;
+      if (!this.sameRoom(peerId, roomHint)) return;
+      var src = this.karaokeStream || this.stream;
+      if (!src) return;
+      var pc = this.peers[peerId];
+      if (pc) {
+        if (pc.localDescription || pc.remoteDescription) return;
+        this.sendOffer(pc, peerId);
+        return;
+      }
+      this.connect(peerId, true, roomHint);
+    },
+    sendOffer: function (pc, peerId) {
+      var self = this;
+      try {
+        pc.createOffer().then(function (o) { return pc.setLocalDescription(o); }).then(function () {
+          REALTIME.send({ type: 'rtc-offer', id: REALTIME.id(), to: peerId, room: self.refRoom(),
+                          sdp: { type: pc.localDescription.type, sdp: pc.localDescription.sdp } });
+        }).catch(function () {});
+      } catch (e) {}
+    },
+    /* 상대와 연결한다. initiator=true 면 offer 를 보내는 쪽, false 면 offer 를 받는 쪽.
+       오디오를 보낼 스트림이 없어도(마이크 꺼짐) 받는 쪽은 될 수 있다 — 듣기 전용(recvonly). */
+    connect: function (peerId, initiator, roomHint) {
       var self = this;
       /* 노래방 마이크가 켜져 있으면 그 가공 스트림(필터·에코)을 내보낸다 */
       var src = this.karaokeStream || this.stream;
-      if (!this.supported || !src || this.peers[peerId]) return;
-      if (!this.sameRoom(peerId)) return;      // 다른 층(다른 room) 사람과는 절대 연결하지 않는다
+      if (!this.supported) return;
+      if (!this.sameRoom(peerId, roomHint)) return;   // 다른 층(다른 room) 사람과는 절대 연결하지 않는다
+      var old = this.peers[peerId];
+      if (old) {
+        /* 이미 연결되어 있으면 새 연결을 만들지 않는다(받던 소리가 끊기지 않게) */
+        if (initiator && src) this.upgradePeer(peerId);
+        return;
+      }
+      if (!src && initiator) return;                  // 보낼 것도 없이 offer 만 걸 수는 없다
       try {
         var pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
         this.peers[peerId] = pc;
-        src.getTracks().forEach(function (t) { pc.addTrack(t, src); });
-        pc.onicecandidate = function (e) {
-          if (e.candidate) REALTIME.send({ type: 'rtc-ice', id: REALTIME.id(), to: peerId, room: self.room, candidate: e.candidate });
-        };
-        pc.ontrack = function (e) { self.play(e.streams[0], peerId); };
-        if (initiator) {
-          pc.createOffer().then(function (o) { return pc.setLocalDescription(o); }).then(function () {
-            REALTIME.send({ type: 'rtc-offer', id: REALTIME.id(), to: peerId, room: self.room, sdp: pc.localDescription });
-          }).catch(function () {});
+        if (src) {
+          try { src.getTracks().forEach(function (t) { pc.addTrack(t, src); }); } catch (e0) {}
         }
+        pc.onicecandidate = function (e) {
+          var c = e.candidate;
+          if (!c) return;
+          /* 후보는 JSON 으로 실을 수 있는 값만 보낸다 — 로컬 버스(BroadcastChannel)에서도 전달되게 */
+          REALTIME.send({ type: 'rtc-ice', id: REALTIME.id(), to: peerId, room: self.refRoom(),
+                          candidate: { candidate: c.candidate, sdpMid: c.sdpMid, sdpMLineIndex: c.sdpMLineIndex,
+                                       usernameFragment: c.usernameFragment } });
+        };
+        pc.ontrack = function (e) {
+          var st = e.streams && e.streams[0];
+          if (!st && e.track) { try { st = new MediaStream([e.track]); } catch (e1) { st = null; } }
+          if (st) self.play(st, peerId);
+        };
+        pc.onconnectionstatechange = function () {
+          if (self.peers[peerId] !== pc) return;
+          var cs = pc.connectionState;
+          if (cs === 'connected') { self._retry[peerId] = 0; return; }
+          if (cs === 'failed') { self.dropPeer(peerId); self.retryPeer(peerId); }   // 끊기면 몇 번 다시 시도
+          else if (cs === 'closed') { self.dropPeer(peerId); }
+        };
+        if (initiator) this.sendOffer(pc, peerId);
       } catch (e) {}
     },
+    /* 듣기만 하던 피어(내 트랙 없음)에 지금 마이크 스트림을 얹고 다시 협상한다 */
+    upgradePeer: function (peerId) {
+      var src = this.karaokeStream || this.stream;
+      if (!src) return;
+      var pc = this.peers[peerId];
+      if (!pc) return;
+      var has = false;
+      try { pc.getSenders().forEach(function (s) { if (s.track) has = true; }); } catch (e) {}
+      if (has) return;
+      try { src.getTracks().forEach(function (t) { pc.addTrack(t, src); }); } catch (e) {}
+      this.sendOffer(pc, peerId);
+    },
+    /* 연결이 끊겼을 때 다시 붙는다 — 말하는 쪽은 다시 offer, 듣는 쪽은 다시 요청(최대 3회) */
+    retryPeer: function (peerId) {
+      var self = this;
+      if (!this.supported) return;
+      var n = (this._retry[peerId] || 0) + 1;
+      this._retry[peerId] = n;
+      if (n > 3) return;
+      setTimeout(function () {
+        if (self.peers[peerId]) return;
+        if (self.active) self.offerTo(peerId, self.refRoom());
+        else self.askListen(peerId, self.refRoom());
+      }, 1200 * n);
+    },
+    upgradeAll: function () {
+      var self = this;
+      Object.keys(this.peers).forEach(function (id) { self.upgradePeer(id); });
+    },
+    /* 시그널 처리 — 마이크를 켜지 않은 '듣기 전용' 방문자도 같은 층이면 offer 를 받아 소리를 듣는다 */
     handleSignal: function (msg) {
-      if (!this.supported || !this.active) return;
+      if (!this.supported) return;
       if (msg.to && msg.to !== REALTIME.id()) return;
-      if (msg.room && msg.room !== this.room) return;            // 다른 채널의 신호는 버린다
-      if (!this.sameRoom(msg.id, msg.room)) return;              // 다른 층 사람과는 연결하지 않는다
+      if (!this.sameRoom(msg.id, msg.room)) return;   // 같은 층(같은 room) 사람만 — 1층 대화와 2층 회의는 섞이지 않는다
       if (msg.type === 'rtc-offer') {
-        this.connect(msg.id, false);
+        this.connect(msg.id, false, msg.room);
         var pc = this.peers[msg.id];
         if (!pc) return;
+        if (pc.signalingState === 'have-local-offer') return;   // 동시에 걸었으면 내 offer 를 우선한다
         pc.setRemoteDescription(new RTCSessionDescription(msg.sdp)).then(function () {
           return pc.createAnswer();
         }).then(function (a) { return pc.setLocalDescription(a); }).then(function () {
-          REALTIME.send({ type: 'rtc-answer', id: REALTIME.id(), to: msg.id, room: this.room, sdp: pc.localDescription });
-        }.bind(this)).catch(function () {});
+          REALTIME.send({ type: 'rtc-answer', id: REALTIME.id(), to: msg.id, room: VOICE.refRoom(),
+                          sdp: { type: pc.localDescription.type, sdp: pc.localDescription.sdp } });
+          VOICE.flushIce(msg.id, pc);
+        }).catch(function () {});
       } else if (msg.type === 'rtc-answer') {
         var p2 = this.peers[msg.id];
-        if (p2) p2.setRemoteDescription(new RTCSessionDescription(msg.sdp)).catch(function () {});
+        if (p2) p2.setRemoteDescription(new RTCSessionDescription(msg.sdp)).then(function () {
+          VOICE.flushIce(msg.id, p2);
+        }).catch(function () {});
       } else if (msg.type === 'rtc-ice') {
         var p3 = this.peers[msg.id];
         if (p3 && msg.candidate) p3.addIceCandidate(new RTCIceCandidate(msg.candidate)).catch(function () {});
+        else if (msg.candidate) (this.iceBuf[msg.id] = this.iceBuf[msg.id] || []).push(msg.candidate);   // offer/answer 보다 먼저 온 후보는 모아 둔다
       }
     },
-    /* 피어마다 <audio> 를 따로 둔다 — 한 명 것을 덮어쓰지 않고 여러 목소리가 함께 들린다 */
+    flushIce: function (peerId, pc) {
+      var buf = this.iceBuf[peerId];
+      if (!buf || !buf.length || !pc) return;
+      delete this.iceBuf[peerId];
+      buf.forEach(function (c) {
+        try { pc.addIceCandidate(new RTCIceCandidate(c)).catch(function () {}); } catch (e) {}
+      });
+    },
+    /* 검증용 — 마이크·연결·받는 소리 상태(관리자 디버그 API 에서만 읽는다) */
+    debugState: function () {
+      return { active: this.active, room: this.room, refRoom: this.refRoom(),
+               supported: this.supported, listening: this.isListening(),
+               peers: Object.keys(this.peers), audio: Object.keys(this.audioEls) };
+    },
+    debugPeers: function () {
+      var self = this, out = {};
+      Object.keys(this.peers).forEach(function (k) {
+        var pc = self.peers[k], recv = null, senders = -1;
+        try {
+          var t = (pc.getReceivers() || []).map(function (r) { return r.track; })
+            .filter(function (x) { return x && x.kind === 'audio'; })[0] || null;
+          if (t) recv = { kind: t.kind, muted: !!t.muted, ready: t.readyState, live: t.readyState === 'live' };
+        } catch (e) {}
+        try { senders = pc.getSenders().filter(function (s) { return !!s.track; }).length; } catch (e) {}
+        out[k] = { state: pc.connectionState, signaling: pc.signalingState, recv: recv, senders: senders };
+      });
+      return out;
+    },
+    debugAudio: function () {
+      var self = this;
+      return Object.keys(this.audioEls).map(function (k) {
+        var a = self.audioEls[k], st = a.srcObject;
+        var t = (st && st.getAudioTracks) ? st.getAudioTracks()[0] : null;
+        return { peer: k, paused: !!a.paused, volume: a.volume, muted: !!a.muted,
+                 playsinline: a.getAttribute('playsinline') === '',
+                 track: t ? { ready: t.readyState, muted: !!t.muted, live: t.readyState === 'live' } : null };
+      });
+    },
+    /* 마이크는 꺼져 있지만 같은 층 사람의 소리를 듣고 있는 중인지 */
+    isListening: function () {
+      return !this.active && (Object.keys(this.audioEls).length > 0 || Object.keys(this.peers).length > 0);
+    },
+    /* 듣기만 하던 소리를 끈다 — 말하는 쪽에는 voice-bye 로 알리고 연결을 정리한다 */
+    stopListening: function () {
+      if (!this.isListening()) return false;
+      var self = this;
+      var room = this.refRoom();
+      Object.keys(this.peers).forEach(function (k) {
+        try { REALTIME.send({ type: 'voice-bye', id: REALTIME.id(), to: k, room: room }); } catch (e) {}
+        self.dropPeer(k);
+      });
+      Object.keys(this.audioEls).forEach(function (k) { self.dropPeer(k); });
+      return true;
+    },
+    /* 층을 옮길 때 — 듣기 전용 연결까지 모두 정리해 이전 층 소리가 남지 않게 */
+    dropAll: function () {
+      var self = this;
+      Object.keys(this.peers).forEach(function (k) { self.dropPeer(k); });
+      Object.keys(this.audioEls).forEach(function (k) { self.dropPeer(k); });
+      this.iceBuf = {};
+    },
+    /* 피어마다 <audio> 를 따로 둔다 — 한 명 것을 덮어쓰지 않고 여러 목소리가 함께 들린다.
+       폰(안드로이드 크롬·삼성 인터넷)에서는 자동재생이 막힐 수 있어 첫 터치에서 살린다. */
     play: function (stream, peerId) {
+      var self = this;
       var key = String(peerId || 'peer');
+      if (!stream) return;
       var el = this.audioEls[key];
       if (!el) {
         el = document.createElement('audio');
-        el.autoplay = true;
-        el.style.display = 'none';
+        el.muted = false;
+        el.volume = 1.0;
+        el.setAttribute('playsinline', '');
+        el.setAttribute('webkit-playsinline', '');
         el.setAttribute('data-peer', key);
+        el.style.display = 'none';
         this.audioEls[key] = el;
         document.body.appendChild(el);
       }
+      el.autoplay = true;
+      el.playsInline = true;
+      el.muted = false;
+      try { el.volume = 1.0; } catch (e0) {}
       el.srcObject = stream;
+      var kick = function () {
+        try {
+          var p = el.play();
+          if (p && p.catch) p.catch(function () { self.armAudioUnlock(); });
+        } catch (e1) { self.armAudioUnlock(); }
+      };
+      kick();
+      try { el.onloadedmetadata = kick; } catch (e2) {}
+      if (!this.active) { try { renderVoiceNote('idle'); } catch (e3) {} }
+    },
+    /* 자동재생이 막혔을 때 — 화면을 한 번 누르면 모든 피어 소리를 살린다 */
+    armAudioUnlock: function () {
+      var self = this;
+      if (this._unlockArmed) return;
+      this._unlockArmed = true;
+      var locked = Object.keys(this.audioEls).some(function (k) {
+        var a = self.audioEls[k];
+        return !!(a && a.paused);
+      });
+      if (locked) { try { toast('🔊 소리를 들으려면 화면을 한 번 눌러 주세요', 4200); } catch (e0) {} }
+      var resume = function () {
+        self._unlockArmed = false;
+        ['pointerdown', 'touchstart', 'click', 'keydown'].forEach(function (n) {
+          try { document.removeEventListener(n, resume, true); } catch (e2) {}
+        });
+        Object.keys(self.audioEls).forEach(function (k) {
+          var a = self.audioEls[k];
+          if (!a) return;
+          try {
+            var p = a.play();
+            if (p && p.catch) p.catch(function () {});
+          } catch (e3) {}
+        });
+      };
+      ['pointerdown', 'touchstart', 'click', 'keydown'].forEach(function (n) {
+        try { document.addEventListener(n, resume, true); } catch (e1) {}
+      });
     }
   };
 
@@ -11467,6 +11683,13 @@
       btn.disabled = false;
       btn.textContent = inMeeting ? '🎙️ 회의실 음성 나가기' : '🎙️ 음성 대화 끄기';
       if (head) head.classList.toggle('on', onHere);
+      return;
+    } else if (VOICE.isListening()) {
+      // 마이크는 꺼져 있지만 같은 층 사람의 소리를 듣고 있는 중
+      msg.textContent = '듣는 중입니다 (내 마이크는 꺼져 있음) — 말하려면 아래 단추로 마이크를 켜세요.';
+      btn.disabled = false;
+      btn.textContent = '🔇 듣기 끄기';
+      if (head) head.classList.remove('on');
       return;
     } else {
       msg.textContent = VOICE.supported ? where + ' 실시간 연결이 준비되어 있습니다.' : where;
@@ -11515,6 +11738,7 @@
     });
     $('voice-join').addEventListener('click', function () {
       updateVoiceUnlock();
+      if (VOICE.stopListening()) { renderVoiceNote('idle'); return; }   // 듣기만 하던 중이면 먼저 끈다
       VOICE.join(state.floor === 2 ? 'meeting' : 'gallery');
     });
     // 1층 중앙홀·전시실 — 마주친 방문자와 바로 음성 대화(2층 회의실 음성과는 별개 채널)
