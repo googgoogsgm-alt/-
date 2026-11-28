@@ -10379,10 +10379,14 @@
 
   /* 마이크 안내문 — 2층 회의실 음성이 함께 켜졌을 때는 노래가 상대에게 전달된다는 것까지 알린다 */
   function karaokeMicVoiceNote() {
-    if (VOICE.active && VOICE.room === 'meeting') {
-      karaokeMicMsg('마이크가 켜졌습니다. 2층 회의실 상대방에게도 노래 소리가 전달됩니다.', '');
-    } else if (VOICE.active) {
-      karaokeMicMsg('마이크가 켜졌습니다. 1층 음성 대화 상대에게도 노래 소리가 전달됩니다.', '');
+    if (!MIC.stream) return;
+    var link = VOICE.statusText();
+    var where = (VOICE.active && VOICE.room === 'meeting') ? '2층 회의실'
+              : (VOICE.active ? '1층 음성 대화' : '');
+    if (where && link) {
+      karaokeMicMsg('마이크가 켜졌습니다. ' + where + ' 상대에게 노래가 전달됩니다 · ' + link, '');
+    } else if (where) {
+      karaokeMicMsg('마이크가 켜졌습니다. ' + where + ' 상대를 기다리는 중입니다.', '');
     } else {
       karaokeMicMsg('마이크가 켜졌습니다. 하울링·잡음 억제 필터가 적용되었습니다.', '');
     }
@@ -10398,8 +10402,10 @@
     var borrowed = karaokeBorrowVoiceStream();
     if (borrowed) return Promise.resolve(karaokeMicAttach(borrowed, false));
     karaokeMicMsg('마이크 권한을 허용해 주세요…', '');
-    /* 폰 스피커 소리가 마이크로 되돌아오는 하울링을 막는다: 에코 캔슬·잡음 억제 켜고 자동 게인은 끈다 */
-    var wantAudio = { echoCancellation: true, noiseSuppression: true, autoGainControl: false };
+    /* 폰 스피커 소리가 마이크로 되돌아오는 하울링을 막는다: 에코 캔슬은 켜고 자동 게인은 끈다.
+       잡음 억제(noiseSuppression)는 말소리용이라 노래를 깎아 먹어(숨소리·여운이 잘림)
+       노래방 마이크에서는 끈다 — 대신 저역 필터·리미터·에코 상한으로 잡음을 잡는다. */
+    var wantAudio = { echoCancellation: true, noiseSuppression: false, autoGainControl: false };
     return navigator.mediaDevices.getUserMedia({ audio: wantAudio })
       .catch(function (e) {
         var n = (e && e.name) || '';
@@ -10454,6 +10460,7 @@
       refreshKaraokeScreen();
     }
     karaokeMicUi();
+    karaokeMicMsg('마이크가 꺼졌습니다. 다시 켜면 같은 방 사람에게 노래가 전달됩니다.', '');
   }
 
   function karaokeLoadPrefs() {
@@ -10636,43 +10643,70 @@
       var base = String(conf.supabaseUrl).replace(/\/+$/, '');
       var wsUrl = base.replace(/^http/, 'ws') + '/realtime/v1/websocket?apikey=' +
         encodeURIComponent(conf.supabaseAnonKey) + '&vsn=1.0.0';
-      var ws = new WebSocket(wsUrl);
-      var ref = 0, joinRef = String(++ref), joined = false, outbox = [], hb = null;
+      var ref = 0, joined = false, outbox = [], hb = null, ws = null;
+      var retry = 0, retryTimer = null, closedByUs = false;
 
       function raw(obj) {
-        try { if (ws.readyState === 1) ws.send(JSON.stringify(obj)); else outbox.push(obj); }
+        try { if (ws && ws.readyState === 1) ws.send(JSON.stringify(obj)); else outbox.push(obj); }
         catch (e) {}
       }
       function sendEvent(name, payload) {
         raw({ topic: topic, event: 'broadcast', ref: String(++ref),
               payload: { type: 'broadcast', event: name, payload: payload } });
       }
-      ws.onopen = function () {
-        raw({ topic: topic, event: 'phx_join', ref: joinRef,
-              payload: { config: { broadcast: { self: false }, presence: { key: clientId } } } });
-        var rest = outbox; outbox = [];
-        rest.forEach(function (o) { try { ws.send(JSON.stringify(o)); } catch (e) {} });
-        hb = setInterval(function () {
-          raw({ topic: 'phoenix', event: 'heartbeat', payload: {}, ref: String(++ref) });
-        }, 25000);
-      };
-      ws.onmessage = function (ev) {
-        var m;
-        try { m = JSON.parse(ev.data); } catch (e) { return; }
-        if (m.event === 'phx_reply' && m.ref === joinRef) { joined = true; emit({ type: 'mode', mode: 'online' }); }
-        else if (m.event === 'broadcast' && m.payload && m.payload.payload) { emit(m.payload.payload); }
-        else if (m.event === 'phx_error' || m.event === 'phx_close') { emit({ type: 'mode', mode: 'offline' }); }
-      };
-      ws.onerror = function () { emit({ type: 'mode', mode: 'offline' }); };
-      ws.onclose = function () {
-        if (hb) clearInterval(hb);
-        joined = false;
-        emit({ type: 'mode', mode: 'offline' });
-      };
+      /* 폰 화면이 꺼지거나 LTE↔와이파이를 오가면 WebSocket 이 끊긴다.
+         예전에는 새로고침 전까지 시그널링이 죽어 있어 원거리 음성이 영영 다시 붙지 않았다. */
+      function scheduleRetry() {
+        if (closedByUs || retryTimer) return;
+        retry = Math.min(retry + 1, 6);
+        retryTimer = setTimeout(open, Math.min(15000, 700 * Math.pow(1.7, retry)));
+      }
+      function open() {
+        retryTimer = null;
+        if (closedByUs) return;
+        try { ws = new WebSocket(wsUrl); } catch (e) { scheduleRetry(); return; }
+        var joinRef = String(++ref);
+        ws.onopen = function () {
+          raw({ topic: topic, event: 'phx_join', ref: joinRef,
+                payload: { config: { broadcast: { self: false }, presence: { key: clientId } } } });
+          var rest = outbox; outbox = [];
+          rest.forEach(function (o) { try { ws.send(JSON.stringify(o)); } catch (e) {} });
+          if (hb) clearInterval(hb);
+          hb = setInterval(function () {
+            raw({ topic: 'phoenix', event: 'heartbeat', payload: {}, ref: String(++ref) });
+          }, 25000);
+        };
+        ws.onmessage = function (ev) {
+          var m;
+          try { m = JSON.parse(ev.data); } catch (e) { return; }
+          if (m.event === 'phx_reply' && m.ref === joinRef) {
+            joined = true;
+            retry = 0;
+            emit({ type: 'mode', mode: 'online' });
+            emit({ type: 'bus-open' });            // (재)접속 — 내 방·음성 채널을 다시 알린다
+          } else if (m.event === 'broadcast' && m.payload && m.payload.payload) { emit(m.payload.payload); }
+          else if (m.event === 'phx_error' || m.event === 'phx_close') { joined = false; emit({ type: 'mode', mode: 'offline' }); }
+        };
+        ws.onerror = function () { emit({ type: 'mode', mode: 'offline' }); };
+        ws.onclose = function () {
+          if (hb) { clearInterval(hb); hb = null; }
+          joined = false;
+          if (closedByUs) return;
+          emit({ type: 'mode', mode: 'offline' });
+          scheduleRetry();
+        };
+      }
+      open();
       return {
         kind: 'online',
         send: function (m) { if (joined) sendEvent('msg', m); },
-        close: function () { if (hb) clearInterval(hb); try { ws.close(); } catch (e) {} }
+        kick: function () { if (!joined && !closedByUs) { retry = 0; if (retryTimer) { clearTimeout(retryTimer); retryTimer = null; } open(); } },
+        close: function () {
+          closedByUs = true;
+          if (hb) clearInterval(hb);
+          if (retryTimer) clearTimeout(retryTimer);
+          try { ws.close(); } catch (e) {}
+        }
       };
     }
 
@@ -10700,6 +10734,7 @@
       id: function () { return clientId; },
       mode: function () { return mode; },
       configured: function () { return !!(cfg && cfg.supabaseUrl && cfg.supabaseAnonKey); },
+      kick: function () { try { if (bus && bus.kick) bus.kick(); } catch (e) {} },
       // 온라인 연결이 끊기면 로컬 버스로 계속 동작시킨다
       fallbackLocal: function () {
         if (mode === 'online') return;
@@ -11142,6 +11177,12 @@
   function handleRealtime(msg) {
     if (!msg || typeof msg !== 'object') return;
     if (msg.type === 'mode') { setChatMode(msg.mode); return; }
+    if (msg.type === 'bus-open') {
+      // 시그널링이 (다시) 붙었다 — 같은 방 사람에게 내 방·음성을 다시 알려 연결을 되살린다
+      try { helloOwn(ownName()); } catch (e0) {}
+      try { if (VOICE.active) VOICE.announce(); } catch (e1) {}
+      return;
+    }
     if (!msg.id || msg.id === REALTIME.id()) return;
 
     if (msg.type === 'panel-update') {
@@ -11296,11 +11337,48 @@
      · 1층 중앙홀·전시실: 마주친 방문자끼리 🎙️ 음성 대화
      · 2층 회의실: A·B 등급 전용 음성 회의
      두 채널은 room 이름으로 완전히 갈라지며 서로 연결되지 않는다. */
+  /* 노래방 마이크가 아직 살아 있는지 — 꺼진 트랙을 음성에 다시 태우면 무음이 흘러간다 */
+  function karaokeStreamLive(stream) {
+    if (!stream || !stream.getAudioTracks) return false;
+    try {
+      return stream.getAudioTracks().some(function (t) { return !!t && t.readyState === 'live'; });
+    } catch (e) { return false; }
+  }
+
   var VOICE = {
     active: false, stream: null, peers: {}, audioEls: {}, iceBuf: {},
     supported: false, denied: false, room: 'gallery', _unlockArmed: false, _retry: {},
     /* 🎤 노래방 마이크(필터·에코를 거친 스트림) — 켜져 있으면 이 스트림을 회의실로 내보낸다 */
-    karaokeStream: null, _autoJoinedByKaraoke: false,
+    karaokeStream: null, _autoJoinedByKaraoke: false, _audioBlocked: false,
+    /* ── ICE 서버 ─────────────────────────────────────────────────────────
+       같은 와이파이·근거리에서는 STUN 만으로도 붙지만, 서울↔지방↔외국 또는
+       LTE/5G 사설 NAT(CGNAT) 사이에서는 STUN 만으로는 후보가 엇갈려 ICE 가 failed 로 끊긴다.
+       그래서 TURN 릴레이를 함께 넣는다 — 직결이 되면 ICE 가 직결을 먼저 쓰고,
+       막힐 때만 릴레이로 넘어간다(평소 품질 손해 없음).
+       2026-11-28 실측(Allocate 0x0103 = 릴레이 할당 성공, 3/3):
+         · turn.evan-brass.net   3478 UDP · 443 TLS(turns) — 무료 공개 TURN
+         · turn.quickblox.com    3478 UDP
+         · turn.bettercrewl.ink  3478 UDP
+       바꾸려면 window.GALLERY_RTC_ICE = [{urls:'turn:...', username:'...', credential:'...'}]
+       (예: Metered·Cloudflare 등 전용 TURN 자격 증명을 넣으면 그 목록이 우선한다) */
+    ICE_STUN: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302',
+               'stun:stun.cloudflare.com:3478'],
+    ICE_TURN: [
+      { urls: 'turns:turn.evan-brass.net:443?transport=tcp', username: 'user', credential: 'password' },
+      { urls: 'turn:turn.evan-brass.net:3478', username: 'user', credential: 'password' },
+      { urls: 'turn:turn.quickblox.com:3478', username: 'quickblox', credential: 'baccb97ba2d92d71e26eb9886da5f1e0' },
+      { urls: 'turn:turn.bettercrewl.ink:3478', username: 'M9DRVaByiujoXeuYAAAG', credential: 'TpHR9HQNZ8taxjb3' }
+    ],
+    iceServers: function () {
+      var list = [{ urls: this.ICE_STUN.slice() }];
+      var custom = (window.GALLERY_RTC_ICE && window.GALLERY_RTC_ICE.length) ? window.GALLERY_RTC_ICE : null;
+      (custom || this.ICE_TURN).forEach(function (s) { if (s && s.urls) list.push(s); });
+      return list;
+    },
+    rtcConfig: function () {
+      return { iceServers: this.iceServers(), iceCandidatePoolSize: 4,
+               bundlePolicy: 'max-bundle', rtcpMuxPolicy: 'require' };
+    },
     init: function (cfg) {
       this.supported = !!(cfg && cfg.supabaseUrl && cfg.supabaseAnonKey &&
         navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.RTCPeerConnection);
@@ -11331,7 +11409,7 @@
       if (this.active) this.leave();                                     // 채널을 바꿀 때는 이전 채널을 확실히 끊는다
       this.denied = false;
       /* 🎤 노래방 마이크가 켜져 있으면 그 가공 스트림으로 바로 연결한다 — 마이크를 두 번 열지 않는다 */
-      if (MIC.stream && MIC.dest && MIC.dest.stream) {
+      if (MIC.stream && MIC.dest && karaokeStreamLive(MIC.dest.stream)) {
         if (this.attachKaraokeStream(MIC.dest.stream, want)) return;
       }
       navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
@@ -11345,8 +11423,10 @@
         // 같은 채널(같은 층) 방문자에게만 알린다
         REALTIME.send({ type: 'voice-hello', id: REALTIME.id(), name: ownName(), room: self.room });
         Object.keys(visitors).forEach(function (vid) {
-          // 방이 같을 때만 연결하고, id 가 작은 쪽이 먼저 offer 를 건다(동시에 켜도 엇갈리지 않게)
-          self.connect(vid, String(REALTIME.id()) < String(vid), self.room);
+          /* 방이 같을 때만 연결하고, id 가 작은 쪽만 먼저 offer 를 건다(동시에 켜도 엇갈리지 않게).
+             id 가 큰 쪽은 빈 연결을 미리 만들지 않는다 — 빈 PC 가 남으면 그 사람이 나중에
+             들어와도 '이미 연결이 있다'로 보여 announce(내 채널 알리기)를 건너뛰어 소리가 끊긴다. */
+          if (String(REALTIME.id()) < String(vid)) self.connect(vid, true, self.room);
         });
         updateMeetingHud();
       }).catch(function () {
@@ -11364,8 +11444,15 @@
     attachKaraokeStream: function (stream, scope) {
       var self = this;
       if (!stream) return false;
+      var want = scope || this.scopeOfFloor();
       this.karaokeStream = stream;
       var track = (stream.getAudioTracks() || [])[0] || null;
+      /* 1층 음성 대화를 켜 둔 채 2층 노래방으로 올라온 경우 —
+         방을 meeting 으로 옮기지 않으면 회의실 사람에게는 한 마디도 가지 않는다. */
+      if (this.active && this.room !== want) {
+        this.leave(true);
+        this.karaokeStream = stream;
+      }
       if (this.active) {
         if (track) {
           Object.keys(this.peers).forEach(function (id) {
@@ -11394,7 +11481,7 @@
       updateHallVoice();
       REALTIME.send({ type: 'voice-hello', id: REALTIME.id(), name: ownName(), room: this.room });
       Object.keys(visitors).forEach(function (vid) {
-        self.connect(vid, String(REALTIME.id()) < String(vid), self.room);
+        if (String(REALTIME.id()) < String(vid)) self.connect(vid, true, self.room);   // 위와 같은 이유
       });
       updateMeetingHud();
       return true;
@@ -11433,17 +11520,22 @@
       if (pc) this.dropPeer(peerId);
       this.connect(peerId, true);
     },
-    leave: function () {
+    leave: function (keepKaraoke) {
       var self = this;
       if (this.active) {
         REALTIME.send({ type: 'voice-bye', id: REALTIME.id(), name: ownName(), room: this.room });
       }
       Object.keys(this.peers).forEach(function (k) { self.dropPeer(k); });
       var s = this.stream;
+      var ks = this.karaokeStream;
       this.stream = null;
-      /* 노래방 마이크 스트림의 주인은 노래방이다 — 여기서 끄면 노래방 마이크까지 같이 죽는다 */
-      if (s && s !== this.karaokeStream) { try { s.getTracks().forEach(function (t) { t.stop(); }); } catch (e) {} }
-      this.karaokeStream = null;
+      /* 노래방 마이크 스트림의 주인은 노래방이다 — 여기서 끄면 노래방 마이크까지 같이 죽는다.
+         마이크가 아직 살아 있으면 참조를 남겨 다음에 음성을 켤 때 노래가 그대로 전달되게 한다. */
+      /* 노래방이 빌려 쓴 마이크(MIC.stream)는 여기서 끄면 노래 자체가 죽는다 */
+      if (s && s !== ks && s !== MIC.stream) {
+        try { s.getTracks().forEach(function (t) { t.stop(); }); } catch (e) {}
+      }
+      this.karaokeStream = (keepKaraoke || karaokeStreamLive(ks)) ? ks : null;
       this._autoJoinedByKaraoke = false;
       this.active = false;
       renderVoiceNote('idle');
@@ -11460,6 +11552,8 @@
         try { el.pause(); el.srcObject = null; if (el.parentNode) el.parentNode.removeChild(el); } catch (e) {}
         delete this.audioEls[peerId];
       }
+      this._audioBlocked = false;
+      this.publishLink();
     },
     /* 새 방문자에게 내 음성 채널을 알린다(연결 또는 듣기 전용 수신을 시작하게) */
     announce: function () {
@@ -11508,12 +11602,13 @@
       var old = this.peers[peerId];
       if (old) {
         /* 이미 연결되어 있으면 새 연결을 만들지 않는다(받던 소리가 끊기지 않게) */
-        if (initiator && src) this.upgradePeer(peerId);
+        if (initiator && src && !old.localDescription && !old.remoteDescription) this.sendOffer(old, peerId);
+        else if (initiator && src) this.upgradePeer(peerId);
         return;
       }
       if (!src && initiator) return;                  // 보낼 것도 없이 offer 만 걸 수는 없다
       try {
-        var pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+        var pc = new RTCPeerConnection(this.rtcConfig());
         this.peers[peerId] = pc;
         if (src) {
           try { src.getTracks().forEach(function (t) { pc.addTrack(t, src); }); } catch (e0) {}
@@ -11521,6 +11616,7 @@
         pc.onicecandidate = function (e) {
           var c = e.candidate;
           if (!c) return;
+          if (c.type === 'relay') pc._relay = true;     // 직결이 막혀 중계로 붙었는지 표시
           /* 후보는 JSON 으로 실을 수 있는 값만 보낸다 — 로컬 버스(BroadcastChannel)에서도 전달되게 */
           REALTIME.send({ type: 'rtc-ice', id: REALTIME.id(), to: peerId, room: self.refRoom(),
                           candidate: { candidate: c.candidate, sdpMid: c.sdpMid, sdpMLineIndex: c.sdpMLineIndex,
@@ -11534,8 +11630,10 @@
         pc.onconnectionstatechange = function () {
           if (self.peers[peerId] !== pc) return;
           var cs = pc.connectionState;
-          if (cs === 'connected') { self._retry[peerId] = 0; return; }
+          self.publishLink();                            // 바의 '연결됨 · N명' 표시를 바로 맞춘다
+          if (cs === 'connected') { self._retry[peerId] = 0; self.markRelay(pc); return; }
           if (cs === 'failed') { self.dropPeer(peerId); self.retryPeer(peerId); }   // 끊기면 몇 번 다시 시도
+          else if (cs === 'disconnected') { self.scheduleIceRestart(pc, peerId); }  // 잠깐 끊겨도 다시 살린다
           else if (cs === 'closed') { self.dropPeer(peerId); }
         };
         if (initiator) this.sendOffer(pc, peerId);
@@ -11552,6 +11650,23 @@
       if (has) return;
       try { src.getTracks().forEach(function (t) { pc.addTrack(t, src); }); } catch (e) {}
       this.sendOffer(pc, peerId);
+    },
+    /* 잠깐 'disconnected' 로 멀어져도(폰이 잠깐 멈추거나 중계가 끊길 때) 연결을 새로 맺지 않고
+       ICE 만 다시 시작한다 — 소리가 몇 초 끊기는 것으로 끝나고 대화 상대 목록도 유지된다. */
+    scheduleIceRestart: function (pc, peerId) {
+      var self = this;
+      if (!pc || pc._iceTimer) return;
+      pc._iceTimer = setTimeout(function () {
+        pc._iceTimer = null;
+        if (self.peers[peerId] !== pc) return;
+        if (pc.connectionState === 'connected') return;
+        try {
+          pc.createOffer({ iceRestart: true }).then(function (o) { return pc.setLocalDescription(o); }).then(function () {
+            REALTIME.send({ type: 'rtc-offer', id: REALTIME.id(), to: peerId, room: self.refRoom(),
+                            sdp: { type: pc.localDescription.type, sdp: pc.localDescription.sdp } });
+          }).catch(function () { self.dropPeer(peerId); self.retryPeer(peerId); });
+        } catch (e) { self.dropPeer(peerId); self.retryPeer(peerId); }
+      }, 3500);
     },
     /* 연결이 끊겼을 때 다시 붙는다 — 말하는 쪽은 다시 offer, 듣는 쪽은 다시 요청(최대 3회) */
     retryPeer: function (peerId) {
@@ -11636,6 +11751,61 @@
                  track: t ? { ready: t.readyState, muted: !!t.muted, live: t.readyState === 'live' } : null };
       });
     },
+    /* 실제로 TURN 릴레이를 거쳐 붙었는지 — '중계' 표시가 거짓말이 되지 않게 후보쌍을 직접 읽는다 */
+    markRelay: function (pc) {
+      var self = this;
+      if (!pc || !pc.getStats) return;
+      try {
+        pc.getStats(null).then(function (stats) {
+          var byId = {}, pair = null, pairId = null;
+          stats.forEach(function (r) { byId[r.id] = r; });
+          stats.forEach(function (r) {
+            if (r.type === 'transport' && r.selectedCandidatePairId) pairId = r.selectedCandidatePairId;
+          });
+          if (!pairId) {
+            stats.forEach(function (r) { if (!pairId && r.type === 'candidate-pair' && r.selected) pairId = r.id; });
+          }
+          pair = pairId ? byId[pairId] : null;
+          if (!pair) return;
+          var lc = byId[pair.localCandidateId] || {}, rc = byId[pair.remoteCandidateId] || {};
+          var relay = lc.candidateType === 'relay' || rc.candidateType === 'relay';
+          if (relay !== !!pc._relayUse) { pc._relayUse = relay; self.publishLink(); }
+        }).catch(function () {});
+      } catch (e) {}
+    },
+    /* 지금 몇 명과 실제로 연결돼 있는지 — 화면 표시와 검증에 함께 쓴다 */
+    linkInfo: function () {
+      var self = this, connected = 0, connecting = 0, relay = 0, failed = 0;
+      Object.keys(this.peers).forEach(function (k) {
+        var pc = self.peers[k];
+        if (!pc) return;
+        var cs = pc.connectionState;
+        if (cs === 'connected') { connected++; if (pc._relayUse || pc._relay) relay++; }
+        else if (cs === 'failed') failed++;
+        else connecting++;
+      });
+      return { connected: connected, connecting: connecting, relay: relay, failed: failed,
+               total: Object.keys(this.peers).length, audio: Object.keys(this.audioEls).length,
+               listening: this.isListening(), blocked: !!this._audioBlocked };
+    },
+    statusText: function () {
+      var n = this.linkInfo();
+      var tail = n.relay ? ' · 원거리 중계' : '';
+      if (this.active) {
+        if (n.connected) return '실시간 음성 연결됨 · ' + n.connected + '명' + tail;
+        if (n.connecting) return '상대와 연결 중…';
+        return '같은 방에 들어온 사람을 기다리는 중';
+      }
+      if (n.connected) return '듣는 중 · ' + n.connected + '명' + tail;
+      if (n.connecting) return '듣는 중 · 연결 중…';
+      return '';
+    },
+    /* 연결된 사람 수·상태가 바뀔 때마다 음성 바·노래방 안내·채팅 음성 패널을 함께 갱신 */
+    publishLink: function () {
+      try { updateMeetingHud(); } catch (e) {}
+      try { karaokeMicVoiceNote(); } catch (e) {}
+      try { renderVoiceNote(this.active ? 'on' : 'idle'); } catch (e) {}
+    },
     /* 마이크는 꺼져 있지만 같은 층 사람의 소리를 듣고 있는 중인지 */
     isListening: function () {
       return !this.active && (Object.keys(this.audioEls).length > 0 || Object.keys(this.peers).length > 0);
@@ -11690,7 +11860,13 @@
       };
       kick();
       try { el.onloadedmetadata = kick; } catch (e2) {}
+      /* 폰에서 자동재생이 막히면 연결은 됐는데 소리만 안 난다 — 화면에 그 사실을 알린다 */
+      setTimeout(function () {
+        self._audioBlocked = !!el.paused;
+        self.publishLink();
+      }, 900);
       if (!this.active) { try { renderVoiceNote('idle'); } catch (e3) {} }
+      this.publishLink();
     },
     /* 자동재생이 막혔을 때 — 화면을 한 번 누르면 모든 피어 소리를 살린다 */
     armAudioUnlock: function () {
@@ -11704,6 +11880,8 @@
       if (locked) { try { toast('🔊 소리를 들으려면 화면을 한 번 눌러 주세요', 4200); } catch (e0) {} }
       var resume = function () {
         self._unlockArmed = false;
+        self._audioBlocked = false;
+        self.publishLink();
         ['pointerdown', 'touchstart', 'click', 'keydown'].forEach(function (n) {
           try { document.removeEventListener(n, resume, true); } catch (e2) {}
         });
@@ -11743,8 +11921,8 @@
       btn.disabled = false; btn.textContent = '다시 시도';
     } else if (vstate === 'on') {
       msg.textContent = onHere
-        ? (inMeeting ? '2층 회의실 음성 회의에 연결되었습니다. 같은 회의실 사람과 목소리로 대화합니다. (헤드폰 권장)'
-                    : '1층 방문자 음성 대화에 연결되었습니다. 같은 1층에 있는 방문자와 목소리로 대화합니다. (헤드폰 권장)')
+        ? ((inMeeting ? '2층 회의실 음성 회의' : '1층 방문자 음성 대화') + '에 연결되었습니다. ' +
+           (VOICE.statusText() || '') + ' (헤드폰 권장)')
         : where;
       btn.disabled = false;
       btn.textContent = inMeeting ? '🎙️ 회의실 음성 나가기' : '🎙️ 음성 대화 끄기';
@@ -11843,6 +12021,13 @@
     setTimeout(maybeOfferNickname, 900);
     window.addEventListener('beforeunload', function () {
       REALTIME.send({ type: 'bye', id: REALTIME.id() });
+    });
+    /* 폰 화면을 다시 켜면 — 멈춘 오디오(AudioContext)·끊긴 시그널링·음성 연결을 되살린다 */
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) return;
+      try { if (MIC.ctx && MIC.ctx.state === 'suspended' && MIC.ctx.resume) MIC.ctx.resume(); } catch (e0) {}
+      try { REALTIME.kick(); } catch (e1) {}
+      try { if (VOICE.active || VOICE.isListening()) VOICE.announce(); } catch (e2) {}
     });
   }
 
@@ -15882,21 +16067,25 @@
     setTimeout(positionVistaBar, 60);   // 글자가 여러 줄로 늘어난 뒤 한 번 더 맞춘다
     if (!on) return;
     var msg = $('mv-msg'), btn = $('mv-join');
+    var link = VOICE.statusText();
     var key = (VOICE.active ? 'on' : (VOICE.denied ? 'denied' : (VOICE.supported ? 'idle' : 'no'))) + '|' +
-              (state.meeting ? state.meeting.name : '');
+              (state.meeting ? state.meeting.name : '') + '|' + link +
+              '|' + (VOICE._audioBlocked ? 'mute' : '');
     if (state._mvKey === key) return;
     state._mvKey = key;
     if (!VOICE.supported) {
       if (msg) msg.textContent = '이 환경에서는 음성 회의를 열 수 없습니다(HTTPS · WebRTC 필요).';
       if (btn) { btn.textContent = '지원 안 됨'; btn.disabled = true; btn.classList.remove('on'); }
     } else if (VOICE.active) {
-      if (msg) msg.textContent = '음성 회의에 연결되었습니다 · 목소리로 대화 중(헤드폰 권장)';
+      if (msg) msg.textContent = (link ? link + ' · ' : '') +
+        (VOICE._audioBlocked ? '🔊 화면을 한 번 누르면 상대 소리가 켜집니다' : '목소리로 대화 중(헤드폰 권장)');
       if (btn) { btn.textContent = '마이크 끄기'; btn.disabled = false; btn.classList.add('on'); }
     } else if (VOICE.denied) {
       if (msg) msg.textContent = '마이크 권한이 거부되었습니다. 브라우저 설정에서 허용해 주세요.';
       if (btn) { btn.textContent = '다시 시도'; btn.disabled = false; btn.classList.remove('on'); }
     } else {
-      if (msg) msg.textContent = '마이크를 켜면 이 회의실 사람들과 목소리로 대화합니다.';
+      if (msg) msg.textContent = link ? (link + ' — 말하려면 마이크를 켜세요.')
+                                      : '마이크를 켜면 이 회의실 사람들과 목소리로 대화합니다.';
       if (btn) { btn.textContent = '마이크 켜기'; btn.disabled = false; btn.classList.remove('on'); }
     }
   }
@@ -16707,7 +16896,15 @@
           spec: KARAOKE, songs: karaokeSongList, select: karaokeSelect,
           play: karaokePlayId, playEntry: karaokePlayEntry, stop: karaokeStopVideo,
           mr: karaokeOpenMr, idFrom: karaokeIdFrom,
-          mic: { start: karaokeMicStart, stop: karaokeMicStop, on: function () { return !!MIC.stream; } },
+          mic: { start: karaokeMicStart, stop: karaokeMicStop, on: function () { return !!MIC.stream; },
+                 /* 검증용 — 원본 마이크와 회의실로 나가는 가공 스트림이 살아 있는지 */
+                 streams: function () {
+                   function st(s) {
+                     try { var a = (s && s.getAudioTracks) ? (s.getAudioTracks() || [])[0] : null;
+                           return a ? a.readyState : null; } catch (e) { return null; }
+                   }
+                   return { mic: st(MIC.stream), dest: st(MIC.dest && MIC.dest.stream) };
+                 } },
           pos: function () {
             return { x: KARAOKE.x, z: KARAOKE.z, ry: +KARAOKE.ry.toFixed(3), y: FLOOR2_Y,
                      stage: KARAOKE.stage, meshes: KARAOKE.group ? KARAOKE.group.children.length : 0 };
