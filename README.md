@@ -310,6 +310,14 @@ python3 build.py                               # index.html 재빌드(내장 데
   마이크를 껐다 켜도 이어지도록 빈 `RTCPeerConnection` 을 미리 만들지 않는다.
 - **노래방 마이크**: 잡음 억제(`noiseSuppression`)는 끄고 에코 캔슬만 켠다 — 잡음 억제가 노래의 숨소리·여운을 깎기 때문.
   유튜브 반주(MR)는 저작권·브라우저 정책상 각자 기기에서 재생되고, WebRTC 로 넘어가는 것은 마이크를 탄 목소리다.
+- **노래방 마이크 자동 복구(2026-11-28)**: 🔍 반주 찾기로 유튜브 앱·새 창에 다녀오거나 폰 화면이 꺼졌다 켜지면
+  안드로이드가 `AudioContext`(`MIC.ctx`)를 `suspended`/`interrupted` 로 멈추고 마이크 트랙을 `ended`/`muted` 로 바꾼다 —
+  그대로 두면 화면엔 `켜짐` 인데 2층에는 무음이 간다. 그래서 `AudioContext` 상태 변화 · 트랙 `ended`/`muted` ·
+  `visibilitychange`/`focus`/`pageshow` · 반주 재생 직후(0.4·1.2·2.5초) · 5초 주기 감시에서 스스로 `resume()` 하고,
+  죽은 트랙은 `getUserMedia` 로 다시 열어 모든 피어의 송신 트랙을 `replaceTrack` 으로 교체한다(가수가 마이크를 껐다 켤 필요 없음).
+  상대 쪽 `<audio>` 가 멈춰 있으면 다시 재생하고 끊긴 피어는 재연결한다(`VOICE.revive`).
+  탭이 버려져 브라우저가 페이지를 새로 연 경우는 저절로 켜지지 않으므로 창에 `마이크 켜기를 한 번 눌러 주세요` 로 안내한다.
+  검증용: `__gallery.karaoke.mic.state()` · `mic.heal()` · `mic.reopen()`.
 - 운영 시 권장: 방 인원이 많아지면 SFU(LiveKit·Daily)나 전용 TURN(coturn·Metered) 으로 교체.
 
 ---
