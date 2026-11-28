@@ -294,10 +294,23 @@ python3 build.py                               # index.html 재빌드(내장 데
 - **2층 회의실**: 회의실 상단 **`2층 회의실 · 음성 회의`** 바의 `마이크 켜기`.
 - 채팅창 상단 **🎙️ 음성방** 버튼 → 지금 층에 맞는 안내 패널. `meta.realtime`이 설정돼 있으면 버튼이 활성화됩니다.
 - 방식: `getUserMedia` 마이크 → 방문자끼리 `RTCPeerConnection` 연결(피어마다 `<audio>` 1개),
-  SDP offer/answer·ICE 후보는 위 Realtime Broadcast(`rtc-offer` / `rtc-answer` / `rtc-ice`)로 교환합니다(STUN: Google 공개 STUN).
+  SDP offer/answer·ICE 후보는 위 Realtime Broadcast(`rtc-offer` / `rtc-answer` / `rtc-ice`)로 교환합니다.
+- **ICE 서버(2026-11-28)**: STUN 3개(Google 2 · Cloudflare 1) + **TURN 4개**(`turn.evan-brass.net` 3478 UDP / 443 TLS,
+  `turn.quickblox.com` 3478, `turn.bettercrewl.ink` 3478). 서울↔지방↔외국, LTE/5G 대칭 NAT(CGNAT)에서도
+  직결이 막히면 릴레이로 붙는다(바에 `· 원거리 중계` 표시). 바꾸려면 `window.GALLERY_RTC_ICE` 로
+  `[{urls, username, credential}]` 을 넣으면 그 목록이 우선한다(예: Metered·Cloudflare 전용 TURN 자격 증명).
 - 층을 옮기면(`setFloor`) 음성을 먼저 끊고 `voice-bye` 를 보낸 뒤 새 `room` 을 `hello`/`state` 로 알린다 — 1층 대화와 2층 회의 음성이 섞이지 않는다.
 - 설정이 없으면 버튼이 **비활성** 상태로 `2단계 서버 연결 필요`를 표시합니다. **가짜 연결·가짜 참가자는 만들지 않습니다.**
-- 운영 시 권장: TURN 서버(예: coturn·Twilio) 추가 — 대칭 NAT 환경에서 필요합니다.
+- **연결 상태 표시**: 2층 음성 바·노래방 안내문·채팅 음성 패널에 `실시간 음성 연결됨 · N명`(듣기만 하면 `듣는 중 · N명`)이
+  실제 연결된 피어 수로 뜬다. 자동재생이 막히면 `🔊 화면을 한 번 누르면 상대 소리가 켜집니다` 로 알린다.
+- **자동 복구**: 시그널링 WebSocket 이 끊기면(폰 화면 꺼짐·LTE↔와이파이) 1~15초 간격으로 다시 붙고,
+  붙는 순간 `hello`/`voice-hello` 를 다시 보내 연결을 되살린다. 잠깐 `disconnected` 되면 ICE 재시작으로 잇는다.
+- **전체 수신**: 마이크를 켜지 않은 사람도 같은 `room` 이면 듣기 전용(`recvonly`)으로 연결되고,
+  3D 거리와 무관하게 같은 방이면 모두 들린다(거리 감쇠 없음). 한 명이 켜 둔 뒤 다른 사람이 들어와도,
+  마이크를 껐다 켜도 이어지도록 빈 `RTCPeerConnection` 을 미리 만들지 않는다.
+- **노래방 마이크**: 잡음 억제(`noiseSuppression`)는 끄고 에코 캔슬만 켠다 — 잡음 억제가 노래의 숨소리·여운을 깎기 때문.
+  유튜브 반주(MR)는 저작권·브라우저 정책상 각자 기기에서 재생되고, WebRTC 로 넘어가는 것은 마이크를 탄 목소리다.
+- 운영 시 권장: 방 인원이 많아지면 SFU(LiveKit·Daily)나 전용 TURN(coturn·Metered) 으로 교체.
 
 ---
 
@@ -307,7 +320,7 @@ python3 build.py                               # index.html 재빌드(내장 데
 2. **실시간**: `REALTIME` 어댑터 자리에 Supabase Realtime(현재 내장) 또는 자체 WebSocket 서버를 끼웁니다.
    - 위치 동기화 주기 200ms(이동 시)·3초(정지 시) — `broadcastState()`에서 조정.
    - 방문자 12명까지 아바타를 그립니다(`ensureVisitor`).
-3. **음성**: 위 WebRTC 훅 + TURN 서버, 방 인원이 많아지면 SFU(LiveKit·Daily 등)로 교체.
+3. **음성**: 위 WebRTC 훅(공개 TURN 포함), 방 인원이 많아지면 SFU(LiveKit·Daily 등)로 교체.
 4. **방명록**: 현재 `localStorage`. 2단계에서는 Supabase 테이블(`guestbook`)로 옮기면 방문자 간 공유됩니다.
 5. **배포**: 정적 호스팅에 `index.html` + `exhibits.json` 업로드. HTTPS면 음성 입력·마이크 권한이 모두 동작합니다.
 
